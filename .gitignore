@@ -1,0 +1,124 @@
+# ============================================================
+# 🔧 Core Node / npm
+# ============================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+
+# ============================================================
+# ⚙️ Build / Dist Outputs
+# ============================================================
+dist/
+build/
+functions/lib/
+functions/node_modules/
+firebase-debug.log
+firebase-debug.*
+firebase-debug.log.*
+
+# ============================================================
+# 🧰 Environment Variables
+# ============================================================
+.env
+.env.local
+.env.development.local
+.env.production.local
+.env.test.local
+
+# ============================================================
+# 💾 Firebase / Service Accounts / Secrets
+# ============================================================
+*.serviceAccount.json
+serviceAccountKey.json
+firebaseConfig.js.backup
+credentials.json
+
+# ============================================================
+# 🖼️ Editor / IDE Files
+# ============================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.DS_Store
+Thumbs.db
+
+# ============================================================
+# 🧪 Test / Coverage
+# ============================================================
+coverage/
+*.lcov
+jest-cache/
+jest-results.json
+
+# ============================================================
+# 🚀 OS / System Files
+# ============================================================
+*.log
+*.tmp
+*.bak
+*.old
+*.orig
+*.lock
+*.pid
+*.seed
+*.pid.lock
+*.tgz
+
+# ============================================================
+# 🗃️ Local caches / tooling
+# ============================================================
+.cache/
+.parcel-cache/
+.vite/
+vite.config.js.timestamp*
+eslintcache
+*.eslintcache
+stylelintcache
+*.stylelintcache
+
+# ============================================================
+# 🪶 Firebase Hosting / Cloud Functions Build
+# ============================================================
+.firebase/
+.firebaserc
+firebase-debug.log
+firebase-debug.*
+firebase-debug.log.*
+
+# ============================================================
+# ⚙️ OS generated
+# ============================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ============================================================
+# 🧠 Project specific extras
+# ============================================================
+/Official Missouri State Lacrosse Site/*.iml
+/Official Missouri State Lacrosse Site/out/
+/Official Missouri State Lacrosse Site/.env
+/public/firebase-messaging-sw.js
+
+# ============================================================
+# ✅ Misc safe exclusions
+# ============================================================
+*.log
+*.bak
+*.tmp
+*.local
+*.zip
+*.tar
+*.gz
+*.rar
+.env
+src/Services/firebaseConfig.js
