@@ -1,4 +1,4 @@
-// src/Men/Global/Pages/Home/HomeWrapper.jsx
+// src/Men/Local/Pages/Home/HomeWrapper.jsx
 import Hero from "./Hero.jsx";
 import About from "./About.jsx";
 import SocialFeeds from "./SocialFeeds.jsx";

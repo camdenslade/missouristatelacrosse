@@ -1,5 +1,5 @@
-// src/Men/Global/pages/Home/SocialFeeds.jsx
-import React, { useEffect, useReducer, useCallback, useMemo } from "react";
+// src/Men/Local/Pages/Home/SocialFeeds.jsx
+import { useEffect, useReducer, useCallback } from "react";
 import { db } from "../../services/firebaseConfig";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useAuth } from "../../Context/AuthContext";

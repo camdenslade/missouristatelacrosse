@@ -1,3 +1,4 @@
+// src/Men/Local/Pages/Gallery/Modals/GalleryUpload.jsx
 import { useEffect, useReducer } from "react";
 import useGames from "../Schedule/hooks/useGames.js";
 import { X, Loader2, Image as ImageIcon } from "lucide-react";

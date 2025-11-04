@@ -1,5 +1,5 @@
-// src/Men/Global/pages/Home/MainContent.jsx
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+// src/Men/Local/Pages/Home/MainContent.jsx
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import { db } from "../../services/firebaseConfig.js";
 import { collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";

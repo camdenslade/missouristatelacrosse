@@ -1,4 +1,4 @@
-// src/Men/Global/pages/Home/About.jsx
+// src/Men/Local/Pages/Home/About.jsx
 export default function About() {
   return (
     <section className="py-16">

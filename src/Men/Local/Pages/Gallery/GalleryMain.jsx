@@ -1,9 +1,9 @@
-// src/Men/Global/Pages/Gallery/Gallery.jsx
+// src/Men/Local/Pages/Gallery/GalleryMain.jsx
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
-import GalleryUploadModal from "./Modals/GalleryUploadModal.jsx";
-import GalleryEditModal from "./Modals/GalleryEditModal.jsx";
+import GalleryUploadModal from "./Modals/GalleryUpload.jsx";
+import GalleryEditModal from "./Modals/GalleryEdit.jsx";
 import { useAuth } from "../../Context/AuthContext.jsx";
 import { getGallery } from "../../Global/Gallery/galleryService.js";
 

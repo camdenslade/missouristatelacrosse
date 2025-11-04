@@ -1,3 +1,4 @@
+// src/Global/Gallery/galleryService.js
 import {
   ref,
   uploadBytes,
@@ -14,15 +15,8 @@ import {
   collection,
   getDocs
 } from "firebase/firestore";
-import { storage, db } from "./Services/firebaseConfig.js";
-
-
-function getActiveProgram(){
-  if (typeof window !== "undefined"){
-    return window.location.pathname.toLowerCase().includes("/women") ? "women" : "men";
-  }
-  return "men";
-}
+import { storage, db } from "../../Services/firebaseConfig.js";
+import { getProgramConfig } from "../../Services/programHelper.js";
 
 /**
  * @param {string} folderName
@@ -36,9 +30,7 @@ export async function uploadGallery(folderName, files){
         return [];
     }
 
-    const program = getActiveProgram();
-    const collectionName = program === "women" ? "galleryw" : "gallery";
-    const basePath = program === "women" ? "women/gallery" : "gallery";
+    const { collection: collectionName, storagePath: basePath } = getProgramConfig("gallery");
 
     try{
         const uploadedUrls = await Promise.all(
@@ -79,11 +71,9 @@ export async function uploadGallery(folderName, files){
  */
 
 export async function deleteGallery(folderName, fileName){
-    if (!folderName) throw new Error("Missing foler name");
+    if (!folderName) throw new Error("Missing folder name");
 
-    const program = getActiveProgram();
-    const collectionName = program === "women" ? "galleryw" : "gallery";
-    const basePath = program === "women" ? "women/gallery" : "gallery";
+    const { collection: collectionName, storagePath: basePath } = getProgramConfig("gallery");
     const folderPath = `${basePath}/${folderName}`;
     const folderRef = ref(storage, folderPath);
     const docRef = doc(db, collectionName, folderName);
@@ -116,8 +106,7 @@ export async function deleteGallery(folderName, fileName){
 }
 
 export async function getGallery(folderName){
-  const program = getActiveProgram();
-  const collectionName = program === "women" ? "galleryWomen" : "gallery";
+  const { collection: collectionName } = getProgramConfig("gallery");
 
   if (folderName){
     const docRef = doc(db, collectionName, folderName);
