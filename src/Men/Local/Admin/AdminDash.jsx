@@ -1,4 +1,4 @@
-// src/components/Admin/AdminDashboard.jsx
+// src/Men/Local/Admin/AdminDash.jsx
 import { useReducer, useMemo } from "react";
 import ManagePlayers from "./Tabs/ManagePlayers.jsx";
 import AccountRequests from "./Tabs/AccountRequests.jsx";
