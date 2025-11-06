@@ -122,3 +122,4 @@ Thumbs.db
 *.rar
 .env
 src/Services/firebaseConfig.js
+backend/src/main/resources/application.properties

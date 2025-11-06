@@ -1,0 +1,64 @@
+# ==============================
+# Build & IDE
+# ==============================
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+out/
+bin/
+
+# ==============================
+# IDEs
+# ==============================
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# VS Code
+.vscode/
+
+# STS / Eclipse
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# ==============================
+# Sensitive Configs
+# ==============================
+application.properties
+application.yml
+application-*.properties
+application-*.yml
+.env
+.env.*
+
+# Firebase credentials
+src/main/resources/serviceAccountKey.json
+
+# AWS credentials (if ever used)
+.aws/
+.aws/credentials
+aws-credentials.json
+
+# ==============================
+# OS / Misc
+# ==============================
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.bak
