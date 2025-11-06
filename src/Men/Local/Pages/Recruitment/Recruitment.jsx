@@ -1,8 +1,9 @@
 // src/Men/Local/Pages/Recruitment/Recruitment.jsx
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { useReducer } from "react";
 import { Link } from "react-router-dom";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "../../Services/firebaseConfig.js";
+
+import { db } from "../../../../Services/firebaseConfig.js";
 
 const initialState = {
   formData: {

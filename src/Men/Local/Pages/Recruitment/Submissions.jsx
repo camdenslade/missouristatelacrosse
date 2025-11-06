@@ -1,7 +1,8 @@
 // src/Men/Local/Pages/Recruitment/Submissions.jsx
-import { useEffect, useReducer } from "react";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
-import { db } from "../../Services/firebaseConfig.js";
+import { useEffect, useReducer } from "react";
+
+import { db } from "../../../../Services/firebaseConfig.js";
 
 const initialState = {
   submissions: [],

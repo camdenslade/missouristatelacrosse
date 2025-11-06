@@ -1,8 +1,8 @@
 // src/Men/Local/Pages/Home/MainContent.jsx
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { collection, getDocs, limit, orderBy, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { db } from "../../services/firebaseConfig.js";
-import { collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
+import { useEffect, useLayoutEffect, useState } from "react";
+import { db } from "../../../../Services/firebaseConfig.js";
 
 const heroImages = [
   "/assets/hero1.jpg",
@@ -14,115 +14,87 @@ const heroImages = [
   "/assets/hero7.jpg",
 ];
 
-export default function Hero(){
-  const [heroState, setHeroState] = useState({
-    articles: [],
-    slides: [],
-    currentIndex: 0,
-    loading: true,
-  });
+const fetchArticles = async () => {
+  try {
+    const q = query(
+      collection(db, "articles"),
+      where("published", "==", true),
+      orderBy("createdAt", "desc"),
+      limit(7)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  } catch (err) {
+    console.error("Error fetching articles:", err);
+    return [];
+  }
+};
 
-  const { articles, slides, currentIndex, loading } = heroState;
+export default function Hero() {
+  const [articles, setArticles] = useState([]);
+  const [slides, setSlides] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let mounted = true;
-    let rotationId;
-
-    async function load(){
-      try{
-        const q = query(
-          collection(db, "articles"),
-          where("published", "==", true),
-          orderBy("createdAt", "desc"),
-          limit(7)
-        );
-
-        const snap = await getDocs(q);
-        if (!mounted) return;
-
-        const fetched = snap.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-
-        const articleImages = fetched
-          .filter((a) => a.image?.trim())
-          .slice(0, 7)
-          .map((a) => a.image);
-
-        const needPlaceholders = Math.max(0, 7 - articleImages.length);
-        const selectedPlaceholders = heroImages.slice(0, needPlaceholders);
-        const finalSlides = [...articleImages, ...selectedPlaceholders];
-
-        setHeroState({
-          articles: fetched,
-          slides: finalSlides,
-          currentIndex: 0,
-          loading: false,
-        });
-
-        rotationId = setInterval(() => {
-          setHeroState((prev) => ({
-            ...prev,
-            currentIndex: (prev.currentIndex + 1) % finalSlides.length,
-          }));
-        }, 5000);
-      } catch (err){
-        console.error("Error fetching articles:", err);
-        if (mounted) setHeroState((prev) => ({ ...prev, loading: false }));
-      }
-    }
-
-    load();
-
-    return () => {
-      mounted = false;
-      if (rotationId) clearInterval(rotationId);
+    const load = async () => {
+      setLoading(true);
+      const fetched = await fetchArticles();
+      setArticles(fetched);
+      const filledSlides = fetched.map(
+        (a, i) => (a.image && a.image.trim() !== "" ? a.image : heroImages[i % heroImages.length])
+      );
+      const finalSlides =
+        filledSlides.length < 7
+          ? [...filledSlides, ...heroImages.slice(0, 7 - filledSlides.length)]
+          : filledSlides.slice(0, 7);
+      setSlides(finalSlides);
+      setLoading(false);
     };
+    load();
   }, []);
 
-  const prev = useCallback(() => {
-    setHeroState((prev) => ({ ...prev, currentIndex: prev.currentIndex === 0 ? prev.slides.length - 1 : prev.currentIndex - 1,}));
-  }, []);
+  useLayoutEffect(() => {
+    if (loading || slides.length <= 1) return;
+    const id = setTimeout(
+      () => setCurrentIndex((p) => (p + 1) % slides.length),
+      5000
+    );
+    return () => clearTimeout(id);
+  }, [currentIndex, slides, loading]);
 
-  const next = useCallback(() => {
-    setHeroState((prev) => ({ ...prev, currentIndex: (prev.currentIndex + 1)%prev.slides.length,}));
-  }, []);
+  const prev = () =>
+    setCurrentIndex((p) => (p === 0 ? slides.length - 1 : p - 1));
+  const next = () => setCurrentIndex((p) => (p + 1) % slides.length);
 
-  const currentArticleTitle = useMemo(() => {
-    const currentUrl = slides[currentIndex];
-    return articles.find(
-      (a) => a.image?.trim() && a.image === currentUrl
-    )?.title;
-  }, [slides, currentIndex, articles]);
+  const currentUrl = slides[currentIndex];
+  const currentArticleTitle = articles.find(
+    (a) => a.image && a.image.trim() !== "" && a.image === currentUrl
+  )?.title;
 
   return (
-    <section className="relative h-[80vh] md:h-[90vh] flex items-center justify-center overflow-hidden">
-      {/* Article Slides */}
-      {loading ? (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-200 text-gray-600">
-          Loading hero images...
-        </div>
-      ) : (
-        slides.map((img, i) => (
-          <motion.img
-            key={img}
-            src={img}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            initial={{ opacity: 0 }}
-            animate={i === currentIndex ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 1.0, ease: "easeInOut" }}
-            className="absolute inset-0 w-full h-full object-cover object-top md:[object-position:50%_20%]"
-          />
-        ))
-      )}
+    <section className="relative h-[80vh] md:h-[90vh] flex items-center justify-center overflow-hidden bg-gray-900">
+      {!loading ? (
+      slides.map((img, i) => (
+        <motion.img
+          key={img}
+          src={img}
+          alt=""
+          initial={{ opacity: 0 }}
+          animate={i === currentIndex ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ duration: 1.0, ease: "easeInOut" }}
+          className="absolute inset-0 w-full h-full object-cover object-top z-0 md:[object-position:50%_20%]"
+        />
+      ))
+    ) : (
+      <div className="absolute inset-0 flex items-center justify-center bg-gray-200 text-gray-600 z-0">
+        Loading hero images...
+      </div>
+    )}
 
-      {/* Gray Overlay */}
-      <div className="absolute inset-0 bg-gray-500 bg-opacity-40"></div>
+    <div className="absolute inset-0 bg-black/20 z-10 pointer-events-none"></div>
 
-      {/* Left-Right Controls */}
+
       {!loading && slides.length > 1 && (
         <>
           <button
@@ -140,9 +112,8 @@ export default function Hero(){
         </>
       )}
 
-      {/* Article Title */}
       {!loading && currentArticleTitle && (
-        <div className="absolute bottom-4 right-8 text-right">
+        <div className="absolute bottom-4 right-8 text-right z-20">
           <div className="inline-block relative">
             <div className="absolute top-0 left-4 right-0 h-1 bg-[#5E0009] mb-1"></div>
             <h2 className="text-white text-lg md:text-xl font-semibold relative z-10">
@@ -152,12 +123,10 @@ export default function Hero(){
         </div>
       )}
 
-      {/* Main Text and Buttons */}
-      <div className="relative z-10 text-center flex flex-col items-center gap-4">
+      <div className="relative z-20 text-center flex flex-col items-center gap-4">
         <h1 className="text-5xl md:text-6xl font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
           Missouri State Lacrosse
         </h1>
-
         <div className="flex flex-col gap-3 mt-6">
           <a
             href="/recruitment"

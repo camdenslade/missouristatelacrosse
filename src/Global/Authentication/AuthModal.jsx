@@ -1,8 +1,10 @@
 // src/Global/Authentication/AuthModal.jsx
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth, db } from "../../Services/firebaseConfig.js";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { useReducer } from "react";
+
 import API_BASE from "../../Services/API.js";
+import { auth, db } from "../../Services/firebaseConfig.js";
 import { getActiveProgram } from "../../Services/programHelper.js";
 
 const initialState = {

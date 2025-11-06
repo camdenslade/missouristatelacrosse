@@ -1,6 +1,7 @@
 // src/Global/Authentication/ProtectedRoute.jsx
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "../../Context/AuthContext.jsx";
+
+import { useAuth } from "../Context/AuthContext.jsx";
 
 export default function ProtectedRoute({ allowedRoles = [], children }) {
   const location = useLocation();

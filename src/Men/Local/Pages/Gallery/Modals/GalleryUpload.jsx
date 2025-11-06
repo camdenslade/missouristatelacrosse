@@ -1,8 +1,9 @@
 // src/Men/Local/Pages/Gallery/Modals/GalleryUpload.jsx
-import { useEffect, useReducer } from "react";
-import useGames from "../Schedule/hooks/useGames.js";
 import { X, Loader2, Image as ImageIcon } from "lucide-react";
-import { uploadGallery } from "../../Global/Gallery/galleryService.js";
+import { useEffect, useReducer } from "react";
+
+import { uploadGallery } from "../../../../../Global/Gallery/galleryService.js";
+import useGames from "../../Schedule/hooks/useGames.js";
 
 const initialState = {
   files: [],

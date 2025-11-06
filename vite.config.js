@@ -1,14 +1,15 @@
-import { defineConfig } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   server: {
     proxy: {
       '/api': {
-        target: 'https://us-central1-missouristatelacrosse-cc913.cloudfunctions.net',
+        target: 'http://localhost:8080', // Spring Boot backend
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
+        rewrite: (path) => path.replace(/^\/api/, '/api'), // keep /api
       },
     },
   },

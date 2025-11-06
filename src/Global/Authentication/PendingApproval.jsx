@@ -1,5 +1,6 @@
 // src/Global/Authentication/PendingApproval.jsx
 import { Link } from "react-router-dom";
+
 import { getActiveProgram } from "../../Services/programHelper.js";
 
 export default function PendingApproval() {

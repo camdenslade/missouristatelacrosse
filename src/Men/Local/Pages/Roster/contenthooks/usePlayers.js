@@ -1,16 +1,17 @@
 // src/Men/Local/Pages/Roster/contenthooks/usePlayers.js
-import { useReducer, useCallback } from "react";
-import { db, storage } from "../../../Services/firebaseConfig.js";
+import imageCompression from "browser-image-compression";
 import {
-  collection,
-  getDocs,
   addDoc,
-  updateDoc,
+  collection,
   deleteDoc,
   doc,
+  getDocs,
+  updateDoc,
 } from "firebase/firestore";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import imageCompression from "browser-image-compression";
+import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
+import { useCallback, useReducer } from "react";
+
+import { db, storage } from "../../../../../Services/firebaseConfig.js";
 import { formatSeason } from "../hooks/seasonUtils.js";
 
 const initialState = {

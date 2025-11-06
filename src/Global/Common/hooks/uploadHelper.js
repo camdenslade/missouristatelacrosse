@@ -1,7 +1,8 @@
 // src/Global/Common/hooks/uploadHelper.js
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import imageCompression from "browser-image-compression";
-import { storage } from "../Services/firebaseConfig.js";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+
+import { storage } from "../../../Services/firebaseConfig.js";
 
 /**
  * @param {File|string|null} file

@@ -1,6 +1,4 @@
 // src/Men/Local/Pages/Home/Articles/ManageArticles.jsx
-import { useEffect, useReducer } from "react";
-import { db } from "../../services/firebaseConfig.js";
 import {
   collection,
   addDoc,
@@ -13,9 +11,12 @@ import {
   serverTimestamp,
   getDoc,
 } from "firebase/firestore";
-import { useAuth } from "../../Context/AuthContext.jsx";
+import { useEffect, useReducer } from "react";
+
 import ArticleForm from "./ArticleForm.jsx";
 import ArticleList from "./ArticleList.jsx";
+import { useAuth } from "../../../../../Global/Context/AuthContext.jsx";
+import { db } from "../../../../../Services/firebaseConfig.js";
 
 const initialState = {
   articles: [],
@@ -125,7 +126,7 @@ export default function ManageArticlesModal({ isOpen, onClose }) {
           ×
         </button>
 
-        <h2 className="text-2xl font-bold mb-4">Manage Men’s Articles</h2>
+        <h2 className="text-2xl font-bold mb-4">Manage Men's Articles</h2>
 
         {loadingRole ? (
           <p className="text-gray-500 italic mb-4">Checking permissions...</p>

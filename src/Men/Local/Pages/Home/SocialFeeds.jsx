@@ -1,10 +1,12 @@
 // src/Men/Local/Pages/Home/SocialFeeds.jsx
-import { useEffect, useReducer, useCallback } from "react";
-import { db } from "../../services/firebaseConfig";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { useAuth } from "../../Context/AuthContext";
-import { Swiper, SwiperSlide } from "swiper/react";
+import { useEffect, useReducer, useCallback } from "react";
 import { Pagination, A11y } from "swiper/modules";
+import { Swiper, SwiperSlide } from "swiper/react";
+
+import { useAuth } from "../../../../Global/Context/AuthContext.jsx";
+import { db } from "../../../../Services/firebaseConfig.js";
+
 import "swiper/css";
 import "swiper/css/pagination";
 
@@ -41,7 +43,7 @@ export default function SocialFeeds(){
     const { postUrls, loading, error, newUrl, adding, isMobile } = state;
 
     const { user, roles } = useAuth();
-    const Postable = (user && (roles?.men === "player" || roles?.men === "admin"))
+    const canAddPost = (user && (roles?.men === "player" || roles?.men === "admin"))
 
     const fetchPosts = useCallback(async (isBackground = false) => {
         try{

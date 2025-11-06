@@ -1,9 +1,10 @@
 import { useEffect, useReducer, useRef } from "react";
+import { FaBars, FaTimes, FaUserCircle } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
-import { FaUserCircle, FaBars, FaTimes } from "react-icons/fa";
-import { useAuth } from "../../Context/AuthContext.jsx";
-import MobileMenu from "./MobileMenu.jsx";
+
 import { getProgramInfo } from "../../Services/programHelper.js";
+import { useAuth } from "../Context/AuthContext.jsx";
+import MobileMenu from "./Mobile.jsx";
 
 const initialState = {
   showUserMenu: false,
@@ -82,7 +83,7 @@ export default function Header({ onManageArticles, onAuthOpen }) {
             <Link to={programLink("")} className={linkHover}>Home</Link>
             <Link to={programLink("/schedule")} className={linkHover}>Schedule</Link>
             <Link to={programLink("/roster")} className={linkHover}>Roster</Link>
-            <Link to={programLink("/teamstore")} className={linkHover}>Team Store</Link>
+            <Link to={programLink("/store")} className={linkHover}>Team Store</Link>
             <Link to={programLink("/recruitment")} className={linkHover}>Recruitment</Link>
             <Link to={programLink("/donate")} className={linkHover}>Donate</Link>
             <Link to={programLink("/gallery")} className={linkHover}>Gallery</Link>

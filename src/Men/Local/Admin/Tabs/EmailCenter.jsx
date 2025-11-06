@@ -1,6 +1,4 @@
 // src/Men/Local/Admin/Tabs/EmailCenter.jsx
-import { useEffect, useReducer } from "react";
-import { db } from "../../Services/firebaseConfig.js";
 import {
   collection,
   getDocs,
@@ -9,7 +7,10 @@ import {
   updateDoc,
   deleteDoc,
 } from "firebase/firestore";
-import API_BASE from "../../Services/API.js";
+import { useEffect, useReducer } from "react";
+
+import API_BASE from "../../../../Services/API.js";
+import { db } from "../../../../Services/firebaseConfig.js";
 
 const initialState = {
   groups: [],

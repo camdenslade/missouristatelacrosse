@@ -37,3 +37,15 @@ export const generateSeasonValues = () => {
   }
   return arr;
 };
+
+// Alias for normalizeSeasonParam - used for formatting season values
+export const formatSeason = normalizeSeasonParam;
+
+// Generate season options for dropdowns
+export const generateSeasonOptions = () => {
+  const values = generateSeasonValues();
+  return values.map((value) => ({
+    value,
+    label: displaySeasonLabel(value),
+  }));
+};

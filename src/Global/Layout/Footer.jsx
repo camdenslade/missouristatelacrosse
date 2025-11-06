@@ -1,4 +1,5 @@
 import { FaInstagram, FaFacebook } from "react-icons/fa";
+
 import { getProgramInfo } from "../../Services/programHelper.js";
 
 export default function Footer() {

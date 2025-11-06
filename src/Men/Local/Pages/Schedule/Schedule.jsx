@@ -1,17 +1,18 @@
 // src/Men/Local/Pages/Schedule/Schedule.jsx
+import { isWithinInterval, addHours, subHours, parseISO } from "date-fns";
 import { useReducer, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { isWithinInterval, addHours, subHours, parseISO } from "date-fns";
-import useGames from "./hooks/useGame.js";
-import useCountdown from "./hooks/useCountdown.js";
+
 import GameRow from "./components/GameRow.jsx";
-import RecordGrid from "./components/RecordGrid.jsx";
 import NextGameSection from "./components/HighlightGame.jsx";
-import LiveGameUI from "./components/LiveGameUI.jsx";
-import LiveGameViewer from "./components/LiveGameViewer.jsx";
-import ScheduleFormModal from "./Modals/ScheduleForm.jsx";
-import ScoreModal from "./Modals/ScoreModal.jsx";
+import LiveGameUI from "./Live/LiveGameUI.jsx";
+import LiveGameViewer from "./Live/LiveGameViewer.jsx";
+import RecordGrid from "./components/RecordGrid.jsx";
 import { calculateRecord } from "./hooks/recordUtils.js";
+import useCountdown from "./hooks/useCountdown.js";
+import useGames from "./hooks/useGames.js";
+import ScheduleFormModal from "./Modals/ScheduleForm.jsx";
+import ScoreModal from "./Modals/Score.jsx";
 
 const getSeasonValue = (date = new Date()) => {
   const y = date.getFullYear();

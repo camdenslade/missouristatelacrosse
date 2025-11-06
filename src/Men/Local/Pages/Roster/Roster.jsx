@@ -1,15 +1,16 @@
+import { deleteDoc, doc } from "firebase/firestore";
 import { useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { db } from "../../Services/firebaseConfig.js";
-import { doc, deleteDoc } from "firebase/firestore";
-import usePlayers from "./contenthooks/usePlayers.js";
-import useCoaches from "./contenthooks/useCoaches.js";
-import useRosterState from "./hooks/useRosterState.js";
-import { displaySeasonLabel, normalizeSeasonParam, generateSeasonValues } from "./hooks/seasonUtils.js";
-import { rosterPrintStyle } from "./utils/printStyles.js";
-import PlayerRow from "./components/PlayerRow.jsx";
+import { useNavigate, useParams } from "react-router-dom";
+
+import { db } from "../../../../Services/firebaseConfig.js";
 import CoachRow from "./components/CoachRow.jsx";
+import PlayerRow from "./components/PlayerRow.jsx";
 import RosterFormModal from "./components/RosterForm.jsx";
+import useCoaches from "./contenthooks/useCoaches.js";
+import usePlayers from "./contenthooks/usePlayers.js";
+import { rosterPrintStyle } from "./hooks/printStyles.js";
+import { displaySeasonLabel, generateSeasonValues, normalizeSeasonParam } from "./hooks/seasonUtils.js";
+import useRosterState from "./hooks/useRosterState.js";
 
 function Spinner(){
   return (
@@ -27,8 +28,19 @@ export default function Roster({ userRole }){
   const [state, dispatch] = useRosterState(normalizedSeason);
   const { selectedSeason, showModal, isCoach, editingItem, loading } = state;
 
-  const [players, fetchPlayers] = usePlayers();
-  const [coaches, fetchCoaches] = useCoaches();
+  const {
+    players,
+    loading: playersLoading,
+    error: playersError,
+    fetchPlayers,
+  } = usePlayers();
+
+  const {
+    coaches,
+    loading: coachesLoading,
+    error: coachesError,
+    fetchCoaches,
+  } = useCoaches();
 
   const availableSeasons = useMemo(() => {
     const base = generateSeasonValues();

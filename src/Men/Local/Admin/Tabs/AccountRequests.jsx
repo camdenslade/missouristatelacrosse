@@ -1,6 +1,7 @@
 // src/Men/Local/Admin/Tabs/AccountRequests.jsx
 import { useEffect, useReducer } from "react";
-import API_BASE from "../../Services/API.js";
+
+import API_BASE from "../../../../Services/API.js";
 
 const initialState = {
   requests: [],

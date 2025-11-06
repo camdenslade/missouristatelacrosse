@@ -1,12 +1,5 @@
 // src/Global/Gallery/galleryService.js
 import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-  listAll,
-} from "firebase/storage";
-import {
   doc,
   setDoc,
   getDoc,
@@ -15,8 +8,15 @@ import {
   collection,
   getDocs
 } from "firebase/firestore";
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+  listAll,
+} from "firebase/storage";
+
 import { storage, db } from "../../Services/firebaseConfig.js";
-import { getProgramConfig } from "../../Services/programHelper.js";
 
 /**
  * @param {string} folderName
@@ -30,12 +30,10 @@ export async function uploadGallery(folderName, files){
         return [];
     }
 
-    const { collection: collectionName, storagePath: basePath } = getProgramConfig("gallery");
-
     try{
         const uploadedUrls = await Promise.all(
             files.map(async (file) => {
-                const filePath = `${basePath}/${folderName}/${file.name}`;
+                const filePath = `gallery/${folderName}/${file.name}`;
                 const fileRef = ref(storage, filePath);
 
                 await uploadBytes(fileRef, file);
@@ -44,7 +42,7 @@ export async function uploadGallery(folderName, files){
             })
         );
 
-        const docRef = doc(db, collectionName, folderName);
+        const docRef = doc(db, "gallery", folderName);
         const snap = await getDoc(docRef);
         const oldUrls = snap.exists() ? snap.data().urls || [] : [];
 
@@ -73,10 +71,9 @@ export async function uploadGallery(folderName, files){
 export async function deleteGallery(folderName, fileName){
     if (!folderName) throw new Error("Missing folder name");
 
-    const { collection: collectionName, storagePath: basePath } = getProgramConfig("gallery");
-    const folderPath = `${basePath}/${folderName}`;
+    const folderPath = `gallery/${folderName}`;
     const folderRef = ref(storage, folderPath);
-    const docRef = doc(db, collectionName, folderName);
+    const docRef = doc(db, "gallery", folderName);
 
     try{
     if (fileName){
@@ -106,14 +103,12 @@ export async function deleteGallery(folderName, fileName){
 }
 
 export async function getGallery(folderName){
-  const { collection: collectionName } = getProgramConfig("gallery");
-
   if (folderName){
-    const docRef = doc(db, collectionName, folderName);
+    const docRef = doc(db, "gallery", folderName);
     const snap = await getDoc(docRef);
     return snap.exists() ? snap.data() : null;
   } else{
-    const colRef = collection(db, collectionName);
+    const colRef = collection(db, "gallery");
     const snap = await getDocs(colRef);
     const data = {};
     snap.forEach((doc) => {

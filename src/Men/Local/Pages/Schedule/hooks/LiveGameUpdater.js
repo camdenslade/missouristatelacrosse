@@ -1,6 +1,7 @@
 // src/Men/Local/Pages/Schedule/hooks/LiveGameUpdater.js
-import { db } from "../../../Services/firebaseConfig.js";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
+
+import { db } from "../../../../../Services/firebaseConfig.js";
 
 export async function updateLiveGame(gameId, updates = {}){
   if (!gameId){

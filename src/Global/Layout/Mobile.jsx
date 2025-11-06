@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+
 import { getProgramInfo } from "../../Services/programHelper.js";
 
 export default function MobileMenu({
@@ -38,7 +39,7 @@ export default function MobileMenu({
       <Link to={programLink("/roster")} className={linkHover} onClick={() => setOpen(false)}>
         Roster
       </Link>
-      <Link to={programLink("/teamstore")} className={linkHover} onClick={() => setOpen(false)}>
+      <Link to={programLink("/store")} className={linkHover} onClick={() => setOpen(false)}>
         Team Store
       </Link>
       <Link to={programLink("/recruitment")} className={linkHover} onClick={() => setOpen(false)}>

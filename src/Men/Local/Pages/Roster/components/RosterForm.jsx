@@ -1,10 +1,11 @@
 // src/Men/Local/Pages/Roster/components/RosterForm.jsx
 import { useReducer, useRef, useState } from "react";
-import Modal from "../../../Common/Modal.jsx";
-import { formatSeason, generateSeasonOptions } from "../../../hooks/seasonUtils.js";
-import { uploadCompressedImage } from "../../../Global/Common/hooks/uploadHelper.js";
-import usePlayers from "../hooks/usePlayers.js";
-import useCoaches from "../hooks/useCoaches.js";
+
+import Modal from "../../../../../Global/Common/Modal.jsx";
+import { uploadCompressedImage } from "../../../../../Global/Common/hooks/uploadHelper.js";
+import { formatSeason, generateSeasonOptions } from "../hooks/seasonUtils.js";
+import useCoaches from "../contenthooks/useCoaches.js";
+import usePlayers from "../contenthooks/usePlayers.js";
 
 const CLASS_OPTIONS = ["Freshman", "Sophomore", "Junior", "Senior", "Graduate"];
 

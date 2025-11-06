@@ -1,6 +1,4 @@
 // src/Men/Local/Pages/Schedule/hooks/useGames.js
-import { useEffect, useReducer } from "react";
-import { db } from "../../Global/Services/firebaseConfig.js";
 import {
   collection,
   getDocs,
@@ -11,7 +9,10 @@ import {
   doc,
   setDoc,
 } from "firebase/firestore";
-import { uploadHelper } from "../../Global/Common/hooks/uploadHelper.js";
+import { useEffect, useReducer } from "react";
+
+import { uploadCompressedImage } from "../../../../../Global/Common/hooks/uploadHelper.js";
+import { db } from "../../../../../Services/firebaseConfig.js";
 
 const initialState = {
   games: [],
@@ -120,8 +121,10 @@ export default function useGames(){
 
   const saveGame = async (formData, editingId) => {
     try{
-      const logoURL = await uploadHelper("teams", formData.awayLogo, (p) =>
-        dispatch({ type: "SET_PROGRESS", value: p })
+      const logoURL = await uploadCompressedImage(
+        formData.awayLogo,
+        "teams",
+        (p) => dispatch({ type: "SET_PROGRESS", value: p })
       );
 
       let dateValue = formData.date;

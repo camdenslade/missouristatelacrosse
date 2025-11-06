@@ -1,6 +1,4 @@
 // src/Men/Local/Admin/Tabs/ManagePlayers.jsx
-import { useEffect, useReducer } from "react";
-import { db } from "../../Services/firebaseConfig.js";
 import {
   collection,
   onSnapshot,
@@ -9,8 +7,11 @@ import {
   query,
   orderBy,
 } from "firebase/firestore";
-import UserSearch from "./UserSearch.jsx";
-import UserList from "./UserList.jsx";
+import { useEffect, useReducer } from "react";
+
+import UserList from "./Users/UserList.jsx";
+import UserSearch from "./Users/UserSearch.jsx";
+import { db } from "../../../../Services/firebaseConfig.js";
 
 const initialState = {
   users: [],

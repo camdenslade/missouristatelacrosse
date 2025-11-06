@@ -1,11 +1,11 @@
 // src/Men/Local/Pages/Gallery/GalleryMain.jsx
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
-import GalleryUploadModal from "./Modals/GalleryUpload.jsx";
+import { useAuth } from "../../../../Global/Context/AuthContext.jsx";
+import { getGallery } from "../../../../Global/Gallery/galleryService.js";
 import GalleryEditModal from "./Modals/GalleryEdit.jsx";
-import { useAuth } from "../../Context/AuthContext.jsx";
-import { getGallery } from "../../Global/Gallery/galleryService.js";
+import GalleryUploadModal from "./Modals/GalleryUpload.jsx";
 
 export default function Gallery({ userRole }) {
   const [state, setState] = useState({
@@ -18,23 +18,26 @@ export default function Gallery({ userRole }) {
   });
 
   const { galleries, loading, error, lightbox, showUploadModal, showEditModal } = state;
-  const { user, roles } = useAuth();
-  const userRoleMen = roles?.men;
+  const { user } = useAuth();
 
   const canUpload = useMemo(() => {
     if (!user) return false;
     const normalized = userRole?.toLowerCase?.();
-    return normalized === "admin" || userRoleMen === "admin" || userRoleMen === "player";
-  }, [user, userRole, userRoleMen]);
+    return normalized === "admin" || normalized === "player";
+  }, [user, userRole]);
 
-  const isAdmin = userRoleMen === "admin";
+  const isAdmin = userRole === "admin";
 
   const loadGallery = useCallback(async () => {
     setState((prev) => ({ ...prev, loading: true, error: "" }));
-    try{
+    try {
       const data = await getGallery();
-      setState((prev) => ({ ...prev, galleries: data, loading: false }));
-    } catch (err){
+      const formatted = {};
+      Object.entries(data).forEach(([key, value]) => {
+        formatted[key] = value.urls || [];
+      });
+      setState((prev) => ({ ...prev, galleries: formatted, loading: false }));
+    } catch (err) {
       console.error("Gallery fetch failed:", err);
       setState((prev) => ({
         ...prev,
@@ -61,26 +64,9 @@ export default function Gallery({ userRole }) {
     setState((prev) => ({ ...prev, lightbox: { open: false, images: [], index: 0 } }));
   }, []);
 
-  if (loading)
-    return <p className="text-center text-gray-600 py-10 italic">Loading gallery...</p>;
-
-  if (error)
-    return (
-      <div className="text-center text-red-600 py-10">
-        <p className="italic">{error}</p>
-        <button
-          onClick={loadGallery}
-          className="mt-4 bg-[#5E0009] text-white px-4 py-2 rounded hover:bg-red-800"
-        >
-          Retry
-        </button>
-      </div>
-    );
-
   const galleryGrid = useMemo(() => {
     if (!Object.keys(galleries).length)
       return <p className="text-gray-500 italic">No galleries yet.</p>;
-
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 px-6 max-w-6xl mx-auto">
         {Object.entries(galleries).map(([folderName, images]) => {
@@ -114,12 +100,27 @@ export default function Gallery({ userRole }) {
     );
   }, [galleries, openLightbox, formatFolderName]);
 
+  if (loading)
+    return <p className="text-center text-gray-600 py-10 italic">Loading gallery...</p>;
+
+  if (error)
+    return (
+      <div className="text-center text-red-600 py-10">
+        <p className="italic">{error}</p>
+        <button
+          onClick={loadGallery}
+          className="mt-4 bg-[#5E0009] text-white px-4 py-2 rounded hover:bg-red-800"
+        >
+          Retry
+        </button>
+      </div>
+    );
+
   return (
     <section className="py-12 bg-white text-center animate-fadeIn relative">
       <h2 className="text-3xl font-bold text-[#5E0009] mb-8">
-        Men&apos;s Lacrosse Photo Gallery
+        Men's Lacrosse Photo Gallery
       </h2>
-
       {canUpload && (
         <div className="absolute top-4 right-4">
           <button
@@ -130,7 +131,6 @@ export default function Gallery({ userRole }) {
           </button>
         </div>
       )}
-
       {isAdmin && (
         <div className="absolute top-4 right-36">
           <button
@@ -141,9 +141,7 @@ export default function Gallery({ userRole }) {
           </button>
         </div>
       )}
-
       {galleryGrid}
-
       {lightbox.open && (
         <Lightbox
           open={lightbox.open}
@@ -152,7 +150,6 @@ export default function Gallery({ userRole }) {
           slides={lightbox.images.map((src) => ({ src }))}
         />
       )}
-
       {showEditModal && (
         <GalleryEditModal
           galleries={galleries}
@@ -160,7 +157,6 @@ export default function Gallery({ userRole }) {
           onRefresh={loadGallery}
         />
       )}
-
       {showUploadModal && (
         <GalleryUploadModal
           onClose={() => setState((p) => ({ ...p, showUploadModal: false }))}

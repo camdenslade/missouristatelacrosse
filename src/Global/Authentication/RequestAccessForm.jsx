@@ -1,7 +1,8 @@
 // src/Global/Authentcation/RequestAccessForm.jsx
-import { useReducer } from "react";
-import { db } from "../../Services/firebaseConfig.js";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useReducer } from "react";
+
+import { db } from "../../Services/firebaseConfig.js";
 import { getActiveProgram } from "../../Services/programHelper.js";
 
 const initialState = {
