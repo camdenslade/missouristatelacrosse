@@ -8,13 +8,13 @@ import { auth, db } from "../../Services/firebaseConfig.js";
 import { getActiveProgram } from "../../Services/programHelper.js";
 
 const initialState = {
-    isSignUp: false,
-    email: "",
-    displayName: "",
-    password: "",
-    error: "",
-    submitted: false,
-    submitting: false,
+  isSignUp: false,
+  email: "",
+  displayName: "",
+  password: "",
+  error: "",
+  submitted: false,
+  submitting: false,
 };
 
 function reducer(state, action) {
@@ -36,7 +36,7 @@ function reducer(state, action) {
   }
 }
 
-export default function AuthModal({ onClose }){
+export default function AuthModal({ onClose }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { isSignUp, email, displayName, password, error, submitted, submitting } = state;
 
@@ -44,7 +44,7 @@ export default function AuthModal({ onClose }){
     e.preventDefault();
     dispatch({ type: "SUBMITTING" });
 
-    try{
+    try {
       const program = getActiveProgram();
       const res = await fetch(`${API_BASE}/account-requests`, {
         method: "POST",
@@ -54,18 +54,17 @@ export default function AuthModal({ onClose }){
 
       if (!res.ok) throw new Error(await res.text());
       dispatch({ type: "SUBMIT_SUCCESS" });
-    } catch (err){
+    } catch (err) {
       console.error(err);
       dispatch({ type: "ERROR", error: "Failed to submit request: " + err.message });
     }
   };
 
-  
   const handleSignIn = async (e) => {
     e.preventDefault();
     dispatch({ type: "SUBMITTING" });
 
-    try{
+    try {
       const program = getActiveProgram();
       const userCred = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCred.user;
@@ -73,7 +72,7 @@ export default function AuthModal({ onClose }){
       const userRef = doc(db, "users", firebaseUser.uid);
       const snap = await getDoc(userRef);
 
-      if (!snap.exists()){
+      if (!snap.exists()) {
         const displayName = firebaseUser.displayName || email.split("@")[0];
         await setDoc(userRef, {
           email: firebaseUser.email,
@@ -82,7 +81,7 @@ export default function AuthModal({ onClose }){
           createdAt: new Date(),
         });
         console.log(`Created new ${program} user: ${displayName}`);
-      } else{
+      } else {
         const data = snap.data();
         if (!data.roles || !data.roles[program]) {
           await setDoc(
@@ -97,14 +96,14 @@ export default function AuthModal({ onClose }){
       }
 
       onClose();
-    } catch (err){
+    } catch (err) {
       console.error(err);
       let msg = "Failed to sign in: " + err.message;
       if (err.code === "auth/user-not-found") msg = "No account found with this email.";
       else if (err.code === "auth/wrong-password") msg = "Incorrect password. Please try again.";
       else if (err.code === "auth/too-many-requests") msg = "Too many attempts. Please wait a moment.";
       dispatch({ type: "ERROR", error: msg });
-    } finally{
+    } finally {
       dispatch({ type: "SET_FIELD", field: "submitting", value: false });
     }
   };
@@ -115,9 +114,8 @@ export default function AuthModal({ onClose }){
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 animate-fadeIn">
-      <div className="bg-white rounded-lg shadow-lg w-96 p-6 relative transform transition-all duration-300 scale-100">
-        {/* Close Button */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+      <div className="relative pointer-events-auto bg-white rounded-lg shadow-2xl w-96 p-6 animate-fadeIn border border-gray-300">
         <button
           className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
           onClick={handleClose}
@@ -125,7 +123,7 @@ export default function AuthModal({ onClose }){
           ✕
         </button>
 
-        <h2 className="text-xl font-bold mb-4 text-center">
+        <h2 className="text-xl font-bold mb-4 text-center text-[#5E0009]">
           {isSignUp ? "Request Account" : "Sign In"}
         </h2>
 
@@ -175,9 +173,7 @@ export default function AuthModal({ onClose }){
               />
             )}
 
-            {error && (
-              <div className="text-red-500 text-sm text-center">{error}</div>
-            )}
+            {error && <div className="text-red-500 text-sm text-center">{error}</div>}
 
             <button
               type="submit"

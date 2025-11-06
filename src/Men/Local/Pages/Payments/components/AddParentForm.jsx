@@ -8,9 +8,6 @@ export default function AddParentForm({
   
   return (
     <div className="mt-4">
-      <h3 className="font-medium">Linked Parents</h3>
-      <div className="text-sm text-gray-700"></div>
-
       <h3 className="font-medium mt-3">Add Parent</h3>
       <div className="flex gap-2 mt-2">
         <input

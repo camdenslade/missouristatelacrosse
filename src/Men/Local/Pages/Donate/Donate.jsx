@@ -74,6 +74,19 @@ export default function Donate() {
         ) : (
           <UnavailableOverlay message="Donations are currently unavailable" />
         )}
+
+        {/* Sponsor Button */}
+        <div className="mt-6 pt-4 border-t w-full">
+          <p className="text-gray-700 mb-3">
+            Interested in partnering with us?
+          </p>
+          <button
+            onClick={() => navigate("/sponsorships")}
+            className="bg-[#5E0009] text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-800 transition"
+          >
+            Become a Sponsor
+          </button>
+        </div>
       </div>
     </div>
   );

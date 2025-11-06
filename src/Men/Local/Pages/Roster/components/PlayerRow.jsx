@@ -16,13 +16,20 @@ export default function PlayerRow({ player, index, onEdit, onDelete, isAdmin }) 
 
   const bg = index % 2 === 0 ? "bg-white" : "bg-gray-100";
   const imgSrc = photo || "/assets/placeholder.png";
-  const infoLine = `${classYear ? `${classYear} / ` : ""}${hometown || ""}${
-    state ? `, ${state}` : ""
-  } / ${highSchool || ""}${previousSchool ? ` / ${previousSchool}` : ""}`;
+
+  const infoLine = (
+    <>
+      {classYear && <span className="font-bold">{classYear}</span>}
+      {classYear && " / "}
+      {hometown && `${hometown}`}
+      {state && `, ${state}`}
+      {` / ${highSchool || ""}`}
+      {previousSchool && ` / ${previousSchool}`}
+    </>
+  );
 
   return (
     <div className={`flex flex-col sm:flex-row items-center sm:items-start w-full ${bg} p-4`}>
-      {/* Player Image */}
       <img
         src={imgSrc}
         alt={name}
@@ -30,7 +37,6 @@ export default function PlayerRow({ player, index, onEdit, onDelete, isAdmin }) 
         onError={(e) => (e.currentTarget.src = "/assets/placeholder.png")}
       />
 
-      {/* Player Info */}
       <div className="flex-1 flex flex-col sm:flex-row justify-between w-full sm:h-36">
         <div className="flex flex-col justify-center text-left">
           <div className="text-black text-md">
@@ -55,7 +61,6 @@ export default function PlayerRow({ player, index, onEdit, onDelete, isAdmin }) 
         </div>
       </div>
 
-      {/* Admin Controls */}
       {isAdmin && (
         <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 mt-3 sm:mt-0 sm:ml-4">
           <button

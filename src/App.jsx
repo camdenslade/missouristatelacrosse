@@ -9,6 +9,7 @@ import PendingApproval from "./Global/Authentication/PendingApproval";
 import ProtectedRoute from "./Global/Authentication/ProtectedRoutes";
 import Footer from "./Global/Layout/Footer";
 import Header from "./Global/Layout/Header";
+import NotFound from "./Global/NotFound";
 
 import AdminDashboard from "./Men/Local/Admin/AdminDash";
 import Donate from "./Men/Local/Pages/Donate/Donate";
@@ -20,6 +21,7 @@ import RecruitmentSubmissions from "./Men/Local/Pages/Recruitment/Submissions";
 import Roster from "./Men/Local/Pages/Roster/Roster";
 import Schedule from "./Men/Local/Pages/Schedule/Schedule";
 import Settings from "./Men/Local/Pages/Settings/Settings";
+import SponsorMain from "./Men/Local/Pages/Sponsor/SponsorMain";
 import Checkout from "./Men/Local/Pages/Store/Checkout/Checkout";
 import CheckoutSuccess from "./Men/Local/Pages/Store/Checkout/CheckoutSuccess";
 import Store from "./Men/Local/Pages/Store/Store";
@@ -74,6 +76,7 @@ export default function App() {
             <Route path="/store" element={<Store cart={cart} setCart={setCart} />} />
             <Route path="/donate" element={<Donate />} />
             <Route path="/gallery" element={<Gallery />} />
+            <Route path="/sponsorships" element={<SponsorMain />} />
             <Route path="/recruitment" element={<RecruitmentForm userRole={userRole} />} />
             <Route
               path="/recruitment/submissions"
@@ -102,6 +105,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="*" element={<NotFound Found />} />
           </Routes>
         </main>
         {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}

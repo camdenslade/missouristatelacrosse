@@ -1,14 +1,8 @@
 // src/Men/Local/Pages/Roster/components/CoachRow.jsx
 import { useState } from "react";
 
-export default function CoachRow({ coach, index, onEdit, onDelete, isAdmin }){
-  const {
-    name,
-    position,
-    bio,
-    photo,
-  } = coach;
-
+export default function CoachRow({ coach, index, onEdit, onDelete, isAdmin }) {
+  const { name, position, bio, photo } = coach;
   const bg = index % 2 === 0 ? "bg-white" : "bg-gray-100";
   const hasBio = bio?.trim();
   const [showBio, setShowBio] = useState(false);
@@ -18,17 +12,21 @@ export default function CoachRow({ coach, index, onEdit, onDelete, isAdmin }){
   };
 
   return (
-    <div className={`flex flex-col sm:flex-row w-full ${bg} p-4 items-center sm:items-start`}>
+    <div
+      className={`flex flex-col sm:flex-row w-full ${bg} p-4 items-center sm:items-center`}
+    >
       {/* Coach Image */}
-      <img
-        src={photo || "/assets/placeholder.png"}
-        alt={name}
-        className="w-24 h-36 object-cover rounded-md border border-gray-300 mr-0 sm:mr-4 mb-2 sm:mb-0"
-        onError={(e) => (e.currentTarget.src = "/assets/placeholder.png")}
-      />
+      <div className="flex justify-center items-center w-24 h-36 mr-0 sm:mr-4 mb-3 sm:mb-0">
+        <img
+          src={photo || "/assets/placeholder.png"}
+          alt={name}
+          className="w-24 h-36 object-cover rounded-md border border-gray-300"
+          onError={(e) => (e.currentTarget.src = "/assets/placeholder.png")}
+        />
+      </div>
 
       {/* Coach Info */}
-      <div className="flex-1 flex flex-col justify-center text-left">
+      <div className="flex-1 flex flex-col justify-center text-left w-full">
         <div className="text-black text-md font-bold">{position}</div>
 
         {hasBio ? (
@@ -42,13 +40,8 @@ export default function CoachRow({ coach, index, onEdit, onDelete, isAdmin }){
           <h3 className="text-gray-800 font-bold text-2xl mt-2">{name}</h3>
         )}
 
-        {/* Bio Section (animated expand/collapse) */}
-        {hasBio && (
-          <div
-            className={`transition-all duration-300 ease-in-out overflow-hidden ${
-              showBio ? "max-h-96 opacity-100 mt-2" : "max-h-0 opacity-0"
-            }`}
-          >
+        {hasBio && showBio && (
+          <div className="mt-3 border border-gray-300 rounded-lg bg-gray-50 p-3">
             <p className="text-gray-700 text-base leading-relaxed whitespace-pre-line">
               {bio}
             </p>

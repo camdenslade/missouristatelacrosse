@@ -9,7 +9,7 @@ export default function Modal({ children, onClose, size = "md" }) {
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-2 sm:p-4 overflow-y-auto"
+      className="fixed inset-0 flex justify-center items-center z-50 p-2 sm:p-4 overflow-y-auto pointer-events-none"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) {
           e.currentTarget.dataset.closing = "true";
@@ -26,10 +26,9 @@ export default function Modal({ children, onClose, size = "md" }) {
       }}
     >
       <div
-        className={`bg-white p-6 rounded-lg shadow-lg w-full ${sizeClasses[size]} relative my-auto max-h-[90vh] overflow-y-auto`}
+        className={`pointer-events-auto bg-white p-6 rounded-lg shadow-2xl border border-gray-300 w-full ${sizeClasses[size]} relative my-auto max-h-[90vh] overflow-y-auto animate-fadeIn`}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        {/* Close button */}
         <button
           type="button"
           className="absolute top-2 right-2 text-gray-600 hover:text-black"

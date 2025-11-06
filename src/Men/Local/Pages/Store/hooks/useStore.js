@@ -5,22 +5,42 @@ const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
 
 export default function useStore(cart, containerId = "paypal-buttons-container") {
   const [paypalLoaded, setPaypalLoaded] = useState(false);
+  const [resolvedClientId, setResolvedClientId] = useState(clientId || "");
 
   useEffect(() => {
+    // Resolve client ID from env or backend
+    if (!resolvedClientId) {
+      (async () => {
+        try {
+          const res = await fetch("/api/paypal/client-id");
+          const data = await res.json();
+          if (data?.clientId) setResolvedClientId(data.clientId);
+          else console.error("Failed to resolve PayPal client ID from backend");
+        } catch (e) {
+          console.error("Error fetching PayPal client ID:", e);
+        }
+      })();
+    }
+
     if (window.paypal){
       setPaypalLoaded(true);
       return;
     }
 
+    if (!resolvedClientId) {
+      console.error("PayPal client ID is missing. Set VITE_PAYPAL_CLIENT_ID in your environment.");
+      return;
+    }
+
     const script = document.createElement("script");
-    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD`;
+    script.src = `https://www.paypal.com/sdk/js?client-id=${resolvedClientId}&currency=USD`;
     script.onload = () => setPaypalLoaded(true);
     document.body.appendChild(script);
 
     return () => {
       script.onload = null;
     };
-  }, []);
+  }, [resolvedClientId]);
 
   useEffect(() => {
     if (!paypalLoaded || !Array.isArray(cart) || cart.length === 0) return;

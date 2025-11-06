@@ -8,23 +8,48 @@ export default function usePayPalButtons(
 ) {
   const [paypalLoaded, setPaypalLoaded] = useState(false);
 
+  const API_BASE =
+    window.location.hostname === "localhost"
+      ? "http://localhost:8080"
+      : "https://api.missouristatelacrosse.com";
+  const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
+  const [resolvedClientId, setResolvedClientId] = useState(clientId || "");
+
   useEffect(() => {
+    // Resolve client ID from env or backend
+    if (!resolvedClientId) {
+      (async () => {
+        try {
+          const res = await fetch(`${API_BASE}/api/paypal/client-id`);
+          const data = await res.json();
+          if (data?.clientId) setResolvedClientId(data.clientId);
+          else console.error("Failed to resolve PayPal client ID from backend");
+        } catch (e) {
+          console.error("Error fetching PayPal client ID:", e);
+        }
+      })();
+    }
+
     if (window.paypal) {
       setPaypalLoaded(true);
       return;
     }
 
+    if (!resolvedClientId) {
+      console.error("PayPal client ID is missing. Set VITE_PAYPAL_CLIENT_ID in your environment.");
+      return;
+    }
+
     const script = document.createElement("script");
-    script.src = `https://www.paypal.com/sdk/js?client-id=${
-      import.meta.env.VITE_PAYPAL_CLIENT_ID
-    }&currency=USD`;
+    script.src = `https://www.paypal.com/sdk/js?client-id=${resolvedClientId}&currency=USD`;
     script.onload = () => setPaypalLoaded(true);
     document.body.appendChild(script);
 
     return () => {
       script.onload = null;
     };
-  }, []);
+  }, [resolvedClientId, API_BASE]);
+
 
   useEffect(() => {
     if (!paypalLoaded || !customAmount) return;
@@ -38,26 +63,39 @@ export default function usePayPalButtons(
 
     window.paypal
       .Buttons({
-        style: { layout: "vertical", color: "gold", shape: "rect", label: "donate" },
+        style: {
+          layout: "vertical",
+          color: "gold",
+          shape: "rect",
+          label: "donate",
+        },
 
         createOrder: async () => {
-          const res = await fetch("/api/paypal/create", {
+          const res = await fetch(`${API_BASE}/api/paypal/create`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ amount }),
+            body: JSON.stringify({ amount: amount.toFixed(2) }),
           });
+
           const data = await res.json();
+          if (!data?.id) {
+            console.error("PayPal create error:", data);
+            throw new Error("No order ID returned from backend");
+          }
+
           return data.id;
         },
 
         onApprove: async (data) => {
           const orderID = data.orderID;
-          const captureRes = await fetch(`/api/paypal/capture?orderID=${orderID}`, {
-            method: "POST",
-          });
+
+          const captureRes = await fetch(
+            `${API_BASE}/api/paypal/capture?orderID=${orderID}`,
+            { method: "POST" }
+          );
           const captureData = await captureRes.json();
 
-          await fetch("/api/email/confirm-donation", {
+          await fetch(`${API_BASE}/api/email/confirm-donation`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -76,7 +114,7 @@ export default function usePayPalButtons(
         },
       })
       .render(`#${containerId}`);
-  }, [paypalLoaded, customAmount, containerId, onSuccess]);
+  }, [paypalLoaded, customAmount, containerId, onSuccess, API_BASE]);
 
   return { paypalLoaded };
 }

@@ -1,11 +1,12 @@
 // src/Men/Local/Pages/Store/Store.jsx
-import { useReducer, useEffect, useRef } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import { FaShoppingCart } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
+import UnavailableOverlay from "../../../../Global/Common/UnavailableOverlay.jsx";
+import API_BASE from "../../../../Services/API.js";
 import Cart from "./components/Cart.jsx";
 import ProductCard from "./components/ProductCard.jsx";
-import UnavailableOverlay from "../../../../Global/Common/UnavailableOverlay.jsx";
 
 const initialState = {
   products: [],
@@ -55,7 +56,7 @@ export default function TeamStore(){
     const fetchProducts = async () => {
       try {
         dispatch({ type: "SET_LOADING", payload: true });
-        const res = await fetch("/api/printify/products");
+        const res = await fetch(`${API_BASE}/printify/products`);
         if (!res.ok) throw new Error("Failed to fetch products");
         const json = await res.json();
         if (Array.isArray(json)) {

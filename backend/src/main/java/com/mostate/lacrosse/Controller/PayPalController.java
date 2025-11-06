@@ -1,14 +1,22 @@
 package com.mostate.lacrosse.Controller;
 
-import com.mostate.lacrosse.Service.PayPalSDKService;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import java.util.Map;
+import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import com.mostate.lacrosse.Service.PayPalSDKService;
 
 @RestController
 @RequestMapping("/api/paypal")
 public class PayPalController {
     private final PayPalSDKService payPalSDKService;
+    @Value("${paypal.client.id}")
+    private String clientId;
 
     public PayPalController(PayPalSDKService payPalSDKService){
         this.payPalSDKService = payPalSDKService;
@@ -16,7 +24,8 @@ public class PayPalController {
 
     @PostMapping("/create")
     public ResponseEntity<?> createOrder(@RequestBody Map<String, Object> body){
-        String amount = (String) body.get("amount");
+        Object amountObj = body.get("amount");
+        String amount = amountObj != null ? String.valueOf(amountObj) : null;
         if (amount == null || amount.isBlank()){
             return ResponseEntity.badRequest().body(Map.of("error", "Amount is required"));
         }
@@ -29,12 +38,17 @@ public class PayPalController {
         }
     }
 
-    @GetMapping("/capture")
+    @PostMapping("/capture")
     public ResponseEntity<?> captureOrder(@RequestParam String orderID){
         try{
             return ResponseEntity.ok(payPalSDKService.captureOrder(orderID));
         } catch (Exception e){
             return ResponseEntity.internalServerError().body("{\"error\": \"" + e.getMessage() + "\"}");
         }
+    }
+
+    @GetMapping("/client-id")
+    public ResponseEntity<?> getClientId(){
+        return ResponseEntity.ok(Map.of("clientId", clientId));
     }
 }

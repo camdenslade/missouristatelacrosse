@@ -1,13 +1,17 @@
 package com.mostate.lacrosse.Service;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
+import javax.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 public class PayPalSDKService {
@@ -22,6 +26,21 @@ public class PayPalSDKService {
     private String baseUrl;
 
     private final RestTemplate rest = new RestTemplate();
+
+    @PostConstruct
+    private void validateConfig(){
+        if (clientId == null || clientId.isBlank()){
+            throw new IllegalStateException("paypal.client.id is not configured");
+        }
+        if (clientSecret == null || clientSecret.isBlank()){
+            throw new IllegalStateException("paypal.client.secret is not configured");
+        }
+        if (baseUrl == null || baseUrl.isBlank()){
+            throw new IllegalStateException("paypal.base-url is not configured");
+        }
+        boolean isLive = baseUrl.contains("api.paypal.com") || baseUrl.contains("api-m.paypal.com");
+        System.out.println("[PayPalSDKService] Initialized with baseUrl=" + baseUrl + " (" + (isLive ? "LIVE" : "SANDBOX") + ")");
+    }
 
     public Map<String, Object> createOrder(String amount){
         try{

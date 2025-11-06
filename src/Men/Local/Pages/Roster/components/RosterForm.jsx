@@ -3,9 +3,9 @@ import { useReducer, useRef, useState } from "react";
 
 import Modal from "../../../../../Global/Common/Modal.jsx";
 import { uploadCompressedImage } from "../../../../../Global/Common/hooks/uploadHelper.js";
-import { formatSeason, generateSeasonOptions } from "../hooks/seasonUtils.js";
 import useCoaches from "../contenthooks/useCoaches.js";
 import usePlayers from "../contenthooks/usePlayers.js";
+import { formatSeason, generateSeasonOptions } from "../hooks/seasonUtils.js";
 
 const CLASS_OPTIONS = ["Freshman", "Sophomore", "Junior", "Senior", "Graduate"];
 
@@ -53,8 +53,9 @@ export default function RosterFormModal({
   const [lookupStatus, setLookupStatus] = useState("");
 
   const nameLookupTimer = useRef(null);
-  const [, , savePlayer, , , findPlayerByName] = usePlayers();
-  const [, saveCoach] = useCoaches();
+  const { savePlayer, findPlayerByName } = usePlayers();
+  const { saveCoach } = useCoaches();
+
 
   const handleInputChange = (e) => {
     const { name, value, files } = e.target;
