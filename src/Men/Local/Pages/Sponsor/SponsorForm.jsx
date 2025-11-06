@@ -27,7 +27,17 @@ export default function SponsorForm() {
     setLoading(true);
 
     try {
-      // 1️⃣ Always email bcole
+      const stored = JSON.parse(localStorage.getItem("sponsorSubmissions") || "[]");
+      stored.push({
+        ...form,
+        timestamp: new Date().toISOString(),
+      });
+      localStorage.setItem("sponsorSubmissions", JSON.stringify(stored));
+    } catch (err) {
+      console.error("Failed to store sponsor locally:", err);
+    }
+
+    try {
       await fetch(`${API_BASE}/email/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -40,7 +50,6 @@ export default function SponsorForm() {
         }),
       });
 
-      // 2️⃣ Email sponsor (only if they provided an email)
       if (form.email) {
         await fetch(`${API_BASE}/email/send`, {
           method: "POST",
@@ -48,7 +57,7 @@ export default function SponsorForm() {
           body: JSON.stringify({
             to: form.email,
             subject: "Thank You for Reaching Out – Missouri State Lacrosse",
-            body: `Hi ${form.businessName},\n\nThank you for your interest in partnering with Missouri State Lacrosse!\n\nWe’ve received your inquiry and will reach out soon to discuss sponsorship opportunities.\n\nGo Bears!\n\n— Missouri State Lacrosse`,
+            body: `Hi ${form.businessName},\n\nThank you for your interest in partnering with Missouri State Lacrosse!\n\nWe’ve received your inquiry and will reach out soon.\n\nGo Bears!\n\n— Missouri State Lacrosse`,
           }),
         });
       }
@@ -58,11 +67,12 @@ export default function SponsorForm() {
       setOpen(false);
     } catch (err) {
       console.error("Sponsor email error:", err);
-      alert("There was an issue sending your message. Please try again later.");
+      alert("There was an issue sending your message, but we saved your info locally.");
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <section className="bg-white py-20 text-center px-6 relative">
