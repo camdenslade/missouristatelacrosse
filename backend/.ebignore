@@ -1,0 +1,13 @@
+# Ignore unnecessary files for Elastic Beanstalk
+.git
+.gitignore
+.ebignore
+.gradle/
+build/
+node_modules/
+.env
+*.log
+*.iml
+
+# Force include Dockerfile
+!Dockerfile

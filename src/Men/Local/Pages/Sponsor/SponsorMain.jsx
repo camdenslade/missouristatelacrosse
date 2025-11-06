@@ -1,8 +1,6 @@
 // src/Men/Local/Pages/Sponsor/SponsorMain.jsx
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
-import { db } from "../../../../Services/firebaseConfig.js";
 
 export default function SponsorMain() {
   const [open, setOpen] = useState(false);
@@ -21,10 +19,13 @@ export default function SponsorMain() {
     e.preventDefault();
     setLoading(true);
     try {
-      await addDoc(collection(db, "sponsorRequests"), {
-        ...form,
-        createdAt: serverTimestamp(),
+      const res = await fetch("/api/sponsor-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to submit");
       alert("Thank you! Your sponsorship inquiry has been submitted.");
       setForm({ businessName: "", contactInfo: "", request: "" });
       setOpen(false);

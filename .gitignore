@@ -123,6 +123,3 @@ Thumbs.db
 .env
 src/Services/firebaseConfig.js
 backend/src/main/resources/application.properties
-backend/src/main/java/com/mostate/lacrosse/Service/PayPalSDKService.java
-backend/serviceAccountKey.base64
-backend/Dockerfile

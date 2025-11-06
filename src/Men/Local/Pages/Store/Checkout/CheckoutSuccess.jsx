@@ -1,5 +1,6 @@
 import { useEffect, useReducer } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import API_BASE from "../../../../../Services/API.js";
 
 const initialState = {
   order: null,
@@ -7,8 +8,8 @@ const initialState = {
   error: "",
 };
 
-function reducer(state, action){
-  switch (action.type){
+function reducer(state, action) {
+  switch (action.type) {
     case "FETCH_START":
       return { ...state, loading: true, error: "" };
     case "FETCH_SUCCESS":
@@ -20,29 +21,56 @@ function reducer(state, action){
   }
 }
 
-export default function CheckoutSuccess(){
+export default function CheckoutSuccess() {
   const location = useLocation();
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(reducer, initialState);
   const { order, loading, error } = state;
 
   useEffect(() => {
-    if (location.state?.order){
-      dispatch({ type: "FETCH_SUCCESS", payload: location.state.order });
-      return;
-    }
+    const processOrder = async () => {
+      const localOrder = location.state?.order;
 
-    const params = new URLSearchParams(window.location.search);
-    const orderID = params.get("orderID");
-    if (!orderID){
-      dispatch({ type: "FETCH_ERROR", payload: "No order ID found." });
-      return;
-    }
+      if (localOrder) {
+        dispatch({ type: "FETCH_SUCCESS", payload: localOrder });
 
-    const fetchOrder = async () => {
-      try{
+        const payer = localOrder.payer || {};
+        const email = payer.email_address || "";
+        const name = `${payer.name?.given_name || ""} ${payer.name?.surname || ""}`.trim();
+        const amount =
+          localOrder.purchase_units?.[0]?.amount?.value ||
+          localOrder.amount ||
+          "0.00";
+
+        if (email) {
+          try {
+            await fetch(`${API_BASE}/email/send`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                to: email,
+                subject: "Thank You for Your Purchase – Missouri State Lacrosse",
+                body: `Hi ${name || "Supporter"},\n\nThank you for your order from the Missouri State Lacrosse Team Store!\n\nOrder ID: ${localOrder.id}\nAmount: $${amount}\n\nWe’ll notify you as soon as your order ships.\n\nGo Bears,\nMissouri State Lacrosse`,
+              }),
+            });
+          } catch (err) {
+            console.error("Failed to send order confirmation:", err);
+          }
+        }
+
+        return;
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const orderID = params.get("orderID");
+      if (!orderID) {
+        dispatch({ type: "FETCH_ERROR", payload: "No order ID found." });
+        return;
+      }
+
+      try {
         dispatch({ type: "FETCH_START" });
-        const res = await fetch(`/api/paypal/capture?orderID=${orderID}`, {
+        const res = await fetch(`${API_BASE}/paypal/capture?orderID=${orderID}`, {
           method: "POST",
         });
         if (!res.ok) throw new Error("Failed to fetch order");
@@ -50,17 +78,29 @@ export default function CheckoutSuccess(){
         const data = await res.json();
         dispatch({ type: "FETCH_SUCCESS", payload: data });
 
-        await fetch("/api/email/order-confirmation", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ order: data }),
-        });
-      } catch (err){
+        const payer = data.payer || {};
+        const email = payer.email_address || "";
+        const name = `${payer.name?.given_name || ""} ${payer.name?.surname || ""}`.trim();
+        const amount =
+          data.purchase_units?.[0]?.amount?.value || data.amount || "0.00";
+
+        if (email) {
+          await fetch(`${API_BASE}/email/send`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              to: email,
+              subject: "Thank You for Your Purchase – Missouri State Lacrosse",
+              body: `Hi ${name || "Supporter"},\n\nThank you for your order from the Missouri State Lacrosse Team Store!\n\nOrder ID: ${data.id}\nAmount: $${amount}\n\nWe’ll notify you as soon as your order ships.\n\nGo Bears,\nMissouri State Lacrosse`,
+            }),
+          });
+        }
+      } catch (err) {
         dispatch({ type: "FETCH_ERROR", payload: err.message });
       }
     };
 
-    fetchOrder();
+    processOrder();
   }, [location.state]);
 
   if (loading)

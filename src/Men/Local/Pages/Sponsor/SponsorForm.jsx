@@ -1,48 +1,67 @@
-import emailjs from "emailjs-com";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
+import API_BASE from "../../../../Services/API.js";
 
 export default function SponsorForm() {
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     businessName: "",
-    contactInfo: "",
+    email: "",
+    phone: "",
     request: "",
   });
-  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!form.email && !form.phone) {
+      alert("Please provide at least an email or phone number.");
+      return;
+    }
+
     setLoading(true);
 
-    const templateParams = {
-      business_name: form.businessName,
-      contact_info: form.contactInfo,
-      message: form.request,
-      to_email: "17bcole@gmail.com", // target email
-    };
+    try {
+      // 1️⃣ Always email bcole
+      await fetch(`${API_BASE}/email/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: "17bcole@gmail.com",
+          subject: `New Sponsorship Inquiry – ${form.businessName}`,
+          body: `Business Name: ${form.businessName}\nEmail: ${
+            form.email || "N/A"
+          }\nPhone: ${form.phone || "N/A"}\n\nMessage:\n${form.request}`,
+        }),
+      });
 
-    emailjs
-      .send(
-        import.meta.env.VITE_EMAILJS_SERVICE_ID,  // store these in your .env
-        import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
-        templateParams,
-        import.meta.env.VITE_EMAILJS_PUBLIC_KEY
-      )
-      .then(() => {
-        alert("Thank you for your interest! Your message has been sent.");
-        setForm({ businessName: "", contactInfo: "", request: "" });
-        setOpen(false);
-      })
-      .catch((err) => {
-        console.error("EmailJS Error:", err);
-        alert("There was an issue sending your message. Please try again later.");
-      })
-      .finally(() => setLoading(false));
+      // 2️⃣ Email sponsor (only if they provided an email)
+      if (form.email) {
+        await fetch(`${API_BASE}/email/send`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: form.email,
+            subject: "Thank You for Reaching Out – Missouri State Lacrosse",
+            body: `Hi ${form.businessName},\n\nThank you for your interest in partnering with Missouri State Lacrosse!\n\nWe’ve received your inquiry and will reach out soon to discuss sponsorship opportunities.\n\nGo Bears!\n\n— Missouri State Lacrosse`,
+          }),
+        });
+      }
+
+      alert("Thank you for your interest! Your message has been sent.");
+      setForm({ businessName: "", email: "", phone: "", request: "" });
+      setOpen(false);
+    } catch (err) {
+      console.error("Sponsor email error:", err);
+      alert("There was an issue sending your message. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,8 +70,9 @@ export default function SponsorForm() {
         Work With Us
       </h2>
       <p className="max-w-2xl mx-auto text-gray-700 mb-8 text-lg">
-        Partner with Missouri State Lacrosse through sponsorships and community collaborations.
-        Your business can help support student-athletes, enhance facilities, and grow the game we love.
+        Partner with Missouri State Lacrosse through sponsorships and community
+        collaborations. Your business can help support student-athletes,
+        enhance facilities, and grow the game we love.
         <br />
         <button
           onClick={() => setOpen(true)}
@@ -83,7 +103,7 @@ export default function SponsorForm() {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
             >
               <button
                 onClick={() => setOpen(false)}
@@ -113,22 +133,35 @@ export default function SponsorForm() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Contact Information
+                    Email
                   </label>
                   <input
-                    type="text"
-                    name="contactInfo"
-                    value={form.contactInfo}
+                    type="email"
+                    name="email"
+                    value={form.email}
                     onChange={handleChange}
-                    placeholder="Email or phone"
-                    required
+                    placeholder="Optional if phone provided"
                     className="w-full border border-gray-300 rounded-md p-2 focus:ring-[#5E0009] focus:border-[#5E0009] outline-none"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Short Request or Message
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={form.phone}
+                    onChange={handleChange}
+                    placeholder="Optional if email provided"
+                    className="w-full border border-gray-300 rounded-md p-2 focus:ring-[#5E0009] focus:border-[#5E0009] outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Message or Request
                   </label>
                   <textarea
                     name="request"

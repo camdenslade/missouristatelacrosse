@@ -1,12 +1,12 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.5.7'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'org.springframework.boot' version '3.5.7'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'com.mostate.lacrosse'
 version = '0.0.1-SNAPSHOT'
-description = 'Demo project for Spring Boot'
+description = 'Missouri State Lacrosse Backend'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -14,28 +14,26 @@ java {
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-	implementation platform("com.google.cloud:libraries-bom:26.46.0")
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-	implementation 'com.google.firebase:firebase-admin:9.3.0'
-	implementation 'com.google.cloud:google-cloud-firestore'
+    implementation 'com.google.firebase:firebase-admin:9.3.0'
 
-	implementation 'com.google.api-client:google-api-client:2.7.1'
-
-	implementation 'software.amazon.awssdk:ses:2.29.0'
-	implementation 'software.amazon.awssdk:auth:2.29.0'
-	implementation 'software.amazon.awssdk:regions:2.29.0'
+    implementation 'software.amazon.awssdk:ses:2.29.0'
+    implementation 'software.amazon.awssdk:auth:2.29.0'
+    implementation 'software.amazon.awssdk:regions:2.29.0'
+    implementation 'software.amazon.awssdk:secretsmanager:2.25.0'
+    implementation 'software.amazon.awssdk:core:2.25.0'
 }
 
-
-tasks.withType(Test){
-	enabled = false
+tasks.withType(Test) {
+    enabled = false
 }

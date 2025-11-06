@@ -1,0 +1,34 @@
+# Build artifacts
+build/
+bin/
+.gradle/
+*.class
+*.jar
+!build/libs/*.jar
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Test files
+src/test/
+
+# Documentation
+*.md
+HELP.md
+
+# Elastic Beanstalk
+.ebextensions/
+.elasticbeanstalk/
+

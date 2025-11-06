@@ -11,7 +11,7 @@ export default function usePayPalButtons(
   const API_BASE =
     window.location.hostname === "localhost"
       ? "http://localhost:8080"
-      : "https://api.missouristatelacrosse.com";
+      : "https://laxsite-backend-env.eba-nnbxwspk.us-east-1.elasticbeanstalk.com";
   const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
   const [resolvedClientId, setResolvedClientId] = useState(clientId || "");
 

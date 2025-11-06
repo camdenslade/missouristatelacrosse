@@ -2,10 +2,7 @@
 @import "swiper/css";
 @import "swiper/css/pagination";
 
-/* Remove default browser outlines for focus states (keep accessibility) */
-* {
-  outline: none;
-}
+
 
 /* Global subtle borders matching Tailwind's default border-gray-300 */
 /* No outer border on table, only internal cell borders */

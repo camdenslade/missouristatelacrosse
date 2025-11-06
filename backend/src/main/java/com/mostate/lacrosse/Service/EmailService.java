@@ -6,7 +6,12 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ses.SesClient;
-import software.amazon.awssdk.services.ses.model.*;
+import software.amazon.awssdk.services.ses.model.Body;
+import software.amazon.awssdk.services.ses.model.Content;
+import software.amazon.awssdk.services.ses.model.Destination;
+import software.amazon.awssdk.services.ses.model.Message;
+import software.amazon.awssdk.services.ses.model.SendEmailRequest;
+import software.amazon.awssdk.services.ses.model.SendEmailResponse;
 
 @Service
 public class EmailService{
@@ -16,10 +21,10 @@ public class EmailService{
     private final boolean emailEnabled;
 
     public EmailService(
-            @Value("${aws.accessKeyId:}") String accessKey,
-            @Value("${aws.secretKey:}") String secretKey,
-            @Value("${aws.region:us-east-2}") String region,
-            @Value("${email.fromAddress:no-reply@missouristatelacrosse.com}") String fromAddress,
+            @Value("${AWS_ACCESS_KEY_ID}") String accessKey,
+            @Value("${AWS_SECRET_ACCESS_KEY}") String secretKey,
+            @Value("${AWS_REGION}") String region,
+            @Value("${AWS_SES_SENDER}") String fromAddress,
             @Value("${app.email.enabled:true}") boolean emailEnabled
     ) {
         this.emailEnabled = emailEnabled

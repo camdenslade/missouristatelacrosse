@@ -46,8 +46,6 @@ application-*.yml
 .env
 .env.*
 
-# Firebase credentials
-src/main/resources/serviceAccountKey.json
 
 # AWS credentials (if ever used)
 .aws/
@@ -62,3 +60,8 @@ Thumbs.db
 *.log
 *.tmp
 *.bak
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

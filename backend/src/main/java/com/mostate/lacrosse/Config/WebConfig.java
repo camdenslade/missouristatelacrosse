@@ -1,3 +1,5 @@
+package com.mostate.lacrosse.Config;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -16,6 +18,7 @@ public class WebConfig {
                         "https://missouristatelacrosse.com",
                         "https://www.missouristatelacrosse.com",
                         "https://api.missouristatelacrosse.com",
+                        "https://laxsite-backend-env.eba-nnbxwspk.us-east-1.elasticbeanstalk.com",
                         "http://localhost:5173"
                     )
                     .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")

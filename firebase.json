@@ -9,10 +9,7 @@
     "rewrites": [
       {
         "source": "/api/**",
-        "run": {
-          "serviceId": "laxsite-backend",
-          "region": "us-central1"
-        }
+        "destination": "https://laxsite-backend-env.eba-nnbxwspk.us-east-1.elasticbeanstalk.com/api/**"
       },
       {
         "source": "**",
@@ -21,21 +18,20 @@
     ]
   },
   "emulators": {
-  "firestore": {
-    "host": "localhost",
-    "port": 8085
-  },
-  "functions": {
-    "port": 5001
-  },
-  "hosting": {
-    "port": 5000
-  },
-  "ui": {
-    "enabled": true,
-    "port": 4000
-  },
-  "singleProjectMode": true
-}
-
+    "firestore": {
+      "host": "localhost",
+      "port": 8085
+    },
+    "functions": {
+      "port": 5001
+    },
+    "hosting": {
+      "port": 5000
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000
+    },
+    "singleProjectMode": true
+  }
 }

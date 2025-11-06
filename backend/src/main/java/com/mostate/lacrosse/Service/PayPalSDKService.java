@@ -16,13 +16,13 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class PayPalSDKService {
 
-    @Value("${paypal.client.id}")
+    @Value("${PAYPAL_CLIENT_ID}")
     private String clientId;
 
-    @Value("${paypal.client.secret}")
+    @Value("${PAYPAL_CLIENT_SECRET}")
     private String clientSecret;
 
-    @Value("${paypal.base-url}")
+    @Value("${PAYPAL_BASE_URL}")
     private String baseUrl;
 
     private final RestTemplate rest = new RestTemplate();

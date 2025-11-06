@@ -1,5 +1,6 @@
 // src/Men/Local/Pages/Store/hooks/useStore.js
 import { useEffect, useState } from "react";
+import API_BASE from "../../../../../Services/API.js";
 
 const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
 
@@ -12,7 +13,7 @@ export default function useStore(cart, containerId = "paypal-buttons-container")
     if (!resolvedClientId) {
       (async () => {
         try {
-          const res = await fetch("/api/paypal/client-id");
+          const res = await fetch(`${API_BASE}/paypal/client-id`);
           const data = await res.json();
           if (data?.clientId) setResolvedClientId(data.clientId);
           else console.error("Failed to resolve PayPal client ID from backend");
@@ -66,20 +67,31 @@ export default function useStore(cart, containerId = "paypal-buttons-container")
         },
 
         createOrder: async () => {
-          const res = await fetch("/api/paypal/create", {
+          const res = await fetch(`${API_BASE}/paypal/create`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ amount: totalPrice.toFixed(2) }),
           });
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.error || "Failed to create PayPal order");
+          }
           const data = await res.json();
+          if (!data?.id) {
+            throw new Error("No order ID returned from backend");
+          }
           return data.id;
         },
 
         onApprove: async (data) => {
           const orderID = data.orderID || data.id;
-          const captureRes = await fetch(`/api/paypal/capture?orderID=${orderID}`, {
+          const captureRes = await fetch(`${API_BASE}/paypal/capture?orderID=${orderID}`, {
             method: "POST",
           });
+          if (!captureRes.ok) {
+            const errorData = await captureRes.json().catch(() => ({}));
+            throw new Error(errorData.error || "Failed to capture PayPal order");
+          }
           const captureData = await captureRes.json();
 
           const pu0 = captureData?.purchase_units?.[0];
@@ -87,7 +99,7 @@ export default function useStore(cart, containerId = "paypal-buttons-container")
           const payer = captureData?.payer || {};
           const payerName = payer?.name || {};
 
-          const printifyRes = await fetch("/api/printify/order", {
+          const printifyRes = await fetch(`${API_BASE}/printify/create-order`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -128,7 +140,7 @@ export default function useStore(cart, containerId = "paypal-buttons-container")
         },
       })
       .render(`#${containerId}`);
-  }, [paypalLoaded, cart, containerId]);
+  }, [paypalLoaded, cart, containerId, resolvedClientId]);
 
   return { paypalLoaded };
 }

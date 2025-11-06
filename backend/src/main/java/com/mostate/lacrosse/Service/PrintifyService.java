@@ -1,24 +1,30 @@
 package com.mostate.lacrosse.Service;
 
-import com.mostate.lacrosse.Controller.Printify.PrintifyOrderRequest;
-import com.mostate.lacrosse.Controller.Printify.ShippingInfo;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import java.util.*;
-import java.util.stream.Collectors;
+import com.mostate.lacrosse.Controller.Printify.PrintifyOrderRequest;
+import com.mostate.lacrosse.Controller.Printify.ShippingInfo;
 
 @Service
 public class PrintifyService {
 
-    @Value("${printify.api.baseUrl}")
+    @Value("${PRINTIFY_BASE_URL}")
     private String baseUrl;
 
-    @Value("${printify.apiToken}")
+    @Value("${PRINTIFY_API_TOKEN}")
     private String apiToken;
 
-    @Value("${printify.shopId}")
+    @Value("${PRINTIFY_SHOP_ID}")
     private String shopId;
 
     private final RestTemplate rest = new RestTemplate();
