@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.4
 FROM gradle:8.4-jdk17-alpine AS build
 WORKDIR /app
 COPY . .
