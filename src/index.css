@@ -1,37 +1,3 @@
 @import "tailwindcss";
 @import "swiper/css";
 @import "swiper/css/pagination";
-<<<<<<< HEAD
-
-
-
-/* Global subtle borders matching Tailwind's default border-gray-300 */
-/* No outer border on table, only internal cell borders */
-table {
-  border-collapse: collapse;
-  /* Removed outer border */
-}
-
-table th,
-table td {
-  border: 1px solid rgb(209 213 219); /* border-gray-300 - matches Tailwind default */
-  padding: 0.5rem;
-}
-
-/* Subtle borders for form inputs and buttons - matching Tailwind defaults */
-input:not([type="checkbox"]):not([type="radio"]),
-textarea,
-select,
-button {
-  border: 1px solid rgb(209 213 219) !important; /* border-gray-300 */
-}
-
-/* Focus states using brand color */
-input:focus,
-textarea:focus,
-select:focus {
-  border-color: #5E0009 !important; /* your brand color */
-  box-shadow: 0 0 0 3px rgba(94, 0, 9, 0.1); /* subtle brand color ring */
-}
-=======
->>>>>>> b4cdc0a53bed9ae4ddba3aa2745070a79562cd7a

@@ -1,24 +1,36 @@
 package com.mostate.lacrosse.Repository;
 
-import com.google.api.core.ApiFuture;
-import com.google.cloud.firestore.*;
-import com.google.firebase.cloud.FirestoreClient;
-import com.mostate.lacrosse.Model.AccountRequestModel;
-import org.springframework.stereotype.Repository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import org.springframework.stereotype.Repository;
+import com.google.api.core.ApiFuture;
+import com.google.cloud.firestore.CollectionReference;
+import com.google.cloud.firestore.DocumentReference;
+import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.QueryDocumentSnapshot;
+import com.google.cloud.firestore.QuerySnapshot;
+import com.google.cloud.firestore.WriteResult;
+import com.google.firebase.cloud.FirestoreClient;
+import com.mostate.lacrosse.Model.AccountRequestModel;
 
 @Repository
 public class AccountRequestRepo {
-    private final Firestore firestore = FirestoreClient.getFirestore();
+    private Firestore firestore;
+    private Firestore getFirestore(){
+        if (firestore == null){
+            firestore = FirestoreClient.getFirestore();
+        }
+        return firestore;
+    }
 
     public String save(AccountRequestModel requestModel) throws ExecutionException, InterruptedException {
         if (requestModel.getProgram() == null || requestModel.getProgram().isEmpty()) {
             requestModel.setProgram("men"); 
         }
 
-        DocumentReference docRef = firestore.collection("accountRequests").document();
+        DocumentReference docRef = getFirestore().collection("accountRequests").document();
         requestModel.setId(docRef.getId());
         ApiFuture<WriteResult> result = docRef.set(requestModel);
         result.get(); 
@@ -26,7 +38,7 @@ public class AccountRequestRepo {
     }
 
     public List<AccountRequestModel> findAll(String program) throws ExecutionException, InterruptedException {
-        CollectionReference colRef = firestore.collection("accountRequests");
+        CollectionReference colRef = getFirestore().collection("accountRequests");
 
         ApiFuture<QuerySnapshot> future;
         if (program != null && !program.equalsIgnoreCase("all") && !program.isEmpty()){
@@ -48,7 +60,7 @@ public class AccountRequestRepo {
 
 
     public AccountRequestModel findById(String id) throws ExecutionException, InterruptedException {
-        DocumentReference docRef = firestore.collection("accountRequests").document(id);
+        DocumentReference docRef = getFirestore().collection("accountRequests").document(id);
         DocumentSnapshot snapshot = docRef.get().get();
 
         if (snapshot.exists()){
@@ -60,21 +72,21 @@ public class AccountRequestRepo {
     }
 
     public void updateStatus(String id, String status) throws ExecutionException, InterruptedException {
-        firestore.collection("accountRequests")
+        getFirestore().collection("accountRequests")
                 .document(id)
                 .update("status", status)
                 .get();
     }
 
     public void updateField(String id, String field, Object value) throws ExecutionException, InterruptedException {
-        firestore.collection("accountRequests")
+        getFirestore().collection("accountRequests")
                 .document(id)
                 .update(field, value)
                 .get();
     }
 
     public void delete(String id) throws ExecutionException, InterruptedException {
-        firestore.collection("accountRequests")
+        getFirestore().collection("accountRequests")
                 .document(id)
                 .delete()
                 .get();
