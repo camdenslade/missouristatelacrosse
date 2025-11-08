@@ -39,7 +39,7 @@ export default function SponsorForm() {
       const res = await fetch(`${API_BASE}/api/email/sponsor`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, program: "women"}),
       });
 
       if (!res.ok) {

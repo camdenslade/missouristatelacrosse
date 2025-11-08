@@ -24,14 +24,15 @@ export default function PlayerPaymentDetails({
         <p className="text-sm text-gray-600">Current Balance: ${balance.toFixed(2)}</p>
       </div>
 
-      {userRole === "admin" && (
+      {(userRole === "admin" || userRole === "player") && (
         <AddParentForm
-          addParentEmail={addParentEmail}
-          setAddParentEmail={setAddParentEmail}
-          handleAddParent={handleAddParent}
-          message={message}
+            addParentEmail={addParentEmail}
+            setAddParentEmail={setAddParentEmail}
+            handleAddParent={handleAddParent}
+            message={message}
         />
-      )}
+        )}
+
 
       {parents.length > 0 && (
         <div className="mt-4">

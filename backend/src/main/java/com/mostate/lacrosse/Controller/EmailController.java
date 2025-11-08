@@ -39,40 +39,56 @@ public class EmailController {
     }
 
     @PostMapping("/sponsor")
-    public ResponseEntity<String> handleSponsor(@RequestBody Map<String, String> body) {
+    public ResponseEntity<String> handleSponsor(@RequestBody Map<String, String> body){
         String business = body.get("businessName");
         String email = body.get("email");
         String phone = body.get("phone");
         String request = body.get("request");
-        if ((email == null || email.isBlank()) && (phone == null || phone.isBlank()))
+        String program = body.getOrDefault("program", "men").toLowerCase();
+
+        if ((email == null || email.isBlank()) && (phone == null || phone.isBlank())) {
             return ResponseEntity.badRequest().body("At least one contact method required.");
+        }
+        
         String adminBody = """
-                New Sponsorship Inquiry
+            New Sponsorship Inquiry
 
-                Business: %s
-                Email: %s
-                Phone: %s
+            Business: %s
+            Email: %s
+            Phone: %s
 
-                Message:
-                %s
-                """.formatted(
-                business != null ? business : "N/A",
-                email != null && !email.isBlank() ? email : "N/A",
-                phone != null && !phone.isBlank() ? phone : "N/A",
-                request != null ? request : "N/A");
-        emailService.sendEmail("17bcole@gmail.com", "New Sponsor Inquiry", adminBody);
+            Message:
+            %s
+            """.formatted(
+            business != null ? business : "N/A",
+            email != null && !email.isBlank() ? email : "N/A",
+            phone != null && !phone.isBlank() ? phone : "N/A",
+            request != null ? request : "N/A"
+        );
+
+        String adminRecipient = program.equals("women")
+                ? "mostatewomenslax@gmail.com"
+                : "17bcole@gmail.com";
+
+        emailService.sendEmail(adminRecipient, "New Sponsor Inquiry", adminBody);
+
         if (email != null && !email.isBlank()) {
             String thankYou = """
-                    Hi %s,
+                    Hello %s,
 
-                    Thank you for your interest in supporting Missouri State Lacrosse!
+                    Thank you for your interest in supporting Missouri State %s Lacrosse!
                     We’ve received your inquiry and will reach out soon.
 
                     Go Bears!
-                    – Missouri State Lacrosse
-                    """.formatted(business != null ? business : "there");
+                    – Missouri State %s Lacrosse
+                    """.formatted(
+                    business != null ? business : "there",
+                    program.equals("women") ? "Women’s" : "Men’s",
+                    program.equals("women") ? "Women’s" : "Men’s"
+            );
             emailService.sendEmail(email, "Thank You for Your Sponsorship Inquiry", thankYou);
         }
+
         return ResponseEntity.ok("Sponsor inquiry processed successfully.");
     }
 
