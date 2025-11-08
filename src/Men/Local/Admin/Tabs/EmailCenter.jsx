@@ -1,11 +1,11 @@
 // src/Men/Local/Admin/Tabs/EmailCenter.jsx
 import {
-  collection,
-  getDocs,
   addDoc,
-  doc,
-  updateDoc,
+  collection,
   deleteDoc,
+  doc,
+  getDocs,
+  updateDoc,
 } from "firebase/firestore";
 import { useEffect, useReducer } from "react";
 
@@ -111,7 +111,7 @@ export default function EmailCenter(){
       });
     } catch (err){
       console.error("Add group failed:", err);
-      dispatch({ type: "SET_MESSAGE", message: "❌ Failed to create group" });
+      dispatch({ type: "SET_MESSAGE", message: "Failed to create group" });
     }
   };
 
@@ -175,7 +175,7 @@ export default function EmailCenter(){
 
     dispatch({ type: "SET_FIELD", field: "sending", value: true });
     try{
-      const res = await fetch(`${API_BASE}/admin/send-email/group`, {
+      const res = await fetch(`${API_BASE}/api/email/group`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -195,7 +195,7 @@ export default function EmailCenter(){
       dispatch({ type: "SET_FIELD", field: "subject", value: "" });
       dispatch({ type: "SET_FIELD", field: "body", value: "" });
     } catch (err){
-      dispatch({ type: "SET_MESSAGE", message: `❌ ${err.message}` });
+      dispatch({ type: "SET_MESSAGE", message: `${err.message}` });
     } finally{
       dispatch({ type: "SET_FIELD", field: "sending", value: false });
     }

@@ -2,12 +2,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
+
 import { useAuth } from "../../../../Global/Context/AuthContext.jsx";
-import { getGallery } from "../../../../Global/Gallery/galleryService.js";
+import { getGallery } from "./hooks/galleryService.js";
 import GalleryEditModal from "./Modals/GalleryEdit.jsx";
 import GalleryUploadModal from "./Modals/GalleryUpload.jsx";
 
-export default function Gallery({ userRole }) {
+export default function Gallery() {
   const [state, setState] = useState({
     galleries: {},
     loading: true,
@@ -18,15 +19,21 @@ export default function Gallery({ userRole }) {
   });
 
   const { galleries, loading, error, lightbox, showUploadModal, showEditModal } = state;
-  const { user } = useAuth();
+  const { user, roles } = useAuth();
+
+  const program = useMemo(
+    () => (window.location.pathname.toLowerCase().includes("/women") ? "women" : "men"),
+    []
+  );
+
+  const programRole = roles?.[program]?.toLowerCase?.() || "player";
 
   const canUpload = useMemo(() => {
     if (!user) return false;
-    const normalized = userRole?.toLowerCase?.();
-    return normalized === "admin" || normalized === "player";
-  }, [user, userRole]);
+    return ["admin", "player"].includes(programRole);
+  }, [user, programRole]);
 
-  const isAdmin = userRole === "admin";
+  const isAdmin = programRole === "admin";
 
   const loadGallery = useCallback(async () => {
     setState((prev) => ({ ...prev, loading: true, error: "" }));
@@ -78,7 +85,7 @@ export default function Gallery({ userRole }) {
               className="cursor-pointer bg-gray-50 shadow-md hover:shadow-lg overflow-hidden transition-all flex flex-col"
               onClick={() => openLightbox(images)}
             >
-              <div className="relative aspect-[4/3] overflow-hidden bg-gray-200">
+              <div className="relative aspect-4/3 overflow-hidden bg-gray-200">
                 <img
                   src={coverUrl}
                   alt={folderName}
@@ -87,8 +94,8 @@ export default function Gallery({ userRole }) {
                   onError={(e) => (e.target.style.display = "none")}
                 />
               </div>
-              <div className="py-3 px-4 text-center flex flex-col flex-grow justify-between">
-                <h3 className="text-lg font-semibold text-[#5E0009] leading-snug break-words">
+              <div className="py-3 px-4 text-center flex flex-col grow justify-between">
+                <h3 className="text-lg font-semibold text-[#5E0009] leading-snug wrap-break-word">
                   {formatFolderName(folderName)}
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">{images.length} photos</p>
@@ -119,8 +126,11 @@ export default function Gallery({ userRole }) {
   return (
     <section className="py-12 bg-white text-center animate-fadeIn relative">
       <h2 className="text-3xl font-bold text-[#5E0009] mb-8">
-        Men's Lacrosse Photo Gallery
+        {program === "women"
+          ? "Women's Lacrosse Photo Gallery"
+          : "Men's Lacrosse Photo Gallery"}
       </h2>
+
       {canUpload && (
         <div className="absolute top-4 right-4">
           <button
@@ -131,6 +141,7 @@ export default function Gallery({ userRole }) {
           </button>
         </div>
       )}
+
       {isAdmin && (
         <div className="absolute top-4 right-36">
           <button
@@ -141,7 +152,9 @@ export default function Gallery({ userRole }) {
           </button>
         </div>
       )}
+
       {galleryGrid}
+
       {lightbox.open && (
         <Lightbox
           open={lightbox.open}
@@ -150,6 +163,7 @@ export default function Gallery({ userRole }) {
           slides={lightbox.images.map((src) => ({ src }))}
         />
       )}
+
       {showEditModal && (
         <GalleryEditModal
           galleries={galleries}
@@ -157,6 +171,7 @@ export default function Gallery({ userRole }) {
           onRefresh={loadGallery}
         />
       )}
+
       {showUploadModal && (
         <GalleryUploadModal
           onClose={() => setState((p) => ({ ...p, showUploadModal: false }))}

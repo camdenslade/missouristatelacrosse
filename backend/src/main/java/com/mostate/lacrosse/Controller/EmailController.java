@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.mostate.lacrosse.Service.EmailService;
 
 @RestController
-@RequestMapping("/admin")
+@RequestMapping("/api/email")
 @CrossOrigin
 public class EmailController {
 
@@ -21,7 +21,7 @@ public class EmailController {
         this.emailService = emailService;
     }
 
-    @PostMapping("/send-email/group")
+    @PostMapping("/group")
     public ResponseEntity<String> sendGroupEmail(@RequestBody EmailRequest req) {
         int success = 0;
         int failures = 0;
@@ -38,7 +38,7 @@ public class EmailController {
         return ResponseEntity.ok(result);
     }
 
-    @PostMapping("/email/sponsor")
+    @PostMapping("/sponsor")
     public ResponseEntity<String> handleSponsor(@RequestBody Map<String, String> body) {
         String business = body.get("businessName");
         String email = body.get("email");
@@ -76,7 +76,7 @@ public class EmailController {
         return ResponseEntity.ok("Sponsor inquiry processed successfully.");
     }
 
-    @PostMapping("/email/receipt")
+    @PostMapping("/receipt")
     public ResponseEntity<String> sendReceipt(@RequestBody Map<String, String> body) {
         String email = body.get("email");
         String name = body.get("name");
@@ -94,7 +94,7 @@ public class EmailController {
         return ResponseEntity.ok("Receipt sent.");
     }
 
-    @PostMapping("/email/donation")
+    @PostMapping("/donation")
     public ResponseEntity<String> sendDonationThankYou(@RequestBody Map<String, String> body) {
         String email = body.get("email");
         String name = body.get("name");
@@ -112,7 +112,7 @@ public class EmailController {
         return ResponseEntity.ok("Donation thank-you sent.");
     }
 
-    @PostMapping("/email/account-approved")
+    @PostMapping("/account-approved")
     public ResponseEntity<String> sendAccountApproval(@RequestBody Map<String, String> body) {
         String email = body.get("email");
         String name = body.get("name");

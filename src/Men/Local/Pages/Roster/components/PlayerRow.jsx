@@ -1,4 +1,3 @@
-// src/Men/Local/Pages/Roster/components/PlayerRow.jsx
 export default function PlayerRow({ player, index, onEdit, onDelete, isAdmin }) {
   const {
     name,
@@ -18,18 +17,20 @@ export default function PlayerRow({ player, index, onEdit, onDelete, isAdmin }) 
   const imgSrc = photo || "/assets/placeholder.png";
 
   const infoLine = (
-    <>
+    <div className="text-black">
       {classYear && <span className="font-bold">{classYear}</span>}
       {classYear && " / "}
       {hometown && `${hometown}`}
       {state && `, ${state}`}
       {` / ${highSchool || ""}`}
       {previousSchool && ` / ${previousSchool}`}
-    </>
+    </div>
   );
 
   return (
-    <div className={`flex flex-col sm:flex-row items-center sm:items-start w-full ${bg} p-4`}>
+    <div
+      className={`flex flex-col sm:flex-row items-center sm:items-start w-full ${bg} p-4`}
+    >
       <img
         src={imgSrc}
         alt={name}
@@ -52,11 +53,11 @@ export default function PlayerRow({ player, index, onEdit, onDelete, isAdmin }) 
           </div>
 
           {/* Mobile Info */}
-          <div className="sm:hidden mt-2 text-sm text-gray-700">{infoLine}</div>
+          <div className="sm:hidden mt-2 text-sm">{infoLine}</div>
         </div>
 
         {/* Desktop Info */}
-        <div className="hidden sm:flex flex-col justify-center text-right text-gray-700 text-sm">
+        <div className="hidden sm:flex flex-col justify-center text-right text-md">
           {infoLine}
         </div>
       </div>

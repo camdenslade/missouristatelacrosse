@@ -20,17 +20,16 @@ public class EmailService {
     private final boolean emailEnabled;
 
     public EmailService(
-            @Value("${AWS_REGION}") String region,
-            @Value("${AWS_SES_SENDER}") String fromAddress,
-            @Value("${app.email.enabled:true}") boolean emailEnabled
-    ) {
-        this.emailEnabled = emailEnabled;
+                @Value("${AWS_REGION}") String region,
+                @Value("${AWS_SES_SENDER}") String fromAddress
+        ) {
+        this.emailEnabled = true;
         this.fromAddress = fromAddress;
         this.sesClient = SesClient.builder()
                 .region(Region.of(region))
                 .credentialsProvider(DefaultCredentialsProvider.create())
                 .build();
-    }
+        }
 
     public void sendEmail(String to, String subject, String body) {
         if (!emailEnabled) {

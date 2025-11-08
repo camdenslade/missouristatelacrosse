@@ -46,7 +46,7 @@ export default function AuthModal({ onClose }) {
 
     try {
       const program = getActiveProgram();
-      const res = await fetch(`${API_BASE}/account-requests`, {
+      const res = await fetch(`${API_BASE}/api/account-requests`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, displayName, program }),

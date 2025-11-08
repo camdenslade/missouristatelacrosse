@@ -1,8 +1,8 @@
 // src/Men/Local/Pages/Gallery/Modals/GalleryEdit.jsx
-import { X, Trash2, Upload, Edit3, Check, Folder } from "lucide-react";
-import { useReducer, useEffect } from "react";
+import { Check, Edit3, Folder, Trash2, Upload, X } from "lucide-react";
+import { useEffect, useReducer } from "react";
 
-import { uploadGallery, deleteGallery, getGallery } from "../../../../../Global/Gallery/galleryService.js";
+import { deleteGallery, getGallery, uploadGallery } from "../hooks/galleryService.js";
 
 const initialState = {
   selectedFolder: "",

@@ -1,3 +1,4 @@
+// src/Men/Local/Pages/Store/Checkout/CheckoutSuccess.jsx
 import { useEffect, useReducer } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import API_BASE from "../../../../../Services/API.js";
@@ -44,17 +45,18 @@ export default function CheckoutSuccess() {
 
         if (email) {
           try {
-            await fetch(`${API_BASE}/email/send`, {
+            await fetch(`${API_BASE}/api/email/receipt`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                to: email,
-                subject: "Thank You for Your Purchase – Missouri State Lacrosse",
-                body: `Hi ${name || "Supporter"},\n\nThank you for your order from the Missouri State Lacrosse Team Store!\n\nOrder ID: ${localOrder.id}\nAmount: $${amount}\n\nWe’ll notify you as soon as your order ships.\n\nGo Bears,\nMissouri State Lacrosse`,
+                email,
+                name,
+                orderId: localOrder.id,
+                amount,
               }),
             });
           } catch (err) {
-            console.error("Failed to send order confirmation:", err);
+            console.error("Failed to send order receipt:", err);
           }
         }
 
@@ -70,7 +72,7 @@ export default function CheckoutSuccess() {
 
       try {
         dispatch({ type: "FETCH_START" });
-        const res = await fetch(`${API_BASE}/paypal/capture?orderID=${orderID}`, {
+        const res = await fetch(`${API_BASE}/api/paypal/capture?orderID=${orderID}`, {
           method: "POST",
         });
         if (!res.ok) throw new Error("Failed to fetch order");
@@ -85,13 +87,14 @@ export default function CheckoutSuccess() {
           data.purchase_units?.[0]?.amount?.value || data.amount || "0.00";
 
         if (email) {
-          await fetch(`${API_BASE}/email/send`, {
+          await fetch(`${API_BASE}/api/email/receipt`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              to: email,
-              subject: "Thank You for Your Purchase – Missouri State Lacrosse",
-              body: `Hi ${name || "Supporter"},\n\nThank you for your order from the Missouri State Lacrosse Team Store!\n\nOrder ID: ${data.id}\nAmount: $${amount}\n\nWe’ll notify you as soon as your order ships.\n\nGo Bears,\nMissouri State Lacrosse`,
+              email,
+              name,
+              orderId: data.id,
+              amount,
             }),
           });
         }

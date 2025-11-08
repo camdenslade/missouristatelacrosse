@@ -1,3 +1,4 @@
+// src/Men/Pages/Donate/DonateSuccess.jsx
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import API_BASE from "../../../../Services/API.js";
@@ -22,7 +23,7 @@ export default function DonateSuccess() {
     const sendThankYou = async () => {
       if (!email) return;
       try {
-        await fetch(`${API_BASE}/email/send`, {
+        await fetch(`${API_BASE}/api/email/send`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

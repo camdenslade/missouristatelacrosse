@@ -1,22 +1,22 @@
-// src/Global/Gallery/galleryService.js
+// src/Women/Local/Gallery/hooks/galleryService.js
 import {
-  doc,
-  setDoc,
-  getDoc,
-  deleteDoc,
-  serverTimestamp,
   collection,
-  getDocs
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  serverTimestamp,
+  setDoc
 } from "firebase/firestore";
 import {
+  deleteObject,
+  getDownloadURL,
+  listAll,
   ref,
   uploadBytes,
-  getDownloadURL,
-  deleteObject,
-  listAll,
 } from "firebase/storage";
 
-import { storage, db } from "../../Services/firebaseConfig.js";
+import { db, storage } from "../../../../../Services/firebaseConfig.js";
 
 /**
  * @param {string} folderName
@@ -33,7 +33,7 @@ export async function uploadGallery(folderName, files){
     try{
         const uploadedUrls = await Promise.all(
             files.map(async (file) => {
-                const filePath = `gallery/${folderName}/${file.name}`;
+                const filePath = `galleryw/${folderName}/${file.name}`;
                 const fileRef = ref(storage, filePath);
 
                 await uploadBytes(fileRef, file);
@@ -42,7 +42,7 @@ export async function uploadGallery(folderName, files){
             })
         );
 
-        const docRef = doc(db, "gallery", folderName);
+        const docRef = doc(db, "galleryw", folderName);
         const snap = await getDoc(docRef);
         const oldUrls = snap.exists() ? snap.data().urls || [] : [];
 
@@ -71,9 +71,9 @@ export async function uploadGallery(folderName, files){
 export async function deleteGallery(folderName, fileName){
     if (!folderName) throw new Error("Missing folder name");
 
-    const folderPath = `gallery/${folderName}`;
+    const folderPath = `galleryw/${folderName}`;
     const folderRef = ref(storage, folderPath);
-    const docRef = doc(db, "gallery", folderName);
+    const docRef = doc(db, "galleryw", folderName);
 
     try{
     if (fileName){
@@ -104,11 +104,11 @@ export async function deleteGallery(folderName, fileName){
 
 export async function getGallery(folderName){
   if (folderName){
-    const docRef = doc(db, "gallery", folderName);
+    const docRef = doc(db, "galleryw", folderName);
     const snap = await getDoc(docRef);
     return snap.exists() ? snap.data() : null;
   } else{
-    const colRef = collection(db, "gallery");
+    const colRef = collection(db, "galleryw");
     const snap = await getDocs(colRef);
     const data = {};
     snap.forEach((doc) => {

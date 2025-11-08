@@ -47,7 +47,7 @@ export default function ManageAccountRequests(){
   const fetchRequests = async () => {
     try{
       dispatch({ type: "SET_LOADING", value: true });
-      const res = await fetch(`${API_BASE}/account-requests?program=${program}`);
+      const res = await fetch(`${API_BASE}/api/account-requests?program=${program}`);
       if (!res.ok) throw new Error("Failed to load requests");
       const data = await res.json();
       const filtered = data.filter((req) => req.program === program);
@@ -70,7 +70,7 @@ export default function ManageAccountRequests(){
     const original = [...requests];
     dispatch({ type: "REMOVE_REQUEST", id });
     try{
-      const res = await fetch(`${API_BASE}/account-requests/${id}/approve?program=${program}`, {
+      const res = await fetch(`${API_BASE}/api/account-requests/${id}/approve?program=${program}`, {
         method: "POST",
       });
       const text = await res.text();
@@ -95,7 +95,7 @@ export default function ManageAccountRequests(){
     const original = [...requests];
     dispatch({ type: "REMOVE_REQUEST", id });
     try{
-      const res = await fetch(`${API_BASE}/account-requests/${id}?program=${program}`, {
+      const res = await fetch(`${API_BASE}/api/account-requests/${id}?program=${program}`, {
         method: "DELETE",
       });
       const text = await res.text();

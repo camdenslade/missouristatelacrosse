@@ -1,3 +1,4 @@
+// src/Men/Local/Pages/Sponsor/SponsorForm.jsx
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import API_BASE from "../../../../Services/API.js";
@@ -28,38 +29,22 @@ export default function SponsorForm() {
 
     try {
       const stored = JSON.parse(localStorage.getItem("sponsorSubmissions") || "[]");
-      stored.push({
-        ...form,
-        timestamp: new Date().toISOString(),
-      });
+      stored.push({ ...form, timestamp: new Date().toISOString() });
       localStorage.setItem("sponsorSubmissions", JSON.stringify(stored));
     } catch (err) {
       console.error("Failed to store sponsor locally:", err);
     }
 
     try {
-      await fetch(`${API_BASE}/email/send`, {
+      const res = await fetch(`${API_BASE}/api/email/sponsor`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: "17bcole@gmail.com",
-          subject: `New Sponsorship Inquiry – ${form.businessName}`,
-          body: `Business Name: ${form.businessName}\nEmail: ${
-            form.email || "N/A"
-          }\nPhone: ${form.phone || "N/A"}\n\nMessage:\n${form.request}`,
-        }),
+        body: JSON.stringify(form),
       });
 
-      if (form.email) {
-        await fetch(`${API_BASE}/email/send`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            to: form.email,
-            subject: "Thank You for Reaching Out – Missouri State Lacrosse",
-            body: `Hi ${form.businessName},\n\nThank you for your interest in partnering with Missouri State Lacrosse!\n\nWe’ve received your inquiry and will reach out soon.\n\nGo Bears!\n\n— Missouri State Lacrosse`,
-          }),
-        });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Server error: ${text}`);
       }
 
       alert("Thank you for your interest! Your message has been sent.");

@@ -123,3 +123,5 @@ Thumbs.db
 .env
 src/Services/firebaseConfig.js
 backend/src/main/resources/application.properties
+backend/laxsite-key.pem
+backend/deploy-backend.sh

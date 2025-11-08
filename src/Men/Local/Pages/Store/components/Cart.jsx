@@ -1,4 +1,5 @@
 // src/Men/Local/Pages/Store/Cart.jsx
+import { useState } from "react";
 import useStore from "../hooks/useStore.js";
 
 export default function Cart({
@@ -11,25 +12,44 @@ export default function Cart({
   handleTouchMove,
   handleTouchEnd,
 }) {
-  const totalPrice = Math.ceil(
-    cart.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0)
-  );
+  const [donation, setDonation] = useState("");
+  const [confirmedDonation, setConfirmedDonation] = useState(0);
 
-  useStore(cart, "paypal-buttons-container");
+  const safeCart = Array.isArray(cart) ? cart : [];
+  const subtotal = Math.ceil(
+    safeCart.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0)
+  );
+  const totalPrice = subtotal + (confirmedDonation || 0);
+
+  useStore(safeCart, "paypal-buttons-container");
+
+  const handleConfirmDonation = () => {
+    const val = parseFloat(donation);
+    if (!isNaN(val) && val > 0) {
+      setConfirmedDonation(val);
+      alert(`Donation confirmed: $${val.toFixed(2)}`);
+    } else {
+      alert("Please enter a valid donation amount.");
+    }
+  };
 
   const removeFromCart = (id, variantId) =>
     setCart((prev) =>
-      prev.filter((item) => !(item.id === id && item.variantId === variantId))
+      Array.isArray(prev)
+        ? prev.filter((item) => !(item.id === id && item.variantId === variantId))
+        : []
     );
 
   const updateQuantity = (id, variantId, qty) => {
     if (qty < 1) return;
     setCart((prev) =>
-      prev.map((item) =>
-        item.id === id && item.variantId === variantId
-          ? { ...item, quantity: qty }
-          : item
-      )
+      Array.isArray(prev)
+        ? prev.map((item) =>
+            item.id === id && item.variantId === variantId
+              ? { ...item, quantity: qty }
+              : item
+          )
+        : []
     );
   };
 
@@ -47,7 +67,14 @@ export default function Cart({
         <div className="p-4 flex justify-between items-center border-b">
           <h2 className="text-lg font-bold">Men’s Team Cart</h2>
           <button
-            onClick={() => setShowCart(false)}
+            onClick={() => {
+              try {
+                window.paypal?.Buttons?.().close?.();
+              } catch (err){
+                console.log("Error:", err)
+              }
+              setShowCart(false);
+            }}
             className="text-gray-500 hover:text-black px-3 py-1 border rounded"
           >
             Close
@@ -55,10 +82,10 @@ export default function Cart({
         </div>
 
         <div className="p-4 flex-1 flex flex-col gap-4 overflow-y-auto">
-          {cart.length === 0 ? (
+          {safeCart.length === 0 ? (
             <p className="text-gray-600">Your cart is empty.</p>
           ) : (
-            cart.map((item) => (
+            safeCart.map((item) => (
               <div
                 key={`${item.id}-${item.variantId}`}
                 className="flex gap-4 items-center bg-gray-50 p-2 rounded shadow hover:bg-gray-100 transition"
@@ -100,9 +127,40 @@ export default function Cart({
           )}
         </div>
 
-        {cart.length > 0 && (
-          <div className="p-4 border-t flex flex-col gap-2">
-            <p className="font-bold text-right text-lg">Total: ${totalPrice}</p>
+        {safeCart.length > 0 && (
+          <div className="p-4 border-t flex flex-col gap-3">
+            {/* Donation Input */}
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-gray-700">
+                Optional Donation:
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="Enter amount"
+                  value={donation}
+                  onChange={(e) => setDonation(e.target.value)}
+                  className="border rounded px-2 py-1 flex-1"
+                />
+                <button
+                  onClick={handleConfirmDonation}
+                  className="bg-[#5E0009] text-white px-3 rounded hover:bg-red-800 transition"
+                >
+                  {confirmedDonation ? "Update" : "Add"}
+                </button>
+              </div>
+              {confirmedDonation > 0 && (
+                <p className="text-sm text-green-700">
+                  Added donation: ${confirmedDonation.toFixed(2)}
+                </p>
+              )}
+            </div>
+
+            <p className="font-bold text-right text-lg">
+              Total: ${totalPrice}
+            </p>
+
             <div id="paypal-buttons-container" />
           </div>
         )}

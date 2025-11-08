@@ -1,26 +1,25 @@
-// src/Men/Local/Context/AuthContext.jsx
+// src/Global/Context/AuthContext.jsx
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import {
+  collection,
   doc,
   getDoc,
+  getDocs,
+  query,
   setDoc,
   updateDoc,
-  collection,
-  query,
   where,
-  getDocs,
 } from "firebase/firestore";
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
-  useReducer,
   useMemo,
-  useCallback,
+  useReducer,
 } from "react";
 
 import { auth, db } from "../../Services/firebaseConfig.js";
-
 
 const initialState = {
   user: null,
@@ -30,8 +29,8 @@ const initialState = {
   loading: true,
 };
 
-function authReducer(state, action){
-  switch (action.type){
+function authReducer(state, action) {
+  switch (action.type) {
     case "SET_USER":
       return { ...state, user: action.payload };
     case "SET_ROLE":
@@ -49,45 +48,50 @@ function authReducer(state, action){
   }
 }
 
-
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  
-  const getCachedAuth = useCallback(() => {
-    try{
-      const cached = JSON.parse(localStorage.getItem("authCache"));
+  const getProgramProp = useCallback(
+    () =>
+      window.location.pathname.toLowerCase().includes("/women")
+        ? "women"
+        : "men",
+    []
+  );
+
+  const getCachedAuth = useCallback((program) => {
+    try {
+      const cached = JSON.parse(localStorage.getItem(`authCache_${program}`));
       if (!cached) return null;
-      const expired = Date.now() - cached.ts > (60 * 60 * 1000);
-      if (expired){
-        localStorage.removeItem("authCache");
+      const expired = Date.now() - cached.ts > 60 * 60 * 1000;
+      if (expired) {
+        localStorage.removeItem(`authCache_${program}`);
         return null;
       }
       return cached;
-    } catch{
+    } catch {
       return null;
     }
   }, []);
 
-  const getProgramProp = useCallback( () => window.location.pathname.toLowerCase().includes("/women") ? "women" : "men", []);
-
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (!currentUser){
+      const program = getProgramProp();
+
+      if (!currentUser) {
         dispatch({ type: "RESET" });
-        localStorage.removeItem("authCache");
+        localStorage.removeItem(`authCache_${program}`);
         return;
       }
 
       dispatch({ type: "SET_USER", payload: currentUser });
       dispatch({ type: "SET_LOADING", payload: true });
 
-      const cached = getCachedAuth();
-      if (cached && auth.currentUser){
+      const cached = getCachedAuth(program);
+      if (cached && auth.currentUser) {
         dispatch({ type: "SET_USER", payload: auth.currentUser });
         dispatch({ type: "SET_ROLE", payload: cached.role });
         dispatch({ type: "SET_ROLES", payload: cached.roles || {} });
@@ -95,15 +99,14 @@ export function AuthProvider({ children }) {
         dispatch({ type: "SET_LOADING", payload: false });
       }
 
-      try{
+      try {
         const userRef = doc(db, "users", currentUser.uid);
         const snap = await getDoc(userRef);
-        const program = getProgramProp();
 
         let data = {};
-        if (snap.exists()){
+        if (snap.exists()) {
           data = snap.data();
-        } else{
+        } else {
           data = {
             email: currentUser.email,
             displayName:
@@ -114,7 +117,8 @@ export function AuthProvider({ children }) {
         }
 
         const userRoles = data.roles || {};
-        const currentRole = userRoles[program]?.toLowerCase() || data.role || "player";
+        const currentRole =
+          userRoles[program]?.toLowerCase() || data.role || "player";
         const displayName =
           data.displayName ||
           currentUser.displayName ||
@@ -122,9 +126,9 @@ export function AuthProvider({ children }) {
           "";
 
         const programs = Object.keys(userRoles || {});
-        let dataProgramSort = JSON.stringify(data.programs.sort());
-        let programSort = JSON.stringify(programs.sort());
-        if (!data.programs || dataProgramSort !== programSort){
+        const dataProgramSort = JSON.stringify((data.programs || []).sort());
+        const programSort = JSON.stringify(programs.sort());
+        if (!data.programs || dataProgramSort !== programSort) {
           await updateDoc(userRef, { programs });
         }
 
@@ -135,7 +139,7 @@ export function AuthProvider({ children }) {
         dispatch({ type: "SET_LOADING", payload: false });
 
         localStorage.setItem(
-          "authCache",
+          `authCache_${program}`,
           JSON.stringify({
             role: currentRole,
             roles: userRoles,
@@ -144,10 +148,10 @@ export function AuthProvider({ children }) {
           })
         );
 
-        if (!data.playerId && currentRole === "player" && displayName){
+        if (!data.playerId && currentRole === "player" && displayName) {
           await tryAutoLinkPlayer(currentUser, userRef, displayName, program);
         }
-      } catch (err){
+      } catch (err) {
         console.error("Auth revalidation error:", err);
         dispatch({ type: "SET_LOADING", payload: false });
       }
@@ -157,13 +161,14 @@ export function AuthProvider({ children }) {
   }, [getCachedAuth, getProgramProp]);
 
   const signOutUser = useCallback(async () => {
-    try{
+    try {
       await signOut(auth);
-    } finally{
+    } finally {
       dispatch({ type: "RESET" });
-      localStorage.removeItem("authCache");
+      const program = getProgramProp();
+      localStorage.removeItem(`authCache_${program}`);
     }
-  }, []);
+  }, [getProgramProp]);
 
   const isAdmin = useMemo(() => state.role === "admin", [state.role]);
   const isAuthenticated = useMemo(() => !!state.user, [state.user]);
@@ -182,8 +187,8 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-async function tryAutoLinkPlayer(firebaseUser, userRef, displayName, program){
-  try{
+async function tryAutoLinkPlayer(firebaseUser, userRef, displayName, program) {
+  try {
     const now = new Date();
     const y = now.getFullYear();
     const m = now.getMonth() + 1;
@@ -203,7 +208,7 @@ async function tryAutoLinkPlayer(firebaseUser, userRef, displayName, program){
     );
     const snap = await getDocs(q);
 
-    if (!snap.empty){
+    if (!snap.empty) {
       const playerDoc = snap.docs[0];
       const playerId = playerDoc.id;
 
@@ -213,12 +218,12 @@ async function tryAutoLinkPlayer(firebaseUser, userRef, displayName, program){
       console.log(
         `Linked ${displayName} to ${program} player ${playerId} (${currentSeason})`
       );
-    } else{
+    } else {
       console.log(
         `No ${program} player found for ${displayName} in ${currentSeason}`
       );
     }
-  } catch (err){
+  } catch (err) {
     console.error("Error auto-linking player:", err);
   }
 }

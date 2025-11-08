@@ -15,8 +15,8 @@ const initialState = {
   showCart: false,
 };
 
-function reducer(state, action){
-  switch (action.type){
+function reducer(state, action) {
+  switch (action.type) {
     case "SET_PRODUCTS":
       return { ...state, products: action.payload, loading: false };
     case "SET_LOADING":
@@ -44,7 +44,7 @@ function reducer(state, action){
   }
 }
 
-export default function TeamStore(){
+export default function Store() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const sidebarRef = useRef(null);
   const touchStartX = useRef(0);
@@ -56,7 +56,7 @@ export default function TeamStore(){
     const fetchProducts = async () => {
       try {
         dispatch({ type: "SET_LOADING", payload: true });
-        const res = await fetch(`${API_BASE}/printify/products`);
+        const res = await fetch(`${API_BASE}/api/printify/products`);
         if (!res.ok) throw new Error("Failed to fetch products");
         const json = await res.json();
         if (Array.isArray(json)) {
@@ -73,6 +73,14 @@ export default function TeamStore(){
     dispatch({ type: "ADD_TO_CART", payload: product });
   };
 
+  const setCart = (newCart) => {
+    dispatch({ type: "SET_CART", payload: newCart });
+  };
+
+  const setShowCart = (val) => {
+    dispatch({ type: "TOGGLE_CART", payload: val });
+  };
+
   const handleTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX;
   };
@@ -81,14 +89,13 @@ export default function TeamStore(){
   };
   const handleTouchEnd = () => {
     if (touchStartX.current - touchCurrentX.current > 50) {
-      dispatch({ type: "TOGGLE_CART", payload: false });
+      setShowCart(false);
     }
   };
 
-  const totalItems = state.cart.reduce(
-    (sum, item) => sum + (item.quantity || 1),
-    0
-  );
+  const totalItems = Array.isArray(state.cart)
+    ? state.cart.reduce((sum, item) => sum + (item.quantity || 1), 0)
+    : 0;
 
   return (
     <div className="relative max-w-5xl mx-auto px-6 py-10">
@@ -114,7 +121,7 @@ export default function TeamStore(){
           )}
 
           <button
-            onClick={() => dispatch({ type: "TOGGLE_CART", payload: true })}
+            onClick={() => setShowCart(true)}
             className="fixed bottom-6 right-6 w-32 h-32 bg-[#5E0009] text-white rounded-full flex items-center justify-center shadow-2xl hover:bg-red-800"
           >
             <FaShoppingCart className="text-5xl" />
@@ -126,19 +133,14 @@ export default function TeamStore(){
           </button>
 
           <Cart
-            cart={state.cart}
-            setCart={(cart) =>
-              dispatch({ type: "SET_CART", payload: cart })
-            }
+            cart={Array.isArray(state.cart) ? state.cart : []}
+            setCart={setCart}
             showCart={state.showCart}
-            setShowCart={(value) =>
-              dispatch({ type: "TOGGLE_CART", payload: value })
-            }
+            setShowCart={setShowCart}
             sidebarRef={sidebarRef}
             handleTouchStart={handleTouchStart}
             handleTouchMove={handleTouchMove}
             handleTouchEnd={handleTouchEnd}
-            navigate={navigate}
           />
         </>
       ) : (

@@ -142,7 +142,7 @@ export default function GameRow({
             onClick={() => setShowStats(!showStats)}
             className="text-sm text-[#5E0009] hover:underline mt-1"
           >
-            {showStats ? "Hide Stats" : "📊 View Stats"}
+            {showStats ? "Hide Stats" : "View Stats"}
           </button>
         )}
       </div>

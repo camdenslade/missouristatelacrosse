@@ -1,5 +1,5 @@
 // src/Men/Local/Admin/AdminDash.jsx
-import { useReducer, useMemo } from "react";
+import { useMemo, useReducer } from "react";
 
 import AccountRequests from "./Tabs/AccountRequests.jsx";
 import EmailCenter from "./Tabs/EmailCenter.jsx";
@@ -16,7 +16,7 @@ function reducer(state, action){
   }
 }
 
-export default function AdminDash(){
+export default function AdminDashboard(){
   const [state, dispatch] = useReducer(reducer, initialState);
   const { activeTab } = state;
 

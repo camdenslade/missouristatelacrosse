@@ -25,10 +25,10 @@ function reducer(state, action){
         ],
       };
     case "UPDATE_PLAYER":
-      const updated = [...state.playerStats];
+      { const updated = [...state.playerStats];
       updated[action.index][action.field] =
         action.field === "name" ? action.value : Number(action.value);
-      return { ...state, playerStats: updated };
+      return { ...state, playerStats: updated }; }
     case "SAVE_START":
       return { ...state, saving: true };
     case "SAVE_SUCCESS":
