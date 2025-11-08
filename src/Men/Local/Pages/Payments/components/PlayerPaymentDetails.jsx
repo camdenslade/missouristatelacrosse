@@ -24,7 +24,7 @@ export default function PlayerPaymentDetails({
         <p className="text-sm text-gray-600">Current Balance: ${balance.toFixed(2)}</p>
       </div>
 
-      {userRole === "admin" && (
+      {userRole === "admin" || "player" && (
         <AddParentForm
           addParentEmail={addParentEmail}
           setAddParentEmail={setAddParentEmail}
