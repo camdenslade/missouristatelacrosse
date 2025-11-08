@@ -2,6 +2,7 @@
 import { addHours, isWithinInterval, parseISO, subHours } from "date-fns";
 import { useEffect, useReducer } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { getCurrentYear, setCurrentYear } from "../../../../Services/yearHelper.js";
 import GameRow from "./components/GameRow.jsx";
 import NextGameSection from "./components/HighlightGame.jsx";
 import RecordGrid from "./components/RecordGrid.jsx";
@@ -71,6 +72,7 @@ function reducer(state, action) {
 
 export default function WSchedule({ userRole }) {
   const { season } = useParams();
+  
   const navigate = useNavigate();
   const { fetchGames, saveGame, removeGame } = useGames();
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -85,6 +87,7 @@ export default function WSchedule({ userRole }) {
   } = state;
 
   useEffect(() => {
+    const cachedYear = getCurrentYear();
     const current = getSeasonValue();
     if (!season) {
       navigate(`/schedule/${current}`, { replace: true });
@@ -92,6 +95,7 @@ export default function WSchedule({ userRole }) {
     }
     if (season !== state.selectedSeason) {
       dispatch({ type: "SET_SEASON", season });
+      setCurrentYear(season);
     }
   }, [season]);
 
@@ -136,6 +140,7 @@ export default function WSchedule({ userRole }) {
 
   const handleSeasonChange = (val) => {
     dispatch({ type: "SET_SEASON", season: val });
+    setCurrentYear(val);
     navigate(`/schedule/${val}`);
   };
 

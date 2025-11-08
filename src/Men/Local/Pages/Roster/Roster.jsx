@@ -4,6 +4,7 @@ import { useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { db } from "../../../../Services/firebaseConfig.js";
+import { getCurrentYear, setCurrentYear } from "../../../../Services/yearHelper.js";
 import CoachRow from "./components/CoachRow.jsx";
 import PlayerRow from "./components/PlayerRow.jsx";
 import RosterFormModal from "./components/RosterForm.jsx";
@@ -23,8 +24,9 @@ function Spinner(){
 
 export default function Roster({ userRole }){
   const { season } = useParams();
+  const cachedYear = getCurrentYear();
   const navigate = useNavigate();
-  const normalizedSeason = normalizeSeasonParam(season);
+  const normalizedSeason = normalizeSeasonParam(season || cachedYear);
 
   const [state, dispatch] = useRosterState(normalizedSeason);
   const { selectedSeason, showModal, isCoach, editingItem, loading } = state;
@@ -72,6 +74,7 @@ export default function Roster({ userRole }){
 
   const handleSeasonChange = (val) => {
     dispatch({ type: "SET_SEASON", payload: val });
+    setCurrentYear(val);
     localStorage.setItem("selectedSeason", val);
     navigate(`/roster/${displaySeasonLabel(val)}`);
   };

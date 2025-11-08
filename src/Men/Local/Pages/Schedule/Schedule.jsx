@@ -2,6 +2,7 @@
 import { addHours, isWithinInterval, parseISO, subHours } from "date-fns";
 import { useEffect, useReducer } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { getCurrentYear, setCurrentYear } from "../../../../Services/yearHelper.js";
 import GameRow from "./components/GameRow.jsx";
 import NextGameSection from "./components/HighlightGame.jsx";
 import RecordGrid from "./components/RecordGrid.jsx";
@@ -85,6 +86,7 @@ export default function Schedule({ userRole }) {
   } = state;
 
   useEffect(() => {
+    const cachedYear = getCurrentYear();
     const current = getSeasonValue();
     if (!season) {
       navigate(`/schedule/${current}`, { replace: true });
@@ -92,6 +94,7 @@ export default function Schedule({ userRole }) {
     }
     if (season !== state.selectedSeason) {
       dispatch({ type: "SET_SEASON", season });
+      setCurrentYear(season);
     }
   }, [season]);
 
@@ -136,6 +139,7 @@ export default function Schedule({ userRole }) {
 
   const handleSeasonChange = (val) => {
     dispatch({ type: "SET_SEASON", season: val });
+    setCurrentYear(val);
     navigate(`/schedule/${val}`);
   };
 
