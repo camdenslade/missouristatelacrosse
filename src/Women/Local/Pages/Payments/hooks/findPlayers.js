@@ -36,37 +36,44 @@ export default function usePlayers(parentProvidedLinkedPlayers = []) {
           list = snap.docs
             .map((d) => ({ id: d.id, ...d.data() }))
             .filter((p) => p.season === currentSeason);
-        } else if (userRole === "player") {
+        }
+
+        else if (userRole === "player") {
           const userRef = doc(db, "users", user.uid);
           const userSnap = await getDoc(userRef);
+
           if (userSnap.exists()) {
-            const data = userSnap.data();
-            const linkedId = data.playerId;
-            if (linkedId) {
+            const linkedId = userSnap.data()?.playerId || "";
+
+            if (!linkedId) {
+              list = [];
+            } else {
               const playerRef = doc(db, playersCollection, linkedId);
               const playerSnap = await getDoc(playerRef);
+
               if (playerSnap.exists()) {
                 const player = { id: playerSnap.id, ...playerSnap.data() };
-                if (player.season === currentSeason) list = [player];
+
+                if (player.season === currentSeason) {
+                  list = [player];
+                }
               }
             }
           }
-        } else if (userRole === "parent") {
-          if (parentProvidedLinkedPlayers.length > 0) {
-            list = parentProvidedLinkedPlayers.filter(
-              (p) => p.season === currentSeason
-            );
-          } else {
-            const parentRef = doc(db, parentsCollection, user.uid);
-            const parentSnap = await getDoc(parentRef);
-            if (parentSnap.exists()) {
-              const ids = parentSnap.data().linkedPlayers || [];
-              for (const pid of ids) {
-                const pDoc = await getDoc(doc(db, playersCollection, pid));
-                if (pDoc.exists()) {
-                  const player = { id: pDoc.id, ...pDoc.data() };
-                  if (player.season === currentSeason) list.push(player);
-                }
+        }
+
+        else if (userRole === "parent") {
+          const parentRef = doc(db, parentsCollection, user.uid);
+          const parentSnap = await getDoc(parentRef);
+
+          if (parentSnap.exists()) {
+            const ids = parentSnap.data()?.linkedPlayers || [];
+
+            for (const pid of ids) {
+              const pSnap = await getDoc(doc(db, playersCollection, pid));
+              if (pSnap.exists()) {
+                const p = { id: pSnap.id, ...pSnap.data() };
+                if (p.season === currentSeason) list.push(p);
               }
             }
           }
@@ -85,7 +92,6 @@ export default function usePlayers(parentProvidedLinkedPlayers = []) {
     authLoading,
     user?.uid,
     userRole,
-    parentProvidedLinkedPlayers.length,
     currentSeason,
     playersCollection,
     parentsCollection,
@@ -93,4 +99,3 @@ export default function usePlayers(parentProvidedLinkedPlayers = []) {
 
   return { players, setPlayers, loading };
 }
-

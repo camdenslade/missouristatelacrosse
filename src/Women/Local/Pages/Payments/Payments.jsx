@@ -90,36 +90,51 @@ export default function WPayments() {
 
   useEffect(() => {
     if (!linkedPlayerId) return;
+
+    const validProgram =
+        (isWomenSite && linkedPlayerId.startsWith("W")) ||
+        (!isWomenSite && !linkedPlayerId.startsWith("W"));
+
+    if (!validProgram) {
+        setLinkedPlayer(null);
+        dispatch({ type: "SET_SELECTED_PLAYER", player: null });
+        return;
+    }
+
     (async () => {
-      const pref = doc(db, playersCollection, linkedPlayerId);
-      const psnap = await getDoc(pref);
-      if (psnap.exists()) {
+        const pref = doc(db, playersCollection, linkedPlayerId);
+        const psnap = await getDoc(pref);
+        if (psnap.exists()) {
         const p = { id: psnap.id, ...psnap.data() };
         setLinkedPlayer(p);
         dispatch({ type: "SET_SELECTED_PLAYER", player: p });
-      }
+        } else {
+        setLinkedPlayer(null);
+        dispatch({ type: "SET_SELECTED_PLAYER", player: null });
+        }
     })();
-  }, [linkedPlayerId, playersCollection]);
+    }, [linkedPlayerId, playersCollection, isWomenSite]);
 
   useEffect(() => {
     if (state.selectedPlayer || !seasonPlayers.length) return;
-
     let match = null;
-    if (linkedPlayer) match = linkedPlayer;
-    if (!match && programRole === "parent" && seasonPlayers.length > 0) match = seasonPlayers[0];
-    if (!match && programRole === "admin" && seasonPlayers.length > 0) match = seasonPlayers[0];
-    if (!match && seasonPlayers.length > 0) match = seasonPlayers[0];
-
-    if (match) dispatch({ type: "SET_SELECTED_PLAYER", player: match });
-  }, [seasonPlayers, state.selectedPlayer, programRole, linkedPlayer]);
-
-  useEffect(() => {
-    if (!state.selectedPlayerId) return;
-    const p = seasonPlayers.find((x) => x.id === state.selectedPlayerId) || null;
-    if (p && p.id !== state.selectedPlayer?.id) {
-      dispatch({ type: "SET_SELECTED_PLAYER", player: p });
+    if (linkedPlayer) {
+        match = linkedPlayer;
     }
-  }, [state.selectedPlayerId, seasonPlayers, state.selectedPlayer]);
+    if (user?.email === "camdenslade@outlook.com" && program === "women") return;
+
+    if (!match && ["admin", "parent"].includes(programRole) && seasonPlayers.length > 0) {
+        match = seasonPlayers[0];
+    }
+    if (programRole === "player" && !match) {
+        match = null;
+    }
+
+    if (match) {
+        dispatch({ type: "SET_SELECTED_PLAYER", player: match });
+    }
+    }, [seasonPlayers, state.selectedPlayer, programRole, linkedPlayer]);
+
 
   useEffect(() => {
     if (programRole !== "admin" || !seasonPlayers.length) return;
