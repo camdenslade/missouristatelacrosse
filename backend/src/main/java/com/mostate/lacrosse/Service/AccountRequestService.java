@@ -118,9 +118,14 @@ public class AccountRequestService {
 
             String collection = effectiveProgram.equals("women") ? "playersw" : "players";
             String playerId = null;
+            String currentSeason = LocalDate.now().getMonthValue() >= 7
+                    ? (LocalDate.now().getYear() % 100) + "-" + ((LocalDate.now().getYear() + 1) % 100)
+                    : ((LocalDate.now().getYear() - 1) % 100) + "-" + (LocalDate.now().getYear() % 100);
+
 
             ApiFuture<QuerySnapshot> playerQuery = db.collection(collection)
                     .whereEqualTo("name", req.getDisplayName())
+                     .whereEqualTo("season", currentSeason)
                     .get();
 
             List<QueryDocumentSnapshot> playerDocs = playerQuery.get().getDocuments();
