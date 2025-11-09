@@ -1,22 +1,22 @@
 // src/Men/Local/Pages/Home/Articles/ManageArticles.jsx
 import {
-  collection,
   addDoc,
-  updateDoc,
+  collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   orderBy,
   query,
   serverTimestamp,
-  getDoc,
+  updateDoc,
 } from "firebase/firestore";
 import { useEffect, useReducer } from "react";
 
-import ArticleForm from "./ArticleForm.jsx";
-import ArticleList from "./ArticleList.jsx";
 import { useAuth } from "../../../../../Global/Context/AuthContext.jsx";
 import { db } from "../../../../../Services/firebaseConfig.js";
+import ArticleForm from "./ArticleForm.jsx";
+import ArticleList from "./ArticleList.jsx";
 
 const initialState = {
   articles: [],
@@ -117,7 +117,7 @@ export default function ManageArticlesModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/30 z-[9999] flex items-center justify-center p-4">
       <div className="bg-white rounded-lg w-full max-w-3xl p-6 relative overflow-y-auto max-h-[90vh]">
         <button
           className="absolute top-2 right-2 text-gray-700 font-bold text-xl"

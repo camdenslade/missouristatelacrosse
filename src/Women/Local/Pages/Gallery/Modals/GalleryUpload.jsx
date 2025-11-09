@@ -76,7 +76,7 @@ export default function GalleryUploadModal({ onClose, onUpload }){
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/30 z-[9999] flex items-center justify-center p-4"
       onDragOver={(e) => e.preventDefault()}
     >
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg relative p-6">

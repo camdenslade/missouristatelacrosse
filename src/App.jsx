@@ -15,6 +15,7 @@ import NotFound from "./Global/NotFound";
 import AdminDashboard from "./Men/Local/Admin/AdminDash";
 import Donate from "./Men/Local/Pages/Donate/Donate";
 import Gallery from "./Men/Local/Pages/Gallery/GalleryMain";
+import ManageArticlesModal from "./Men/Local/Pages/Home/Articles/ManageArticles.jsx";
 import Home from "./Men/Local/Pages/Home/HomeWrapper";
 import Payments from "./Men/Local/Pages/Payments/Payments";
 import RecruitmentForm from "./Men/Local/Pages/Recruitment/Recruitment";
@@ -27,10 +28,12 @@ import Checkout from "./Men/Local/Pages/Store/Checkout/Checkout";
 import CheckoutSuccess from "./Men/Local/Pages/Store/Checkout/CheckoutSuccess";
 import Store from "./Men/Local/Pages/Store/Store";
 
+
 // Women components
 import WAdminDashboard from "./Women/Local/Admin/AdminDash";
 import WDonate from "./Women/Local/Pages/Donate/Donate";
 import WGallery from "./Women/Local/Pages/Gallery/GalleryMain";
+import WManageArticlesModal from "./Women/Local/Pages/Home/Articles/ManageArticles.jsx";
 import WHome from "./Women/Local/Pages/Home/HomeWrapper";
 import WPayments from "./Women/Local/Pages/Payments/Payments";
 import WRecruitmentForm from "./Women/Local/Pages/Recruitment/Recruitment";
@@ -47,6 +50,8 @@ export default function App() {
   const { user, roles } = useAuth();
   const [cart, setCart] = useState([]);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showManageArticles, setShowManageArticles] = useState(false);
+  const [showManageArticlesWomen, setShowManageArticlesWomen] = useState(false);
 
   const menRole = roles?.men;
   const womenRole = roles?.women;
@@ -63,7 +68,17 @@ export default function App() {
   return (
     <Router>
       <div className="min-h-screen flex flex-col bg-gray-50">
-        <Header onAuthOpen={() => setShowAuthModal(true)} />
+        <Header
+            onAuthOpen={() => setShowAuthModal(true)}
+            onManageArticles={() => {
+              setShowManageArticles(true);
+            }}
+            onManageArticlesWomen={() => {
+              setShowManageArticlesWomen(true);
+            }}
+          />
+
+
         <main className="flex-1 w-full px-4 py-8">
           <Routes>
             {/* Men routes */}
@@ -108,6 +123,8 @@ export default function App() {
           </Routes>
         </main>
         {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
+        {showManageArticles && (<ManageArticlesModal isOpen={showManageArticles} onClose={() => setShowManageArticles(false)} />)}
+        {showManageArticlesWomen && (<WManageArticlesModal isOpen={showManageArticlesWomen} onClose={() => setShowManageArticlesWomen(false)} />)}
         <Footer />
       </div>
     </Router>

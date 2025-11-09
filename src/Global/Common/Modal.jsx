@@ -9,7 +9,7 @@ export default function Modal({ children, onClose, size = "md" }) {
 
   return (
     <div
-      className="fixed inset-0 flex justify-center items-center z-50 p-2 sm:p-4 overflow-y-auto pointer-events-none"
+      className="fixed inset-0 bg-black/30 z-[9999] flex items-center justify-center p-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) {
           e.currentTarget.dataset.closing = "true";

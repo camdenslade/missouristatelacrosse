@@ -26,7 +26,7 @@ function reducer(state, action) {
   }
 }
 
-export default function Header({ onManageArticles, onAuthOpen }) {
+export default function Header({ onManageArticles, onManageArticlesWomen, onAuthOpen }) {
   const { user, roles, userName, signOut } = useAuth();
   const [state, dispatch] = useReducer(reducer, initialState);
   const { showUserMenu, mobileMenuOpen } = state;
@@ -42,6 +42,7 @@ export default function Header({ onManageArticles, onAuthOpen }) {
   const isParent = programRole === "parent";
   const canSeePayments = user && (isAdmin || isPlayer || isParent);
   const isGlobalAdmin = roles?.men === "admin" || roles?.women === "admin";
+  
 
   const linkHover =
     "hover:text-[#D3D3D3] transition-colors duration-200 ease-in-out";
@@ -127,9 +128,11 @@ export default function Header({ onManageArticles, onAuthOpen }) {
                   <button
                     className="block w-full px-4 py-2 text-left hover:bg-gray-200"
                     onClick={() => {
-                      onManageArticles?.();
-                      dispatch({ type: "CLOSE_USER_MENU" });
-                    }}
+                    (isWomen ? onManageArticlesWomen : onManageArticles)?.();
+                    dispatch({ type: "CLOSE_USER_MENU" });
+                  }}
+
+
                   >
                     Manage Articles
                   </button>
@@ -180,6 +183,7 @@ export default function Header({ onManageArticles, onAuthOpen }) {
         userName={userName}
         signOut={signOut}
         onManageArticles={onManageArticles}
+        onManageArticlesWomen={onManageArticlesWomen}
         onAuthOpen={onAuthOpen}
         canSeePayments={canSeePayments}
         base={base}

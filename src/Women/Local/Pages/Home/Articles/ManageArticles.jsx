@@ -40,7 +40,7 @@ function reducer(state, action){
   }
 }
 
-export default function ManageArticlesModal({ isOpen, onClose }) {
+export default function WManageArticlesModal({ isOpen, onClose }) {
   const { user } = useAuth();
   const [state, dispatch] = useReducer(reducer, initialState);
   const { articles, editingArticle, hasPermission, loadingRole } = state;
@@ -117,7 +117,7 @@ export default function ManageArticlesModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/30 z-[9999] flex items-center justify-center p-4">
       <div className="bg-white rounded-lg w-full max-w-3xl p-6 relative overflow-y-auto max-h-[90vh]">
         <button
           className="absolute top-2 right-2 text-gray-700 font-bold text-xl"
