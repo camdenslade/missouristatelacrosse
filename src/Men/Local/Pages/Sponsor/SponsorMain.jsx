@@ -52,7 +52,7 @@ export default function SponsorMain() {
       </h3>
 
       <p className="mb-4">
-        We are excited to introduce to the <strong>Missouri State Men’s Lacrosse team</strong>, a
+        We are excited to introduce you to the <strong>Missouri State Men’s Lacrosse team</strong>, a
         local 501(c)(3) organization in search of opportunities to engage with our community. We are
         reaching out to local businesses to explore potential sponsorship opportunities for our
         team’s upcoming season.

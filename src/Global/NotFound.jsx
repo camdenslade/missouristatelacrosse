@@ -1,14 +1,27 @@
+// src/Global/NotFound.jsx
 import { motion } from "framer-motion";
 import { Helmet } from "react-helmet";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import routes from "./routesList";
 
 export default function NotFound() {
+  const location = useLocation();
+  const knownRoutes = routes.map((r) => r.path);
+
+  const isKnown = knownRoutes.some((path) => {
+    const pattern = "^" + path.replace(/:\w+/g, "[^/]+") + "$";
+    const regex = new RegExp(pattern);
+    return regex.test(location.pathname);
+  });
+
   return (
     <>
-      <Helmet>
-        <meta name="robots" content="noindex" />
-        <title>404 Not Found | Missouri State Lacrosse</title>
-      </Helmet>
+      {!isKnown && (
+        <Helmet>
+          <meta name="robots" content="noindex" />
+          <title>404 Not Found | Missouri State Lacrosse</title>
+        </Helmet>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
