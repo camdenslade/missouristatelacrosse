@@ -88,6 +88,12 @@ export default function useStore(cart, containerId = "paypal-buttons-container")
       },
 
       onApprove: async (data) => {
+        const missingSizes = safeCart.filter((item) => !item.size || item.size.trim() === "");
+          if (missingSizes.length > 0) {
+            alert("Please select a size for all items before checking out.");
+            throw new Error("Missing size selection for one or more items.");
+          }
+
         const orderID = data.orderID || data.id;
         const captureRes = await fetch(
           `${API_BASE}/api/paypal/capture?orderID=${orderID}`,
@@ -113,6 +119,7 @@ export default function useStore(cart, containerId = "paypal-buttons-container")
               productId: item.id,
               variantId: item.variantId,
               quantity: item.quantity || 1,
+              size: item.size || "",
             })),
             shipping: {
               firstName: payerName.given_name || "",

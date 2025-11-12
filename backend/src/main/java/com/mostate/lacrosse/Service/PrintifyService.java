@@ -40,24 +40,80 @@ public class PrintifyService {
             HttpEntity<Void> request = new HttpEntity<>(headers);
             ResponseEntity<Map> response = rest.exchange(url, HttpMethod.GET, request, Map.class);
 
-            List<Map<String, Object>> data = (List<Map<String, Object>>) response.getBody().get("data");
-            if (data == null) return List.of();
+            Object dataRaw = response.getBody() != null ? response.getBody().get("data") : null;
+            if (!(dataRaw instanceof List<?> dataList)) return List.of();
 
-            return data.stream().map(p -> {
-                Map<String, Object> firstVariant = ((List<Map<String, Object>>) p.get("variants")).get(0);
-                Map<String, Object> product = new HashMap<>();
-                product.put("id", p.get("id"));
-                product.put("title", p.get("title"));
+            List<Map<String, Object>> products = new java.util.ArrayList<>();
 
-                List<Map<String, Object>> images = (List<Map<String, Object>>) p.get("images");
-                product.put("image", (images != null && !images.isEmpty()) ? images.get(0).get("src") : null);
+            for (Object productObj : dataList) {
+                if (!(productObj instanceof Map<?, ?> p)) continue;
 
-                double basePrice = ((Number) firstVariant.get("price")).doubleValue() / 100.0;
-                double adjusted = Math.round(((basePrice + 5) / 5)) * 5;
-                product.put("price", String.format("%.2f", adjusted));
-                product.put("variantId", firstVariant.get("id"));
-                return product;
-            }).collect(Collectors.toList());
+                String id = String.valueOf(p.get("id"));
+                String title = String.valueOf(p.get("title"));
+
+                List<Map<String, Object>> images = new java.util.ArrayList<>();
+                Object imgsRaw = p.get("images");
+                if (imgsRaw instanceof List<?> imgs && !imgs.isEmpty()) {
+                    Object first = imgs.get(0);
+                    if (first instanceof Map<?, ?> m && m.get("src") != null) {
+                        images.add(Map.of("src", String.valueOf(m.get("src"))));
+                    }
+                }
+
+                List<Map<String, Object>> variantList = new java.util.ArrayList<>();
+                Object variantsRaw = p.get("variants");
+                if (variantsRaw instanceof List<?> variants) {
+                    for (Object vObj : variants) {
+                        if (!(vObj instanceof Map<?, ?> v)) continue;
+
+                        Object idObj = v.get("id");
+                        long variantId = (idObj instanceof Number)
+                                ? ((Number) idObj).longValue()
+                                : Long.parseLong(String.valueOf(idObj));
+
+                        List<String> readableOptions = new java.util.ArrayList<>();
+                        Object optionValuesRaw = v.get("option_values");
+                        if (optionValuesRaw instanceof List<?> optionValues) {
+                            for (Object ovObj : optionValues) {
+                                if (ovObj instanceof Map<?, ?> ov) {
+                                    Object val = ov.get("value");
+                                    if (val != null) readableOptions.add(val.toString());
+                                }
+                            }
+                        }
+
+                        if (readableOptions.isEmpty() && v.get("title") != null) {
+                            String t = v.get("title").toString();
+                            readableOptions = List.of(t.split(" / "));
+                        }
+
+                        if (readableOptions.isEmpty()) readableOptions = List.of("Default");
+
+                        double basePrice = 0;
+                        Object priceObj = v.get("price");
+                        if (priceObj instanceof Number n) basePrice = n.doubleValue() / 100.0;
+                        else if (priceObj != null)
+                            basePrice = Double.parseDouble(priceObj.toString()) / 100.0;
+
+                        double adjusted = Math.round(((basePrice + 5) / 5)) * 5;
+
+                        variantList.add(Map.of(
+                                "id", variantId,
+                                "options", readableOptions,
+                                "price", (int) (adjusted * 100)
+                        ));
+                    }
+                }
+
+                products.add(Map.of(
+                        "id", id,
+                        "title", title,
+                        "images", images,
+                        "variants", variantList
+                ));
+            }
+
+            return products;
 
         } catch (Exception e) {
             e.printStackTrace();

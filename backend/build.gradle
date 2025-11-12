@@ -33,6 +33,8 @@ dependencies {
     implementation 'software.amazon.awssdk:regions:2.25.36'
     implementation 'software.amazon.awssdk:core:2.25.0'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
 }
 
 tasks.withType(Test) {
