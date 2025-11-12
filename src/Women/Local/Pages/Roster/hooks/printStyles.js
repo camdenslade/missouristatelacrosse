@@ -7,7 +7,7 @@ export const rosterPrintStyle = `
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
-    nav, header, footer, .footer, .no-print, .print\\:hidden, select, button {
+    nav, header, footer, .footer, .no-print, .print\\:hidden, select, .print-button {
       display: none !important;
       visibility: hidden !important;
     }
@@ -52,3 +52,4 @@ export const rosterPrintStyle = `
     }
   }
 `;
+

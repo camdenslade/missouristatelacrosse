@@ -9,7 +9,7 @@ import { formatSeason, generateSeasonOptions } from "../hooks/seasonUtils.js";
 
 const CLASS_OPTIONS = ["Freshman", "Sophomore", "Junior", "Senior", "Graduate"];
 
-const initialForm = (editingItem, season) => ({
+const initialForm = (editingItem, selectedSeason) => ({
   name: editingItem?.name || "",
   number: editingItem?.number || "",
   position: editingItem?.position || "",
@@ -23,15 +23,16 @@ const initialForm = (editingItem, season) => ({
   bio: editingItem?.bio || "",
   photo: editingItem?.photo || null,
   userID: editingItem?.userID || "",
-  season: formatSeason(editingItem?.season || season),
+  season: editingItem?.season || selectedSeason,
 });
 
-function formReducer(state, action){
-  switch (action.type){
+function formReducer(state, action) {
+  switch (action.type) {
     case "SET":
       return { ...state, [action.field]: action.value };
     case "RESET":
-      return initialForm(action.editingItem, action.isCoach, action.season);
+      return initialForm(action.editingItem, action.selectedSeason);
+
     default:
       return state;
   }
@@ -46,8 +47,9 @@ export default function RosterFormModal({
 }) {
   const [formData, dispatch] = useReducer(
     formReducer,
-    initialForm(editingItem, isCoach, selectedSeason)
+    initialForm(editingItem, selectedSeason)
   );
+
   const [previewPhoto, setPreviewPhoto] = useState(editingItem?.photo || null);
   const [uploadProgress, setUploadProgress] = useState(null);
   const [lookupStatus, setLookupStatus] = useState("");
@@ -56,9 +58,9 @@ export default function RosterFormModal({
   const { savePlayer, findPlayerByName } = usePlayers();
   const { saveCoach } = useCoaches();
 
-
   const handleInputChange = (e) => {
     const { name, value, files } = e.target;
+
     if (files && files[0]) {
       dispatch({ type: "SET", field: name, value: files[0] });
       setPreviewPhoto(URL.createObjectURL(files[0]));
@@ -73,27 +75,30 @@ export default function RosterFormModal({
     }
   };
 
-
   const lookupExistingPlayer = async (nameValue) => {
     if (!nameValue?.trim() || nameValue.trim().length < 2) return;
+
     try {
       setLookupStatus("Searching...");
       const existing = await findPlayerByName(nameValue);
-      if (existing){
+
+      if (existing) {
         dispatch({ type: "SET", field: "hometown", value: existing.hometown || "" });
         dispatch({ type: "SET", field: "state", value: existing.state || "" });
         dispatch({ type: "SET", field: "highSchool", value: existing.highSchool || "" });
         dispatch({ type: "SET", field: "previousSchool", value: existing.previousSchool || "" });
         dispatch({ type: "SET", field: "classYear", value: existing.classYear || "" });
-        if (existing.photo){
+
+        if (existing.photo) {
           dispatch({ type: "SET", field: "photo", value: existing.photo });
           setPreviewPhoto(existing.photo);
         }
+
         setLookupStatus(`Imported ${existing.name}'s info`);
-      } else{
+      } else {
         setLookupStatus("No existing player found");
       }
-    } catch (err){
+    } catch (err) {
       console.error("Lookup error:", err);
       setLookupStatus("Error searching player");
     }
@@ -104,10 +109,9 @@ export default function RosterFormModal({
     setPreviewPhoto(null);
   };
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try{
+    try {
       let photoURL = "";
 
       if (formData.photo instanceof File) {
@@ -127,9 +131,9 @@ export default function RosterFormModal({
       if (isCoach) await saveCoach(finalData, editingItem?.id);
       else await savePlayer(finalData, editingItem?.id);
 
-      onSaved();
+      await onSaved();
       onClose();
-    } catch (err){
+    } catch (err) {
       console.error("Error saving roster entry:", err);
       alert("Failed to save. Please try again.");
     }
@@ -151,7 +155,9 @@ export default function RosterFormModal({
             onChange={handleInputChange}
             className="p-2 border text-lg w-full"
           />
-          {lookupStatus && <p className="text-sm text-gray-600 mt-1 italic">{lookupStatus}</p>}
+          {lookupStatus && (
+            <p className="text-sm text-gray-600 mt-1 italic">{lookupStatus}</p>
+          )}
         </div>
 
         {/* Season */}
@@ -196,7 +202,9 @@ export default function RosterFormModal({
             ))}
 
             <div>
-              <label className="block text-gray-700 font-semibold mb-1">Class Year</label>
+              <label className="block text-gray-700 font-semibold mb-1">
+                Class Year
+              </label>
               <select
                 name="classYear"
                 value={formData.classYear}
@@ -245,7 +253,11 @@ export default function RosterFormModal({
         />
         {previewPhoto && (
           <div className="flex flex-col items-center">
-            <img src={previewPhoto} alt="Preview" className="w-32 h-48 object-cover mt-2" />
+            <img
+              src={previewPhoto}
+              alt="Preview"
+              className="w-32 h-48 object-cover mt-2"
+            />
             <button
               type="button"
               onClick={handleRemoveImage}
@@ -254,7 +266,9 @@ export default function RosterFormModal({
               Remove
             </button>
             {uploadProgress && (
-              <p className="text-sm text-gray-600 mt-1">Uploading: {uploadProgress}%</p>
+              <p className="text-sm text-gray-600 mt-1">
+                Uploading: {uploadProgress}%
+              </p>
             )}
           </div>
         )}

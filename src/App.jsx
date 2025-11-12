@@ -1,17 +1,13 @@
 // src/App.jsx
 import { useState } from "react";
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
-
-import { useAuth } from "./Global/Context/AuthContext";
-
 import AuthModal from "./Global/Authentication/AuthModal";
 import PendingApproval from "./Global/Authentication/PendingApproval";
 import ProtectedRoute from "./Global/Authentication/ProtectedRoutes";
+import { useAuth } from "./Global/Context/AuthContext";
 import Footer from "./Global/Layout/Footer";
 import Header from "./Global/Layout/Header";
 import NotFound from "./Global/NotFound";
-
-// Men components
 import AdminDashboard from "./Men/Local/Admin/AdminDash";
 import Donate from "./Men/Local/Pages/Donate/Donate";
 import Gallery from "./Men/Local/Pages/Gallery/GalleryMain";
@@ -27,9 +23,6 @@ import SponsorMain from "./Men/Local/Pages/Sponsor/SponsorMain";
 import Checkout from "./Men/Local/Pages/Store/Checkout/Checkout";
 import CheckoutSuccess from "./Men/Local/Pages/Store/Checkout/CheckoutSuccess";
 import Store from "./Men/Local/Pages/Store/Store";
-
-
-// Women components
 import WAdminDashboard from "./Women/Local/Admin/AdminDash";
 import WDonate from "./Women/Local/Pages/Donate/Donate";
 import WGallery from "./Women/Local/Pages/Gallery/GalleryMain";
@@ -52,7 +45,6 @@ export default function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showManageArticles, setShowManageArticles] = useState(false);
   const [showManageArticlesWomen, setShowManageArticlesWomen] = useState(false);
-
   const menRole = roles?.men;
   const womenRole = roles?.women;
 
@@ -69,19 +61,12 @@ export default function App() {
     <Router>
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Header
-            onAuthOpen={() => setShowAuthModal(true)}
-            onManageArticles={() => {
-              setShowManageArticles(true);
-            }}
-            onManageArticlesWomen={() => {
-              setShowManageArticlesWomen(true);
-            }}
-          />
-
-
+          onAuthOpen={() => setShowAuthModal(true)}
+          onManageArticles={() => setShowManageArticles(true)}
+          onManageArticlesWomen={() => setShowManageArticlesWomen(true)}
+        />
         <main className="flex-1 w-full px-4 py-8">
           <Routes>
-            {/* Men routes */}
             <Route path="/" element={<Home />} />
             <Route path="/schedule" element={<Navigate to={`/schedule/${activeSeason}`} replace />} />
             <Route path="/schedule/:season" element={<Schedule user={user} userRole={menRole} />} />
@@ -99,8 +84,6 @@ export default function App() {
             <Route path="/checkout-success" element={<CheckoutSuccess />} />
             <Route path="/pending-approval" element={<PendingApproval />} />
             <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
-
-            {/* Women routes */}
             <Route path="/women" element={<WHome />} />
             <Route path="/women/schedule" element={<Navigate to={`/women/schedule/${activeSeason}`} replace />} />
             <Route path="/women/schedule/:season" element={<WSchedule user={user} userRole={womenRole} />} />
@@ -117,9 +100,7 @@ export default function App() {
             <Route path="/women/checkout" element={<WCheckout cart={cart} setCart={setCart} />} />
             <Route path="/women/checkout-success" element={<WCheckoutSuccess />} />
             <Route path="/women/admin" element={<ProtectedRoute allowedRoles={["admin"]}><WAdminDashboard /></ProtectedRoute>} />
-
-            {/* 404 */}
-            <Route path="*" element={<NotFound Found />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
         {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}

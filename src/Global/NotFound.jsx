@@ -6,12 +6,16 @@ import routes from "./routesList";
 
 export default function NotFound() {
   const location = useLocation();
+
+  const normalizedPath =
+    location.pathname !== "/" ? location.pathname.replace(/\/+$/, "") : "/";
+
   const knownRoutes = routes.map((r) => r.path);
 
   const isKnown = knownRoutes.some((path) => {
     const pattern = "^" + path.replace(/:\w+/g, "[^/]+") + "$";
     const regex = new RegExp(pattern);
-    return regex.test(location.pathname);
+    return regex.test(normalizedPath);
   });
 
   return (

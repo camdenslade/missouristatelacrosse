@@ -46,7 +46,7 @@ export default function usePlayers(){
       const data = snapshot.docs.map((d) => ({
         id: d.id,
         ...d.data(),
-        season: formatSeason(d.data().season),
+        season: d.data().season,
         balance: d.data().balance ?? 0,
       }));
 
