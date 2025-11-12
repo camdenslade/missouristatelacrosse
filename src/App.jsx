@@ -8,6 +8,8 @@ import { useAuth } from "./Global/Context/AuthContext";
 import Footer from "./Global/Layout/Footer";
 import Header from "./Global/Layout/Header";
 import NotFound from "./Global/NotFound";
+
+
 import AdminDashboard from "./Men/Local/Admin/AdminDash";
 import Donate from "./Men/Local/Pages/Donate/Donate";
 import Gallery from "./Men/Local/Pages/Gallery/GalleryMain";
@@ -23,6 +25,8 @@ import SponsorMain from "./Men/Local/Pages/Sponsor/SponsorMain";
 import Checkout from "./Men/Local/Pages/Store/Checkout/Checkout";
 import CheckoutSuccess from "./Men/Local/Pages/Store/Checkout/CheckoutSuccess";
 import Store from "./Men/Local/Pages/Store/Store";
+
+
 import WAdminDashboard from "./Women/Local/Admin/AdminDash";
 import WDonate from "./Women/Local/Pages/Donate/Donate";
 import WGallery from "./Women/Local/Pages/Gallery/GalleryMain";
@@ -65,47 +69,149 @@ export default function App() {
           onManageArticles={() => setShowManageArticles(true)}
           onManageArticlesWomen={() => setShowManageArticlesWomen(true)}
         />
+
         <main className="flex-1 w-full px-4 py-8">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/schedule" element={<Navigate to={`/schedule/${activeSeason}`} replace />} />
-            <Route path="/schedule/:season" element={<Schedule user={user} userRole={menRole} />} />
-            <Route path="/roster" element={<Navigate to={`/roster/${activeSeason}`} replace />} />
-            <Route path="/roster/:season" element={<Roster user={user} userRole={menRole} />} />
-            <Route path="/payments" element={<ProtectedRoute allowedRoles={["admin","player","parent"]}><Payments user={user} userRole={menRole} /></ProtectedRoute>} />
+            <Route
+              path="/schedule"
+              element={<Navigate to={`/schedule/${activeSeason}`} replace />}
+            />
+            <Route
+              path="/schedule/:season"
+              element={<Schedule user={user} userRole={menRole} />}
+            />
+            <Route
+              path="/roster"
+              element={<Navigate to={`/roster/${activeSeason}`} replace />}
+            />
+            <Route
+              path="/roster/:season"
+              element={<Roster user={user} userRole={menRole} />}
+            />
+            <Route
+              path="/payments"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "player", "parent"]}>
+                  <Payments user={user} userRole={menRole} />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/store" element={<Store cart={cart} setCart={setCart} />} />
             <Route path="/donate" element={<Donate />} />
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/sponsorships" element={<SponsorMain />} />
             <Route path="/recruitment" element={<RecruitmentForm userRole={menRole} />} />
-            <Route path="/recruitment/submissions" element={<ProtectedRoute allowedRoles={["admin","player"]}><RecruitmentSubmissions userRole={menRole} /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute allowedRoles={["admin","player","parent"]}><Settings userRole={menRole} /></ProtectedRoute>} />
+            <Route
+              path="/recruitment/submissions"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "player"]}>
+                  <RecruitmentSubmissions userRole={menRole} />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "player", "parent"]}>
+                  <Settings userRole={menRole} />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/checkout" element={<Checkout cart={cart} setCart={setCart} />} />
             <Route path="/checkout-success" element={<CheckoutSuccess />} />
             <Route path="/pending-approval" element={<PendingApproval />} />
-            <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
+
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+
             <Route path="/women" element={<WHome />} />
-            <Route path="/women/schedule" element={<Navigate to={`/women/schedule/${activeSeason}`} replace />} />
-            <Route path="/women/schedule/:season" element={<WSchedule user={user} userRole={womenRole} />} />
-            <Route path="/women/roster" element={<Navigate to={`/women/roster/${activeSeason}`} replace />} />
-            <Route path="/women/roster/:season" element={<WRoster user={user} userRole={womenRole} />} />
-            <Route path="/women/payments" element={<ProtectedRoute allowedRoles={["admin","player","parent"]}><WPayments user={user} userRole={womenRole} /></ProtectedRoute>} />
+            <Route
+              path="/women/schedule"
+              element={<Navigate to={`/women/schedule/${activeSeason}`} replace />}
+            />
+            <Route
+              path="/women/schedule/:season"
+              element={<WSchedule user={user} userRole={womenRole} />}
+            />
+            <Route
+              path="/women/roster"
+              element={<Navigate to={`/women/roster/${activeSeason}`} replace />}
+            />
+            <Route
+              path="/women/roster/:season"
+              element={<WRoster user={user} userRole={womenRole} />}
+            />
+            <Route
+              path="/women/payments"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "player", "parent"]}>
+                  <WPayments user={user} userRole={womenRole} />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/women/store" element={<WStore cart={cart} setCart={setCart} />} />
             <Route path="/women/donate" element={<WDonate />} />
             <Route path="/women/gallery" element={<WGallery />} />
             <Route path="/women/sponsorships" element={<WSponsorMain />} />
-            <Route path="/women/recruitment" element={<WRecruitmentForm userRole={womenRole} />} />
-            <Route path="/women/recruitment/submissions" element={<ProtectedRoute allowedRoles={["admin","player"]}><WRecruitmentSubmissions userRole={womenRole} /></ProtectedRoute>} />
-            <Route path="/women/settings" element={<ProtectedRoute allowedRoles={["admin","player","parent"]}><WSettings userRole={womenRole} /></ProtectedRoute>} />
-            <Route path="/women/checkout" element={<WCheckout cart={cart} setCart={setCart} />} />
+            <Route
+              path="/women/recruitment"
+              element={<WRecruitmentForm userRole={womenRole} />}
+            />
+            <Route
+              path="/women/recruitment/submissions"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "player"]}>
+                  <WRecruitmentSubmissions userRole={womenRole} />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/women/settings"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "player", "parent"]}>
+                  <WSettings userRole={womenRole} />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/women/checkout"
+              element={<WCheckout cart={cart} setCart={setCart} />}
+            />
             <Route path="/women/checkout-success" element={<WCheckoutSuccess />} />
-            <Route path="/women/admin" element={<ProtectedRoute allowedRoles={["admin"]}><WAdminDashboard /></ProtectedRoute>} />
+            <Route
+              path="/women/admin"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <WAdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
+
         {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
-        {showManageArticles && (<ManageArticlesModal isOpen={showManageArticles} onClose={() => setShowManageArticles(false)} />)}
-        {showManageArticlesWomen && (<WManageArticlesModal isOpen={showManageArticlesWomen} onClose={() => setShowManageArticlesWomen(false)} />)}
+        {showManageArticles && (
+          <ManageArticlesModal
+            isOpen={showManageArticles}
+            onClose={() => setShowManageArticles(false)}
+          />
+        )}
+        {showManageArticlesWomen && (
+          <WManageArticlesModal
+            isOpen={showManageArticlesWomen}
+            onClose={() => setShowManageArticlesWomen(false)}
+          />
+        )}
+
         <Footer />
       </div>
     </Router>
