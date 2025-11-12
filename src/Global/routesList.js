@@ -17,7 +17,6 @@ export default [
   { path: "/checkout-success" },
   { path: "/pending-approval" },
   { path: "/admin" },
-  { path: "/fundraiser" },
 
   { path: "/women" },
   { path: "/women/" },
@@ -36,5 +35,4 @@ export default [
   { path: "/women/checkout" },
   { path: "/women/checkout-success" },
   { path: "/women/admin" },
-  { path: "/women/fundraiser" },
 ];
