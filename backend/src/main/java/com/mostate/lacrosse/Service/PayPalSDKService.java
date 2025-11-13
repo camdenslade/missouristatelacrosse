@@ -83,7 +83,7 @@ public class PayPalSDKService {
                     "landing_page": "BILLING",
                     "user_action": "PAY_NOW",
                     "return_url": "https://missouristatelacrosse-cc913.web.app/checkout-success",
-                    "cancel_url": "https://missouristatelacrosse-cc913.web.app/teamstore"
+                    "cancel_url": "https://missouristatelacrosse-cc913.web.app/store"
                   }
                 }
                 """.formatted(amount);

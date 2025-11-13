@@ -120,7 +120,7 @@ export default function CheckoutSuccess() {
         <h1 className="text-2xl font-bold mb-4">Error</h1>
         <p className="text-red-600">{error}</p>
         <button
-          onClick={() => navigate("/teamstore")}
+          onClick={() => navigate("/store")}
           className="mt-6 px-4 py-2 bg-[#5E0009] text-white rounded hover:bg-red-800"
         >
           Back to Store
@@ -164,7 +164,7 @@ export default function CheckoutSuccess() {
 
       <div className="text-center mt-6">
         <button
-          onClick={() => navigate("/teamstore")}
+          onClick={() => navigate("/store")}
           className="px-6 py-2 bg-[#5E0009] text-white rounded hover:bg-red-800"
         >
           Back to Store

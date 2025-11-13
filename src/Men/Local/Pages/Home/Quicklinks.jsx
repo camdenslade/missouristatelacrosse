@@ -11,7 +11,7 @@ export default function Quicklinks() {
           <h3 className="text-2xl font-semibold mb-4">Schedule</h3>
           <p>See upcoming games, results, and locations.</p>
         </a>
-        <a href="/teamstore" className="bg-white p-8 rounded-lg shadow hover:shadow-lg transition">
+        <a href="/store" className="bg-white p-8 rounded-lg shadow hover:shadow-lg transition">
           <h3 className="text-2xl font-semibold mb-4">Team Store</h3>
           <p>Shop official Missouri State Lacrosse merchandise.</p>
         </a>

@@ -4,7 +4,7 @@ import API_BASE from "../../../../../Services/API.js";
 
 const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
 
-export default function useStore(cart, containerId = "paypal-buttons-container") {
+export default function useStore(finalTotal, containerId = "paypal-buttons-container") {
   const [paypalLoaded, setPaypalLoaded] = useState(false);
   const [resolvedClientId, setResolvedClientId] = useState(clientId || "");
 
@@ -15,11 +15,11 @@ export default function useStore(cart, containerId = "paypal-buttons-container")
           const res = await fetch(`${API_BASE}/api/paypal/client-id`);
           const data = await res.json();
           if (data?.clientId) setResolvedClientId(data.clientId);
-          else console.error("Failed to resolve PayPal client ID from backend");
         } catch (e) {
-          console.error("Error fetching PayPal client ID:", e);
+          console.log("Error: ", e);
         }
       })();
+      return;
     }
 
     if (window.paypal) {
@@ -27,141 +27,69 @@ export default function useStore(cart, containerId = "paypal-buttons-container")
       return;
     }
 
-    if (!resolvedClientId) {
-      console.error(
-        "PayPal client ID is missing."
-      );
-      return;
-    }
-
     const script = document.createElement("script");
-    script.src = `https://www.paypal.com/sdk/js?client-id=${resolvedClientId}&currency=USD`;
+    script.src = `https://www.paypal.com/sdk/js?client-id=${resolvedClientId}&currency=USD&components=buttons,funding-eligibility&enable-funding=card`;
     script.onload = () => setPaypalLoaded(true);
     document.body.appendChild(script);
 
-    return () => {
-      script.onload = null;
-    };
+    return () => (script.onload = null);
   }, [resolvedClientId]);
 
   useEffect(() => {
-    if (!paypalLoaded || !Array.isArray(cart) || cart.length === 0) return;
+    if (!paypalLoaded) return;
+    if (!finalTotal || finalTotal <= 0) return;
 
     const container = document.getElementById(containerId);
     if (!container) return;
 
     container.innerHTML = "";
 
-    const safeCart = Array.isArray(cart) ? cart : [];
-    const totalPrice = Math.ceil(
-      safeCart.reduce(
-        (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
-        0
-      )
-    );
-
-    if (!totalPrice || totalPrice <= 0) return;
-
     const paypalButtons = window.paypal.Buttons({
       style: {
         layout: "vertical",
         color: "gold",
         shape: "rect",
-        label: "checkout",
+        label: "checkout"
       },
 
-      createOrder: async () => {
+      async createOrder() {
         const res = await fetch(`${API_BASE}/api/paypal/create`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amount: totalPrice.toFixed(2) }),
+          body: JSON.stringify({ amount: finalTotal.toFixed(2) })
         });
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.error || "Failed to create PayPal order");
-        }
+
         const data = await res.json();
-        if (!data?.id) {
-          throw new Error("No order ID returned from backend");
-        }
+        if (!data?.id) throw new Error("Failed to create PayPal order");
         return data.id;
       },
 
-      onApprove: async (data) => {
-        const missingSizes = safeCart.filter((item) => !item.size || item.size.trim() === "");
-          if (missingSizes.length > 0) {
-            alert("Please select a size for all items before checking out.");
-            throw new Error("Missing size selection for one or more items.");
-          }
+      async onApprove(data) {
+        const orderID = data.orderID;
 
-        const orderID = data.orderID || data.id;
         const captureRes = await fetch(
           `${API_BASE}/api/paypal/capture?orderID=${orderID}`,
           { method: "POST" }
         );
-        if (!captureRes.ok) {
-          const errorData = await captureRes.json().catch(() => ({}));
-          throw new Error(errorData.error || "Failed to capture PayPal order");
-        }
-
         const captureData = await captureRes.json();
-        const pu0 = captureData?.purchase_units?.[0];
-        const ship = pu0?.shipping?.address || {};
-        const payer = captureData?.payer || {};
-        const payerName = payer?.name || {};
-
-        const printifyRes = await fetch(`${API_BASE}/api/printify/create-order`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            orderId: captureData?.id,
-            items: safeCart.map((item) => ({
-              productId: item.id,
-              variantId: item.variantId,
-              quantity: item.quantity || 1,
-              size: item.size || "",
-            })),
-            shipping: {
-              firstName: payerName.given_name || "",
-              lastName: payerName.surname || "",
-              email: payer?.email_address || "",
-              phone: "",
-              country: ship.country_code || "",
-              region: ship.admin_area_1 || "",
-              city: ship.admin_area_2 || "",
-              address1: ship.address_line_1 || "",
-              address2: ship.address_line_2 || "",
-              zip: ship.postal_code || "",
-            },
-          }),
-        });
-
-        const printifyJson = await printifyRes.json();
-        if (!printifyRes.ok) {
-          console.error("Printify order error:", printifyJson);
-          alert("Payment captured, but product fulfillment failed.");
-          return;
-        }
 
         alert("Order placed successfully!");
       },
 
-      onError: (err) => {
-        console.error("PayPal error:", err);
+      onError(err) {
+        console.error(err);
         alert("Payment failed. Try again.");
-      },
+      }
     });
 
-    paypalButtons.render(`#${containerId}`);
+    paypalButtons.render(container);
 
     return () => {
-      try {
-        paypalButtons.close();
-      } catch (err) {
-        console.warn("PayPal cleanup error:", err);
+      try { paypalButtons.close(); } catch (e){
+        console.log("Error: ", e);
       }
     };
-  }, [paypalLoaded, cart, containerId, resolvedClientId]);
+  }, [paypalLoaded, finalTotal, containerId, resolvedClientId]);
 
   return { paypalLoaded };
 }
