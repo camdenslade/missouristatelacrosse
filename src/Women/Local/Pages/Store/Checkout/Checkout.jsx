@@ -1,62 +1,43 @@
 // src/Women/Local/Pages/Store/Checkout/Checkout.jsx
-import { useEffect, useState } from "react";
-
+import { useLocation, useNavigate } from "react-router-dom";
 import useStore from "../hooks/useStore.js";
 import CheckoutSummary from "./CheckoutSummary.jsx";
 
-export default function WCheckout({ cart }){
-  const [donation, setDonation] = useState("");
-  const [cartWithDonation, setCartWithDonation] = useState(cart);
+export default function Checkout() {
+  const navigate = useNavigate();
+  const { state } = useLocation();
 
-  useEffect(() => {
-    const parsed = parseFloat(donation);
-    if (isNaN(parsed) || parsed <= 0) {
-      setCartWithDonation(cart);
-    } else {
-      setCartWithDonation([
-        ...cart,
-        {
-          id: "donation",
-          title: "Custom Donation",
-          price: parsed,
-          quantity: 1,
-          variantId: "donation",
-        },
-      ]);
-    }
-  }, [donation, cart]);
+  const cart = state?.cart || [];
+  const donation = state?.donation || 0;
+  const setCart = state?.setCart || null;
 
-  useStore(cartWithDonation, "paypal-buttons-container");
-
-  const total = cartWithDonation.reduce(
+  const cartTotal = cart.reduce(
     (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
     0
   );
+
+  const total = cartTotal + donation;
+
+  useStore(total, "paypal-buttons-container", setCart, navigate);
 
   return (
     <div className="max-w-3xl mx-auto p-6 bg-white rounded shadow animate-fadeIn">
       <h1 className="text-3xl font-bold mb-6 text-[#5E0009]">Checkout</h1>
 
-      <CheckoutSummary cart={cartWithDonation} />
+      <CheckoutSummary cart={cart} />
 
-      <div className="my-4">
-        <label className="block font-medium mb-1">Add a Donation (Optional)</label>
-        <input
-          type="number"
-          min="0"
-          step="1"
-          placeholder="Enter amount"
-          value={donation}
-          onChange={(e) => setDonation(e.target.value)}
-          className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-[#5E0009] outline-none"
-        />
-      </div>
+      <div className="mt-6 border-t pt-4 text-right">
+        <p className="font-semibold text-lg">Subtotal: ${cartTotal.toFixed(2)}</p>
 
-      <div className="mt-6 border-t pt-4">
-        <p className="text-right font-semibold text-lg mb-4">
-          Total: ${total.toFixed(2)}
-        </p>
-        <div id="paypal-buttons-container" />
+        {donation > 0 && (
+          <p className="text-green-700 font-semibold text-lg">
+            Donation: +${donation.toFixed(2)}
+          </p>
+        )}
+
+        <p className="font-bold text-xl mt-2">Total: ${total.toFixed(2)}</p>
+
+        <div id="paypal-buttons-container" className="mt-4" />
       </div>
     </div>
   );

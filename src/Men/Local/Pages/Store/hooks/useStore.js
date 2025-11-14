@@ -4,7 +4,12 @@ import API_BASE from "../../../../../Services/API.js";
 
 const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
 
-export default function useStore(finalTotal, containerId = "paypal-buttons-container") {
+export default function useStore(
+  finalTotal,
+  containerId = "paypal-buttons-container",
+  setCart,
+  navigate
+) {
   const [paypalLoaded, setPaypalLoaded] = useState(false);
   const [resolvedClientId, setResolvedClientId] = useState(clientId || "");
 
@@ -71,9 +76,15 @@ export default function useStore(finalTotal, containerId = "paypal-buttons-conta
           `${API_BASE}/api/paypal/capture?orderID=${orderID}`,
           { method: "POST" }
         );
-        const captureData = await captureRes.json();
+        const order = await captureRes.json();
 
-        alert("Order placed successfully!");
+        if (setCart) {
+          setCart([]);
+        }
+
+        if (navigate) {
+          navigate("/checkout/success", { state: { order } });
+        }
       },
 
       onError(err) {
@@ -85,11 +96,13 @@ export default function useStore(finalTotal, containerId = "paypal-buttons-conta
     paypalButtons.render(container);
 
     return () => {
-      try { paypalButtons.close(); } catch (e){
+      try {
+        paypalButtons.close();
+      } catch (e) {
         console.log("Error: ", e);
       }
     };
-  }, [paypalLoaded, finalTotal, containerId, resolvedClientId]);
+  }, [paypalLoaded, finalTotal, containerId, resolvedClientId, setCart, navigate]);
 
   return { paypalLoaded };
 }

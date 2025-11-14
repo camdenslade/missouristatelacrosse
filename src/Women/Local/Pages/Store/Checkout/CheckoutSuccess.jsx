@@ -22,7 +22,7 @@ function reducer(state, action) {
   }
 }
 
-export default function WCheckoutSuccess() {
+export default function CheckoutSuccess() {
   const location = useLocation();
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(reducer, initialState);

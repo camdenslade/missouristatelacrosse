@@ -1,5 +1,6 @@
 // src/Men/Local/Pages/Store/Cart.jsx
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import useStore from "../hooks/useStore.js";
 
 export default function Cart({
@@ -12,6 +13,8 @@ export default function Cart({
   handleTouchMove,
   handleTouchEnd,
 }) {
+  const navigate = useNavigate();
+
   const [donation, setDonation] = useState("");
   const [confirmedDonation, setConfirmedDonation] = useState(0);
 
@@ -72,7 +75,7 @@ export default function Cart({
             onClick={() => {
               try {
                 window.paypal?.Buttons?.().close?.();
-              } catch (e){
+              } catch (e) {
                 console.log("Error: ", e);
               }
               setShowCart(false);
@@ -161,7 +164,24 @@ export default function Cart({
 
               <p className="font-bold text-right text-lg">Total: ${finalTotal}</p>
 
-              <div id="paypal-buttons-container"></div>
+              <button
+                onClick={() => {
+                  setShowCart(false);
+
+                  navigate("/checkout", {
+                    state: {
+                      cart: safeCart,
+                      donation: confirmedDonation > 0 ? confirmedDonation : 0,
+                    }
+                  });
+                }}
+                className="bg-[#5E0009] text-white py-2 rounded font-semibold hover:bg-red-800 transition"
+              >
+                Proceed to Checkout
+              </button>
+
+
+
             </div>
           )}
         </div>
