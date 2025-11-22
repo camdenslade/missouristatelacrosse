@@ -1,77 +1,49 @@
-// src/Men/Local/Pages/Store/components/ProductCard.jsx
 import { useState } from "react";
 
-export default function ProductCard({ product, onAddToCart }) {
-  const sizeOrder = ["XS","S","M","L","XL","2XL","3XL","4XL","5XL"];
+function resolveVariant(product, colorTitle, sizeTitle) {
+  const colorOpt = product.options.find(o => o.type === "color");
+  const sizeOpt  = product.options.find(o => o.type === "size");
 
-  const allOneSize = product.variants.every(v =>
-    v.options.map(o => o?.toUpperCase()).includes("ONE SIZE")
+  const colorVal = colorOpt?.values.find(v => v.title === colorTitle);
+  const sizeVal  = sizeOpt?.values.find(v => v.title === sizeTitle);
+
+  if (!colorVal || !sizeVal) return null;
+
+  const match = product.variants.find(
+    v => v.options.includes(colorVal.id) && v.options.includes(sizeVal.id)
   );
 
-  const [selectedSize, setSelectedSize] = useState("");
+  return match || null;
+}
 
-  let sizes = [];
-  let sizeIndex = -1;
+export default function ProductCard({ product, onAddToCart }) {
+  const colorOpt = product.options.find(o => o.type === "color");
+  const sizeOpt  = product.options.find(o => o.type === "size");
 
-  if (!allOneSize) {
-    const detectSizeIndex = () => {
-      const variants = product.variants;
+  const colors = colorOpt ? colorOpt.values.map(v => v.title) : [];
+  const sizes  = sizeOpt ? sizeOpt.values.map(v => v.title) : [];
 
-      const count0 = variants.filter(v =>
-        sizeOrder.includes(v.options?.[0]?.toUpperCase())
-      ).length;
+  const [selectedColor, setSelectedColor] = useState(colors[0] || "");
+  const [selectedSize,  setSelectedSize]  = useState(sizes[0]  || "");
 
-      const count1 = variants.filter(v =>
-        sizeOrder.includes(v.options?.[1]?.toUpperCase())
-      ).length;
+  const variant = resolveVariant(product, selectedColor, selectedSize);
 
-      if (count0 > count1) return 0;
-      if (count1 > count0) return 1;
-      return -1;
-    };
+  const price = variant ? variant.our_price / 100 : 0;
 
-    sizeIndex = detectSizeIndex();
-
-    if (sizeIndex !== -1) {
-      sizes = Array.from(
-        new Set(
-          product.variants
-            .map(v => v.options[sizeIndex])
-            .filter(s => s && s.trim() !== "")
-        )
-      ).sort((a, b) => {
-        const i1 = sizeOrder.indexOf(a.toUpperCase());
-        const i2 = sizeOrder.indexOf(b.toUpperCase());
-        if (i1 === -1 && i2 === -1) return a.localeCompare(b);
-        if (i1 === -1) return 1;
-        if (i2 === -1) return -1;
-        return i1 - i2;
-      });
-    }
-  }
-
-
-  const selectedVariant = allOneSize
-    ? product.variants[0]
-    : sizes.length > 0
-    ? product.variants.find(v => v.options?.[sizeIndex] === selectedSize) || null
-    : null;
-
-  const basePrice = selectedVariant
-    ? selectedVariant.price / 100
-    : Math.min(...product.variants.map(v => v.price)) / 100;
-
-  const handleAdd = () => {
-    if (!allOneSize && !selectedSize) {
-      return alert("Please select a size.");
+  const onAdd = () => {
+    if (!variant) {
+      alert("Please select valid options.");
+      return;
     }
 
     onAddToCart({
       id: product.id,
       title: product.title,
-      variantId: selectedVariant.id,
-      size: allOneSize ? "One size" : selectedSize,
-      price: selectedVariant.price / 100,
+      variantId: variant.id,
+      price: variant.our_price / 100,
+      quantity: 1,
+      color: selectedColor,
+      size: selectedSize,
       image: product.images?.[0]?.src || ""
     });
   };
@@ -85,24 +57,43 @@ export default function ProductCard({ product, onAddToCart }) {
       />
 
       <h2 className="text-xl font-semibold mb-1">{product.title}</h2>
-      <p className="text-lg font-bold mb-3">${basePrice.toFixed(2)}</p>
-      {!allOneSize && sizes.length > 0 && (
-        <select
-          value={selectedSize}
-          onChange={(e) => setSelectedSize(e.target.value)}
-          className="border w-full p-2 mb-3"
-        >
-          <option value="">Select Size</option>
-          {sizes.map(size => (
-            <option key={size} value={size}>
-              {size}
-            </option>
-          ))}
-        </select>
+
+      <p className="font-bold mb-3">${price.toFixed(2)}</p>
+
+      {/* COLOR */}
+      {colors.length > 1 && (
+        <div className="mb-3">
+          <label className="block text-sm">Color:</label>
+          <select
+            value={selectedColor}
+            onChange={e => setSelectedColor(e.target.value)}
+            className="border w-full p-2"
+          >
+            {colors.map(c => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* SIZE */}
+      {sizes.length > 1 && (
+        <div className="mb-3">
+          <label className="block text-sm">Size:</label>
+          <select
+            value={selectedSize}
+            onChange={e => setSelectedSize(e.target.value)}
+            className="border w-full p-2"
+          >
+            {sizes.map(s => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
       )}
 
       <button
-        onClick={handleAdd}
+        onClick={onAdd}
         className="bg-[#5E0009] text-white w-full py-2 font-semibold hover:bg-red-800 transition"
       >
         Add to Cart

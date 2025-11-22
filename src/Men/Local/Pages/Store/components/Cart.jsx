@@ -1,7 +1,6 @@
 // src/Men/Local/Pages/Store/Cart.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import useStore from "../hooks/useStore.js";
 
 export default function Cart({
   cart,
@@ -20,13 +19,12 @@ export default function Cart({
 
   const safeCart = Array.isArray(cart) ? cart : [];
 
-  const subtotal = Math.ceil(
-    safeCart.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0)
+  const subtotal = safeCart.reduce(
+    (sum, item) => sum + item.price * (item.quantity || 1),
+    0
   );
 
-  const finalTotal = subtotal + (confirmedDonation || 0);
-
-  useStore(finalTotal, "paypal-buttons-container");
+  const finalTotal = Math.ceil(subtotal + (confirmedDonation || 0));
 
   const handleConfirmDonation = () => {
     const val = parseFloat(donation);
@@ -69,15 +67,11 @@ export default function Cart({
       }`}
     >
       <div className="flex flex-col h-full">
+        {/* Header */}
         <div className="p-4 flex justify-between items-center border-b">
           <h2 className="text-lg font-bold">Men’s Team Cart</h2>
           <button
             onClick={() => {
-              try {
-                window.paypal?.Buttons?.().close?.();
-              } catch (e) {
-                console.log("Error: ", e);
-              }
               setShowCart(false);
             }}
             className="text-gray-500 hover:text-black px-3 py-1 border rounded"
@@ -86,6 +80,7 @@ export default function Cart({
           </button>
         </div>
 
+        {/* Cart Items */}
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6">
           <div className="flex flex-col gap-4">
             {safeCart.length === 0 ? (
@@ -103,7 +98,14 @@ export default function Cart({
                   />
                   <div className="flex-1">
                     <p className="font-semibold">{item.title}</p>
-                    <div className="flex items-center gap-2">
+                    {item.size && (
+                      <p className="text-sm text-gray-600">Size: {item.size}</p>
+                    )}
+                    {item.color && (
+                      <p className="text-sm text-gray-600">Color: {item.color}</p>
+                    )}
+
+                    <div className="flex items-center gap-2 mt-1">
                       <input
                         type="number"
                         min="1"
@@ -118,10 +120,11 @@ export default function Cart({
                         className="w-16 border rounded px-1 py-0.5 text-center"
                       />
                       <span className="text-[#5E0009] font-bold">
-                        ${item.price}
+                        ${item.price.toFixed(2)}
                       </span>
                     </div>
                   </div>
+
                   <button
                     onClick={() => removeFromCart(item.id, item.variantId)}
                     className="text-red-500 hover:text-red-700 font-bold text-lg"
@@ -133,12 +136,15 @@ export default function Cart({
             )}
           </div>
 
+          {/* Donation + Checkout */}
           {safeCart.length > 0 && (
             <div className="flex flex-col gap-3 border-t pt-4">
+              {/* Donation */}
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-gray-700">
                   Optional Donation:
                 </label>
+
                 <div className="flex gap-2">
                   <input
                     type="number"
@@ -155,6 +161,7 @@ export default function Cart({
                     {confirmedDonation ? "Update" : "Add"}
                   </button>
                 </div>
+
                 {confirmedDonation > 0 && (
                   <p className="text-sm text-green-700">
                     Added donation: ${confirmedDonation.toFixed(2)}
@@ -162,26 +169,26 @@ export default function Cart({
                 )}
               </div>
 
-              <p className="font-bold text-right text-lg">Total: ${finalTotal}</p>
+              {/* Total */}
+              <p className="font-bold text-right text-lg">
+                Total: ${finalTotal.toFixed(2)}
+              </p>
 
+              {/* Checkout */}
               <button
                 onClick={() => {
                   setShowCart(false);
-
                   navigate("/checkout", {
                     state: {
                       cart: safeCart,
                       donation: confirmedDonation > 0 ? confirmedDonation : 0,
-                    }
+                    },
                   });
                 }}
                 className="bg-[#5E0009] text-white py-2 rounded font-semibold hover:bg-red-800 transition"
               >
                 Proceed to Checkout
               </button>
-
-
-
             </div>
           )}
         </div>
