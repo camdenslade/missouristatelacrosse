@@ -1,4 +1,4 @@
-Missouri State Lacrosse – Official Website
+# Missouri State Lacrosse – Official Website
 
 This repository contains the official website for Missouri State Lacrosse, built with a full role-based user experience and complete backend integrations for team operations, e-commerce, and account management.
 
