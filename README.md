@@ -1,13 +1,13 @@
 # Missouri State Lacrosse – Official Website
-![JavaScript](https://img.shields.io/badge/JavaScript-ES2023-f7df1e?logo=javascript&logoColor=white)
-![React](https://img.shields.io/badge/React-19.2.0-61dafb?logo=react&logoColor=white)
-![React Router](https://img.shields.io/badge/React_Router-7.9.5-ca4245?logo=reactrouter&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-7.1.12-646cff?logo=vite&logoColor=white)
-![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.1.16-38bdf8?logo=tailwindcss&logoColor=white)
+![JavaScript](https://img.shields.io/badge/javascript-ES2023-f7df1e?style=flat&logo=javascript&logoColor=black)
+![React](https://img.shields.io/badge/react-19.2.0-61dafb?style=flat&logo=react&logoColor=white)
+![React Router](https://img.shields.io/badge/react__router-7.9.5-ca4245?style=flat&logo=reactrouter&logoColor=white)
+![Vite](https://img.shields.io/badge/vite-7.1.12-646cff?style=flat&logo=vite&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/tailwindcss-4.1.16-38bdf8?style=flat&logo=tailwindcss&logoColor=white)
 
-![Firebase](https://img.shields.io/badge/Firebase-12.5.0-ffca28?logo=firebase&logoColor=black)
-![PayPal SDK](https://img.shields.io/badge/PayPal_JS-8.9.2-0070ba?logo=paypal&logoColor=white)
-![Framer Motion](https://img.shields.io/badge/Framer_Motion-12.23.24-ff0050?logo=framer&logoColor=white)
+![Firebase](https://img.shields.io/badge/firebase-12.5.0-ffca28?style=flat&logo=firebase&logoColor=black)
+![PayPal SDK](https://img.shields.io/badge/paypal_js-8.9.2-0070ba?style=flat&logo=paypal&logoColor=white)
+![Framer Motion](https://img.shields.io/badge/framer__motion-12.23.24-ff0050?style=flat&logo=framer&logoColor=white)
 
 This repository contains the official website for Missouri State Lacrosse, built with a full role-based user experience and complete backend integrations for team operations, e-commerce, and account management.
 
