@@ -1,18 +1,24 @@
 package com.mostate.lacrosse.Controller;
 
 import java.util.List;
-import java.util.Map;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Service.EmailService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 
 @RestController
 @RequestMapping("/api/email")
 @CrossOrigin
+@Validated
 public class EmailController {
 
     private final EmailService emailService;
@@ -22,7 +28,7 @@ public class EmailController {
     }
 
     @PostMapping("/group")
-    public ResponseEntity<String> sendGroupEmail(@RequestBody EmailRequest req) {
+    public ResponseEntity<EmailStatusResponse> sendGroupEmail(@Valid @RequestBody EmailRequest req) {
         int success = 0;
         int failures = 0;
         for (String to : req.getRecipients()) {
@@ -35,21 +41,21 @@ public class EmailController {
         }
         String result = "Sent to " + success + " recipients";
         if (failures > 0) result += " (" + failures + " failed)";
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(new EmailStatusResponse(result));
     }
 
     @PostMapping("/sponsor")
-    public ResponseEntity<String> handleSponsor(@RequestBody Map<String, String> body){
-        String business = body.get("businessName");
-        String email = body.get("email");
-        String phone = body.get("phone");
-        String request = body.get("request");
-        String program = body.getOrDefault("program", "men").toLowerCase();
+    public ResponseEntity<?> handleSponsor(@Valid @RequestBody SponsorEmailRequest body) {
+        String business = body.businessName();
+        String email = body.email();
+        String phone = body.phone();
+        String request = body.request();
+        String program = body.program() != null ? body.program().toLowerCase() : "men";
 
         if ((email == null || email.isBlank()) && (phone == null || phone.isBlank())) {
-            return ResponseEntity.badRequest().body("At least one contact method required.");
+            return ResponseEntity.badRequest().body(new ErrorResponse("At least one contact method required."));
         }
-        
+
         String adminBody = """
             New Sponsorship Inquiry
 
@@ -77,44 +83,45 @@ public class EmailController {
                     Hello %s,
 
                     Thank you for your interest in supporting Missouri State %s Lacrosse!
-                    We’ve received your inquiry and will reach out soon.
+                    We've received your inquiry and will reach out soon.
 
                     Go Bears!
-                    – Missouri State %s Lacrosse
+                    - Missouri State %s Lacrosse
                     """.formatted(
                     business != null ? business : "there",
-                    program.equals("women") ? "Women’s" : "Men’s",
-                    program.equals("women") ? "Women’s" : "Men’s"
+                    program.equals("women") ? "Women's" : "Men's",
+                    program.equals("women") ? "Women's" : "Men's"
             );
             emailService.sendEmail(email, "Thank You for Your Sponsorship Inquiry", thankYou);
         }
 
-        return ResponseEntity.ok("Sponsor inquiry processed successfully.");
+        return ResponseEntity.ok(new EmailStatusResponse("Sponsor inquiry processed successfully."));
     }
 
     @PostMapping("/receipt")
-    public ResponseEntity<String> sendReceipt(@RequestBody Map<String, String> body) {
-        String email = body.get("email");
-        String name = body.get("name");
-        String orderId = body.get("orderId");
-        String amount = body.get("amount");
+    public ResponseEntity<EmailStatusResponse> sendReceipt(@Valid @RequestBody ReceiptRequest body) {
+        String email = body.email();
+        String name = body.name();
         String message = """
-                Hi %s,
+            Hi %s,
 
-                Thank you for your purchase! Your order #%s totaling $%s has been received.
+            %s
 
-                Go Bears!
-                – Missouri State Lacrosse Store
-                """.formatted(name != null ? name : "there", orderId, amount);
-        emailService.sendEmail(email, "Order Receipt – Missouri State Lacrosse", message);
-        return ResponseEntity.ok("Receipt sent.");
+            Go Bears!
+            - Missouri State Lacrosse Store
+            """.formatted(
+                name != null ? name : "there",
+                body.body()
+            );
+        emailService.sendEmail(email, "Order Receipt - Missouri State Lacrosse", message);
+        return ResponseEntity.ok(new EmailStatusResponse("Receipt sent."));
     }
 
     @PostMapping("/donation")
-    public ResponseEntity<String> sendDonationThankYou(@RequestBody Map<String, String> body) {
-        String email = body.get("email");
-        String name = body.get("name");
-        String amount = body.get("amount");
+    public ResponseEntity<EmailStatusResponse> sendDonationThankYou(@Valid @RequestBody DonationRequest body) {
+        String email = body.email();
+        String name = body.name();
+        String amount = body.amount();
         String message = """
                 Hi %s,
 
@@ -122,17 +129,17 @@ public class EmailController {
                 Your support helps our athletes and community thrive.
 
                 Go Bears!
-                – Missouri State Lacrosse
+                - Missouri State Lacrosse
                 """.formatted(name != null ? name : "there", amount);
         emailService.sendEmail(email, "Thank You for Your Donation", message);
-        return ResponseEntity.ok("Donation thank-you sent.");
+        return ResponseEntity.ok(new EmailStatusResponse("Donation thank-you sent."));
     }
 
     @PostMapping("/account-approved")
-    public ResponseEntity<String> sendAccountApproval(@RequestBody Map<String, String> body) {
-        String email = body.get("email");
-        String name = body.get("name");
-        String link = body.get("link");
+    public ResponseEntity<EmailStatusResponse> sendAccountApproval(@Valid @RequestBody AccountApprovalRequest body) {
+        String email = body.email();
+        String name = body.name();
+        String link = body.link();
         String message = """
                 Hi %s,
 
@@ -142,15 +149,18 @@ public class EmailController {
                 %s
 
                 Go Bears!
-                – Missouri State Lacrosse
+                - Missouri State Lacrosse
                 """.formatted(name != null ? name : "there", link);
-        emailService.sendEmail(email, "Account Approved – Set Your Password", message);
-        return ResponseEntity.ok("Account approval email sent.");
+        emailService.sendEmail(email, "Account Approved - Set Your Password", message);
+        return ResponseEntity.ok(new EmailStatusResponse("Account approval email sent."));
     }
 
     public static class EmailRequest {
-        private List<String> recipients;
+        @NotEmpty
+        private List<@Email String> recipients;
+        @NotBlank
         private String subject;
+        @NotBlank
         private String body;
         public List<String> getRecipients() { return recipients; }
         public void setRecipients(List<String> recipients) { this.recipients = recipients; }
@@ -159,4 +169,33 @@ public class EmailController {
         public String getBody() { return body; }
         public void setBody(String body) { this.body = body; }
     }
+
+    public record SponsorEmailRequest(
+        @NotBlank String businessName,
+        @Email String email,
+        String phone,
+        @NotBlank String request,
+        String program
+    ) {}
+
+    public record ReceiptRequest(
+        @Email String email,
+        String name,
+        @NotBlank String orderId,
+        @NotBlank String body
+    ) {}
+
+    public record DonationRequest(
+        @Email String email,
+        String name,
+        @NotBlank String amount
+    ) {}
+
+    public record AccountApprovalRequest(
+        @Email String email,
+        String name,
+        @NotBlank String link
+    ) {}
+
+    public record EmailStatusResponse(String message) {}
 }

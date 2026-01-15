@@ -1,0 +1,91 @@
+// src/Men/Local/Pages/Payments/components/PlayerPaymentDetails.jsx
+import AddParentForm from "./AddParentForm";
+import type { ApiPlayer, ParentLink } from "../../../../../types/api";
+
+type PlayerPaymentDetailsProps = {
+  userRole: string;
+  selectedPlayer: ApiPlayer | null;
+  addParentEmail: string;
+  setAddParentEmail: (val: string) => void;
+  handleAddParent: () => Promise<void> | void;
+  handleRemoveParent: (email: string) => Promise<void> | void;
+  message: string;
+  customAmount: string;
+  setCustomAmount: (val: string) => void;
+};
+
+export default function PlayerPaymentDetails({
+  userRole,
+  selectedPlayer,
+  addParentEmail,
+  setAddParentEmail,
+  handleAddParent,
+  handleRemoveParent,
+  message,
+  customAmount,
+  setCustomAmount,
+}: PlayerPaymentDetailsProps) {
+  const balance = Number(selectedPlayer?.balance ?? 0);
+  const parents: ParentLink[] = selectedPlayer?.parents || [];
+
+  return (
+    <div className="space-y-4">
+      <div className="border-b pb-3">
+        <h2 className="text-xl font-semibold text-[#5E0009]">
+          {selectedPlayer?.name || "Player"}
+        </h2>
+        <p className="text-sm text-gray-600">Current Balance: ${balance.toFixed(2)}</p>
+      </div>
+
+      {(userRole === "admin" || userRole === "player") && (
+        <AddParentForm
+          addParentEmail={addParentEmail}
+          setAddParentEmail={setAddParentEmail}
+          handleAddParent={handleAddParent}
+          message={message}
+        />
+      )}
+
+      {parents.length > 0 && (
+        <div className="mt-4">
+          <h3 className="font-medium mb-2">Linked Parents</h3>
+          <div className="space-y-2">
+            {parents.map((parent, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between p-2 bg-gray-50 rounded"
+              >
+                <span className="text-sm">{parent.email || "Unknown"}</span>
+                {userRole === "admin" && (
+                  <button
+                    onClick={() => {
+                      if (parent.email) handleRemoveParent(parent.email);
+                    }}
+                    disabled={!parent.email}
+                    className="text-red-600 text-sm hover:text-red-800"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-4">
+        <label className="block font-medium mb-1">Custom Payment Amount</label>
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          placeholder="Enter amount"
+          value={customAmount}
+          onChange={(e) => setCustomAmount(e.target.value)}
+          className="border px-3 py-2 rounded w-full"
+        />
+      </div>
+    </div>
+  );
+}
+

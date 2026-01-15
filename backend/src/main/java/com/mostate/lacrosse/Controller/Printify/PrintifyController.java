@@ -1,14 +1,15 @@
 package com.mostate.lacrosse.Controller.Printify;
 
-import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Service.EmailService;
 import com.mostate.lacrosse.Service.PrintifyService;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/printify")
@@ -27,12 +28,12 @@ public class PrintifyController {
         try {
             return ResponseEntity.ok(printifyService.getProducts());
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.internalServerError().body(new ErrorResponse(e.getMessage()));
         }
     }
 
     @PostMapping("/create-order")
-    public ResponseEntity<?> createOrder(@RequestBody PrintifyOrderRequest req) {
+    public ResponseEntity<?> createOrder(@Valid @RequestBody PrintifyOrderRequest req) {
         try {
             var result = printifyService.createOrder(req);
             var s = req.getShipping();
@@ -70,7 +71,7 @@ public class PrintifyController {
 
             return ResponseEntity.ok(result);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.internalServerError().body(new ErrorResponse(e.getMessage()));
         }
     }
 }

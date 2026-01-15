@@ -1,52 +1,51 @@
 package com.mostate.lacrosse.Controller;
 
-import com.google.api.core.ApiFuture;
-import com.google.cloud.Timestamp;
-import com.google.cloud.firestore.DocumentReference;
-import com.google.cloud.firestore.Firestore;
-import com.google.firebase.cloud.FirestoreClient;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.HashMap;
-import java.util.Map;
+import com.mostate.lacrosse.Dto.ErrorResponse;
+import com.mostate.lacrosse.Dto.IdResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import com.mostate.lacrosse.Model.SponsorRequest;
+import com.mostate.lacrosse.Repository.SponsorRequestRepository;
+import com.mostate.lacrosse.Utils.TextSanitizer;
 
 @RestController
 @RequestMapping("/api/sponsor-request")
+@Validated
 public class SponsorRequestController {
+    private final SponsorRequestRepository sponsorRequestRepository;
+
+    public SponsorRequestController(SponsorRequestRepository sponsorRequestRepository) {
+        this.sponsorRequestRepository = sponsorRequestRepository;
+    }
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody Map<String, Object> body){
+    public ResponseEntity<?> create(@Valid @RequestBody SponsorRequestPayload payload){
         try{
-            String businessName = String.valueOf(body.getOrDefault("businessName", ""));
-            String contactInfo = String.valueOf(body.getOrDefault("contactInfo", ""));
-            String request = String.valueOf(body.getOrDefault("request", ""));
+            SponsorRequest sponsorRequest = new SponsorRequest();
+            sponsorRequest.setBusinessName(TextSanitizer.clean(payload.businessName()));
+            sponsorRequest.setContactInfo(TextSanitizer.clean(payload.contactInfo()));
+            sponsorRequest.setRequest(TextSanitizer.clean(payload.request()));
 
-            if (businessName.isBlank() || contactInfo.isBlank() || request.isBlank()){
-                return ResponseEntity.badRequest().body(Map.of("error", "All fields are required"));
-            }
+            SponsorRequest saved = sponsorRequestRepository.save(sponsorRequest);
 
-            Firestore fs = FirestoreClient.getFirestore();
-            Map<String, Object> doc = new HashMap<>();
-            doc.put("businessName", businessName);
-            doc.put("contactInfo", contactInfo);
-            doc.put("request", request);
-            doc.put("createdAt", Timestamp.now());
-
-            DocumentReference ref = fs.collection("sponsorRequests").document();
-            doc.put("id", ref.getId());
-            ApiFuture<?> write = ref.set(doc);
-            write.get();
-
-            return ResponseEntity.ok(Map.of("id", ref.getId()));
+            return ResponseEntity.ok(new IdResponse(saved.getId().toString()));
         } catch (Exception e){
             e.printStackTrace();
-            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.internalServerError().body(new ErrorResponse(e.getMessage()));
         }
     }
+
+    public record SponsorRequestPayload(
+        @NotBlank String businessName,
+        @NotBlank String contactInfo,
+        @NotBlank String request
+    ) {}
 }
 
 

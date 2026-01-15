@@ -3,6 +3,7 @@ package com.mostate.lacrosse;
 import java.util.Map;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
@@ -34,25 +35,40 @@ public class MainApp {
             }
 
             ObjectMapper mapper = new ObjectMapper();
-            Map<String, String> secretsMap = mapper.readValue(secretJson, Map.class);
+            Map<String, String> secretsMap = mapper.readValue(
+                secretJson,
+                new TypeReference<Map<String, String>>() {}
+            );
 
             // AWS and App credentials
-            System.setProperty("PAYPAL_CLIENT_ID", secretsMap.get("PAYPAL_CLIENT_ID"));
-            System.setProperty("PAYPAL_CLIENT_SECRET", secretsMap.get("PAYPAL_CLIENT_SECRET"));
-            System.setProperty("PRINTIFY_API_TOKEN", secretsMap.get("PRINTIFY_API_TOKEN"));
-            System.setProperty("PRINTIFY_SHOP_ID", secretsMap.get("PRINTIFY_SHOP_ID"));
-            System.setProperty("AWS_SES_SENDER", secretsMap.get("AWS_SES_SENDER"));
-            System.setProperty("AWS_REGION", secretsMap.get("AWS_REGION"));
+            setPropertyIfPresent(secretsMap, "PAYPAL_CLIENT_ID");
+            setPropertyIfPresent(secretsMap, "PAYPAL_CLIENT_SECRET");
+            setPropertyIfPresent(secretsMap, "PRINTIFY_API_TOKEN");
+            setPropertyIfPresent(secretsMap, "PRINTIFY_SHOP_ID");
+            setPropertyIfPresent(secretsMap, "AWS_SES_SENDER");
+            setPropertyIfPresent(secretsMap, "AWS_REGION");
 
-            // Base URLs
-            System.setProperty("PAYPAL_BASE_URL", secretsMap.get("PAYPAL_BASE_URL"));
-            System.setProperty("PRINTIFY_BASE_URL", secretsMap.get("PRINTIFY_BASE_URL"));
+            // Base URLs and storage
+            setPropertyIfPresent(secretsMap, "PAYPAL_BASE_URL");
+            setPropertyIfPresent(secretsMap, "PRINTIFY_BASE_URL");
+            setPropertyIfPresent(secretsMap, "DB_URL");
+            setPropertyIfPresent(secretsMap, "DB_USER");
+            setPropertyIfPresent(secretsMap, "DB_PASSWORD");
+            setPropertyIfPresent(secretsMap, "S3_BUCKET");
+            setPropertyIfPresent(secretsMap, "S3_PUBLIC_BASE_URL");
 
             System.out.println("Secrets and base URLs loaded successfully from AWS Secrets Manager.");
 
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Failed to load secrets from AWS Secrets Manager", e);
+        }
+    }
+
+    private static void setPropertyIfPresent(Map<String, String> secretsMap, String key) {
+        String value = secretsMap.get(key);
+        if (value != null) {
+            System.setProperty(key, value);
         }
     }
 }

@@ -44,7 +44,7 @@ public class AccountRequestController {
         }
     }
 
-    @DeleteMapping("/id")
+    @DeleteMapping("/{id}")
     public ResponseEntity<String> rejectRequest(@PathVariable String id, @RequestParam(defaultValue = "men") String program){
         try{
             accountRequestService.rejectRequest(id, program);

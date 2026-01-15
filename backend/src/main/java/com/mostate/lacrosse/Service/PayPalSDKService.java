@@ -5,6 +5,7 @@ import java.util.Base64;
 import java.util.Map;
 import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -26,6 +27,8 @@ public class PayPalSDKService {
     private String baseUrl;
 
     private final RestTemplate rest = new RestTemplate();
+    private static final ParameterizedTypeReference<Map<String, Object>> MAP_RESPONSE =
+        new ParameterizedTypeReference<>() {};
 
     @PostConstruct
     private void validateConfig(){
@@ -55,11 +58,11 @@ public class PayPalSDKService {
             HttpEntity<String> tokenRequest =
                     new HttpEntity<>("grant_type=client_credentials", tokenHeaders);
 
-            ResponseEntity<Map> tokenResponse = rest.exchange(
+            ResponseEntity<Map<String, Object>> tokenResponse = rest.exchange(
                     baseUrl + "/v1/oauth2/token",
                     HttpMethod.POST,
                     tokenRequest,
-                    Map.class
+                    MAP_RESPONSE
             );
 
             String accessToken = (String) tokenResponse.getBody().get("access_token");
@@ -82,18 +85,18 @@ public class PayPalSDKService {
                     "brand_name": "Missouri State Lacrosse",
                     "landing_page": "BILLING",
                     "user_action": "PAY_NOW",
-                    "return_url": "https://missouristatelacrosse-cc913.web.app/checkout-success",
-                    "cancel_url": "https://missouristatelacrosse-cc913.web.app/store"
+                    "return_url": "https://missouristatelacrosse.com/checkout-success",
+                    "cancel_url": "https://missouristatelacrosse.com/store"
                   }
                 }
                 """.formatted(amount);
 
             HttpEntity<String> orderRequest = new HttpEntity<>(orderBody, headers);
-            ResponseEntity<Map> orderResponse = rest.exchange(
+            ResponseEntity<Map<String, Object>> orderResponse = rest.exchange(
                     baseUrl + "/v2/checkout/orders",
                     HttpMethod.POST,
                     orderRequest,
-                    Map.class
+                    MAP_RESPONSE
             );
 
             return orderResponse.getBody();
@@ -117,11 +120,11 @@ public class PayPalSDKService {
             HttpEntity<String> tokenRequest =
                     new HttpEntity<>("grant_type=client_credentials", tokenHeaders);
 
-            ResponseEntity<Map> tokenResponse = rest.exchange(
+            ResponseEntity<Map<String, Object>> tokenResponse = rest.exchange(
                     baseUrl + "/v1/oauth2/token",
                     HttpMethod.POST,
                     tokenRequest,
-                    Map.class
+                    MAP_RESPONSE
             );
 
             String accessToken = (String) tokenResponse.getBody().get("access_token");
@@ -133,11 +136,11 @@ public class PayPalSDKService {
 
             HttpEntity<String> captureRequest = new HttpEntity<>("{}", headers);
 
-            ResponseEntity<Map> captureResponse = rest.exchange(
+            ResponseEntity<Map<String, Object>> captureResponse = rest.exchange(
                     baseUrl + "/v2/checkout/orders/" + orderID + "/capture",
                     HttpMethod.POST,
                     captureRequest,
-                    Map.class
+                    MAP_RESPONSE
             );
 
             return captureResponse.getBody();
