@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useStore from "../hooks/useStore";
 
+const SHIPPING_FEE = 5;
+
 export default function Cart({
   cart,
   setCart,
@@ -24,9 +26,10 @@ export default function Cart({
     safeCart.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0)
   );
 
-  const finalTotal = subtotal + (confirmedDonation || 0);
+  const totalBeforeShipping = subtotal + (confirmedDonation || 0);
+  const totalWithShipping = totalBeforeShipping + SHIPPING_FEE;
 
-  useStore(finalTotal, "paypal-buttons-container");
+  useStore(totalBeforeShipping, "paypal-buttons-container");
 
   const handleConfirmDonation = () => {
     const val = parseFloat(donation);
@@ -155,7 +158,12 @@ export default function Cart({
                 )}
               </div>
 
-              <p className="font-bold text-right text-lg">Total: ${finalTotal}</p>
+              <p className="font-semibold text-right text-lg">
+                Shipping: ${SHIPPING_FEE.toFixed(2)}
+              </p>
+              <p className="font-bold text-right text-lg">
+                Total: ${totalWithShipping.toFixed(2)}
+              </p>
 
               <button
                 onClick={() => {

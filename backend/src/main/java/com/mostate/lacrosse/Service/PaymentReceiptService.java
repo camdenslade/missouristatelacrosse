@@ -1,7 +1,6 @@
 package com.mostate.lacrosse.Service;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -14,14 +13,11 @@ import com.mostate.lacrosse.Utils.JsonUtils;
 @Service
 public class PaymentReceiptService {
     private final PaymentReceiptRepository receiptRepository;
-    private final EmailService emailService;
 
     public PaymentReceiptService(
-        PaymentReceiptRepository receiptRepository,
-        EmailService emailService
+        PaymentReceiptRepository receiptRepository
     ) {
         this.receiptRepository = receiptRepository;
-        this.emailService = emailService;
     }
 
     public Optional<Map<String, Object>> findStoredPayload(String orderId) {
@@ -32,6 +28,13 @@ public class PaymentReceiptService {
             .map(PaymentReceipt::getPayload)
             .filter(payload -> payload != null && !payload.isBlank())
             .map(JsonUtils::readMap);
+    }
+
+    public Optional<PaymentReceipt> findReceipt(String orderId) {
+        if (orderId == null || orderId.isBlank()) {
+            return Optional.empty();
+        }
+        return receiptRepository.findByOrderId(orderId);
     }
 
     public PaymentReceipt recordPayPalReceipt(Map<String, Object> payload) {
@@ -58,38 +61,7 @@ public class PaymentReceiptService {
             receipt.setCurrency(amountInfo.currency());
         }
 
-        PaymentReceipt saved = receiptRepository.save(receipt);
-
-        if (saved.getReceiptSentAt() == null && email != null) {
-            sendReceiptEmail(
-                email,
-                saved.getPayerName(),
-                saved.getOrderId(),
-                saved.getAmount()
-            );
-            saved.setReceiptSentAt(Instant.now());
-            saved = receiptRepository.save(saved);
-        }
-
-        return saved;
-    }
-
-    private void sendReceiptEmail(
-        String email,
-        String name,
-        String orderId,
-        BigDecimal amount
-    ) {
-        String amountText = amount != null ? amount.toPlainString() : "0.00";
-        String message = """
-            Hi %s,
-
-            Thank you for your purchase! Your order #%s totaling $%s has been received.
-
-            Go Bears!
-            - Missouri State Lacrosse Store
-            """.formatted(name != null && !name.isBlank() ? name : "there", orderId, amountText);
-        emailService.sendEmail(email, "Order Receipt - Missouri State Lacrosse", message);
+        return receiptRepository.save(receipt);
     }
 
     private static String buildPayerName(Map<String, Object> payer) {

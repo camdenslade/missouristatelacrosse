@@ -67,5 +67,18 @@ public class PrintifyOrderLogService {
             PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "timestamp"))
         ).getContent();
     }
+
+    /**
+     * Fetches the most recent order log for a specific order ID.
+     *
+     * @param orderId External order id (PayPal)
+     * @return Optional containing the latest log if found
+     */
+    public java.util.Optional<PrintifyOrderLog> findLatestByOrderId(String orderId) {
+        if (orderId == null || orderId.isBlank()) {
+            return java.util.Optional.empty();
+        }
+        return orderLogRepo.findFirstByOrderIdOrderByTimestampDesc(orderId);
+    }
 }
 

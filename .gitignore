@@ -1,5 +1,5 @@
 # ============================================================
-# 🔧 Core Node / npm
+# Core Node / npm
 # ============================================================
 node_modules/
 npm-debug.log*
@@ -9,7 +9,7 @@ pnpm-debug.log*
 package-lock.json
 
 # ============================================================
-# ⚙️ Build / Dist Outputs
+# Build / Dist Outputs
 # ============================================================
 dist/
 build/
@@ -20,7 +20,7 @@ firebase-debug.*
 firebase-debug.log.*
 
 # ============================================================
-# 🧰 Environment Variables
+# Environment Variables
 # ============================================================
 .env
 .env.local
@@ -29,7 +29,7 @@ firebase-debug.log.*
 .env.test.local
 
 # ============================================================
-# 💾 Firebase / Service Accounts / Secrets
+# Firebase / Service Accounts / Secrets
 # ============================================================
 *.serviceAccount.json
 serviceAccountKey.json
@@ -37,7 +37,7 @@ firebaseConfig.js.backup
 credentials.json
 
 # ============================================================
-# 🖼️ Editor / IDE Files
+# Editor / IDE Files
 # ============================================================
 .vscode/
 .idea/
@@ -48,7 +48,7 @@ credentials.json
 Thumbs.db
 
 # ============================================================
-# 🧪 Test / Coverage
+# Test / Coverage
 # ============================================================
 coverage/
 *.lcov
@@ -56,7 +56,7 @@ jest-cache/
 jest-results.json
 
 # ============================================================
-# 🚀 OS / System Files
+# OS / System Files
 # ============================================================
 *.log
 *.tmp
@@ -70,7 +70,7 @@ jest-results.json
 *.tgz
 
 # ============================================================
-# 🗃️ Local caches / tooling
+# Local caches / tooling
 # ============================================================
 .cache/
 .parcel-cache/
@@ -82,7 +82,7 @@ stylelintcache
 *.stylelintcache
 
 # ============================================================
-# 🪶 Firebase Hosting / Cloud Functions Build
+# Firebase Hosting / Cloud Functions Build
 # ============================================================
 .firebase/
 .firebaserc
@@ -91,7 +91,7 @@ firebase-debug.*
 firebase-debug.log.*
 
 # ============================================================
-# ⚙️ OS generated
+# OS generated
 # ============================================================
 .DS_Store
 .DS_Store?
@@ -102,7 +102,7 @@ ehthumbs.db
 Thumbs.db
 
 # ============================================================
-# 🧠 Project specific extras
+# Project specific extras
 # ============================================================
 /Official Missouri State Lacrosse Site/*.iml
 /Official Missouri State Lacrosse Site/out/
@@ -110,7 +110,7 @@ Thumbs.db
 /public/firebase-messaging-sw.js
 
 # ============================================================
-# ✅ Misc safe exclusions
+# Misc safe exclusions
 # ============================================================
 *.log
 *.bak

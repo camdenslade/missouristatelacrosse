@@ -3,12 +3,16 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import useStore from "../hooks/useStore";
 import CheckoutSummary from "./CheckoutSummary";
+import { useMenCart } from "../context/MenCartContext";
+
+const SHIPPING_FEE = 5;
 
 export default function Checkout() {
   const navigate = useNavigate();
   const { state } = useLocation();
+  const { cart: persistedCart, setCart } = useMenCart();
 
-  const cart = Array.isArray(state?.cart) ? state.cart : [];
+  const cart = Array.isArray(state?.cart) ? state.cart : persistedCart;
   const donation = state?.donation || 0;
 
   const [shipping, setShipping] = useState({
@@ -39,13 +43,14 @@ export default function Checkout() {
     0
   );
 
-  const total = cartTotal + donation;
+  const totalBeforeShipping = cartTotal + donation;
+  const total = totalBeforeShipping + SHIPPING_FEE;
 
   // PayPal only activates when shipping is valid
   useStore(
-    isShippingValid ? total : 0,
+    isShippingValid ? totalBeforeShipping : 0,
     "paypal-buttons-container",
-    null,
+    setCart,
     navigate,
     cart,
     shipping,
@@ -84,6 +89,10 @@ export default function Checkout() {
             Donation: +${donation.toFixed(2)}
           </p>
         )}
+
+        <p className="font-semibold text-lg">
+          Shipping: +${SHIPPING_FEE.toFixed(2)}
+        </p>
 
         <p className="font-bold text-xl mt-2">
           Total: ${total.toFixed(2)}

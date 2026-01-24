@@ -14,7 +14,9 @@ type PayPalNamespace = {
 };
 
 type NavigateFn = (path: string, options?: { state?: unknown }) => void;
-type SetCartFn = (items: unknown[]) => void;
+type SetCartFn = (
+  items: unknown[] | ((prev: unknown[]) => unknown[])
+) => void;
 
 export default function useStore(
   finalTotal: number,
@@ -84,7 +86,7 @@ export default function useStore(
       async createOrder() {
         const data = await apiRequest<{ id?: string }>("/api/paypal/create", {
           method: "POST",
-          json: { amount: finalTotal.toFixed(2) },
+          json: { amount: finalTotal.toFixed(2), includeShippingFee: true },
         });
 
         if (!data?.id) {

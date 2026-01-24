@@ -180,3 +180,26 @@ export interface ApiOrderLog {
   responsePayload?: string | null;
   timestamp?: string | null;
 }
+
+export interface PublicOrderItem {
+  productId: string;
+  variantId: string;
+  quantity: number;
+}
+
+export interface PublicOrderDetails {
+  orderId: string;
+  items: PublicOrderItem[];
+  shipping?: {
+    first_name?: string | null;
+    last_name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    address1?: string | null;
+    address2?: string | null;
+    city?: string | null;
+    region?: string | null;
+    zip?: string | null;
+    country?: string | null;
+  } | null;
+}

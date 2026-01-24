@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+const SHIPPING_FEE = 5;
+
 export default function Cart({
   cart,
   setCart,
@@ -24,7 +26,9 @@ export default function Cart({
     0
   );
 
-  const finalTotal = Math.ceil(subtotal + (confirmedDonation || 0));
+  const finalTotal = Math.ceil(
+    subtotal + SHIPPING_FEE + (confirmedDonation || 0)
+  );
 
   const handleConfirmDonation = () => {
     const val = parseFloat(donation);
@@ -170,6 +174,9 @@ export default function Cart({
               </div>
 
               {/* Total */}
+              <p className="font-semibold text-right text-lg">
+                Shipping: ${SHIPPING_FEE.toFixed(2)}
+              </p>
               <p className="font-bold text-right text-lg">
                 Total: ${finalTotal.toFixed(2)}
               </p>

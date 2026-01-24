@@ -1,5 +1,7 @@
 package com.mostate.lacrosse.Controller;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +24,7 @@ import jakarta.validation.constraints.NotBlank;
 public class PayPalController {
     private final PayPalSDKService payPalSDKService;
     private final PaymentReceiptService receiptService;
+    private static final BigDecimal SHIPPING_FEE = BigDecimal.valueOf(5);
     @Value("${paypal.client.id}")
     private String clientId;
 
@@ -36,7 +39,16 @@ public class PayPalController {
     @PostMapping("/create")
     public ResponseEntity<?> createOrder(@Valid @RequestBody CreateOrderRequest body){
         try{
-            return ResponseEntity.ok(payPalSDKService.createOrder(body.amount()));
+            BigDecimal amount = new BigDecimal(body.amount());
+
+            if (Boolean.TRUE.equals(body.includeShippingFee())) {
+                amount = amount.add(SHIPPING_FEE);
+            }
+
+            String formatted = amount.setScale(2, RoundingMode.HALF_UP).toPlainString();
+            return ResponseEntity.ok(payPalSDKService.createOrder(formatted));
+        } catch (NumberFormatException e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("Invalid amount"));
         } catch (Exception e){
             e.printStackTrace();
             return ResponseEntity.internalServerError().body(new ErrorResponse(e.getMessage()));
@@ -64,5 +76,5 @@ public class PayPalController {
         return ResponseEntity.ok(new ClientIdResponse(clientId));
     }
 
-    public record CreateOrderRequest(@NotBlank String amount) {}
+    public record CreateOrderRequest(@NotBlank String amount, Boolean includeShippingFee) {}
 }

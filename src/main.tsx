@@ -4,6 +4,7 @@ import ReactDOM from "react-dom/client";
 
 import App from "./App";
 import { AuthProvider } from "./Global/Context/AuthContext";
+import { MenCartProvider } from "./Men/Local/Pages/Store/context/MenCartContext";
 import "./index.css";
 
 const root = document.getElementById("root");
@@ -14,7 +15,9 @@ if (!root) {
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <AuthProvider>
-      <App />
+      <MenCartProvider>
+        <App />
+      </MenCartProvider>
     </AuthProvider>
   </React.StrictMode>
 );

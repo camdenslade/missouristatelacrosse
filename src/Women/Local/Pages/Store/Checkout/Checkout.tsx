@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import useStore from "../hooks/useStore";
 import CheckoutSummary from "./CheckoutSummary";
 
+const SHIPPING_FEE = 5;
+
 export default function Checkout() {
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -16,9 +18,10 @@ export default function Checkout() {
     0
   );
 
-  const total = cartTotal + donation;
+  const totalBeforeShipping = cartTotal + donation;
+  const total = totalBeforeShipping + SHIPPING_FEE;
 
-  useStore(total, "paypal-buttons-container", setCart, navigate);
+  useStore(totalBeforeShipping, "paypal-buttons-container", setCart, navigate);
 
   return (
     <div className="max-w-3xl mx-auto p-6 bg-white rounded shadow animate-fadeIn">
@@ -34,6 +37,10 @@ export default function Checkout() {
             Donation: +${donation.toFixed(2)}
           </p>
         )}
+
+        <p className="font-semibold text-lg">
+          Shipping: +${SHIPPING_FEE.toFixed(2)}
+        </p>
 
         <p className="font-bold text-xl mt-2">Total: ${total.toFixed(2)}</p>
 

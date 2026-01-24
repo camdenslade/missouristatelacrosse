@@ -3,8 +3,8 @@ import { useEffect, useReducer } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { apiRequest } from "../../../../../Services/API";
 import type {
-  ApiOrderLog,
   PrintifyProduct,
+  PublicOrderDetails,
 } from "../../../../../types/api";
 
 type EnrichedItem = {
@@ -14,16 +14,16 @@ type EnrichedItem = {
 };
 
 type Shipping = {
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone?: string;
-  address1: string;
-  address2?: string;
-  city: string;
-  region: string;
-  zip: string;
-  country: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address1?: string | null;
+  address2?: string | null;
+  city?: string | null;
+  region?: string | null;
+  zip?: string | null;
+  country?: string | null;
 };
 
 type State = {
@@ -77,31 +77,28 @@ export default function CheckoutSuccess() {
       }
 
       try {
-        // Fetch order logs (admin endpoint already exists)
-        const logs = await apiRequest<ApiOrderLog[]>(
-          `/api/admin/printify/orders?limit=50`
+        const orderDetails = await apiRequest<PublicOrderDetails>(
+          `/api/printify/orders/${orderID}`
         );
 
-        const log = logs.find((l) => l.orderId === orderID);
-        if (!log?.requestPayload) {
-          throw new Error("Order not found in Printify logs");
+        if (!orderDetails?.items?.length) {
+          throw new Error("Order not found");
         }
 
-        const payload = JSON.parse(log.requestPayload);
         const products = await apiRequest<PrintifyProduct[]>(
           "/api/printify/products"
         );
 
         // Enrich items
-        const items: EnrichedItem[] = payload.line_items.map((li) => {
+        const items: EnrichedItem[] = orderDetails.items.map((li) => {
           const product = products.find(
-            (p) => String(p.id) === String(li.product_id)
+            (p) => String(p.id) === String(li.productId)
           );
 
           let size;
           if (product) {
             const variant = product.variants.find(
-              (v) => String(v.id) === String(li.variant_id)
+              (v) => String(v.id) === String(li.variantId)
             );
             const sizeIndex = product.options.findIndex(
               (o) => o.type === "size"
@@ -115,8 +112,8 @@ export default function CheckoutSuccess() {
           }
 
           return {
-            title: product?.title || li.product_id,
-            quantity: li.quantity,
+            title: product?.title || li.productId,
+            quantity: li.quantity || 1,
             size,
           };
         });
@@ -125,7 +122,7 @@ export default function CheckoutSuccess() {
           type: "SUCCESS",
           payload: {
             orderId: orderID,
-            shipping: payload.address_to,
+            shipping: orderDetails.shipping || undefined,
             items,
           },
         });
@@ -163,7 +160,21 @@ export default function CheckoutSuccess() {
     );
   }
 
-  const s = state.shipping!;
+  if (!state.shipping) {
+    return (
+      <div className="text-center p-8">
+        <p className="text-red-600">Unable to load shipping details for this order.</p>
+        <button
+          onClick={() => navigate("/store")}
+          className="mt-6 px-4 py-2 bg-[#5E0009] text-white rounded"
+        >
+          Back to Store
+        </button>
+      </div>
+    );
+  }
+
+  const s = state.shipping;
 
   return (
     <div className="max-w-xl mx-auto p-8 bg-white rounded shadow">

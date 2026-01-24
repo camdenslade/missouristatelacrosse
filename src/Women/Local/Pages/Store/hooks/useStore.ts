@@ -77,7 +77,7 @@ export default function useStore(
           "/api/paypal/create",
           {
             method: "POST",
-            json: { amount: finalTotal.toFixed(2) }
+            json: { amount: finalTotal.toFixed(2), includeShippingFee: true }
           }
         );
         if (!data?.id) throw new Error("Failed to create PayPal order");

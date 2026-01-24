@@ -10,10 +10,10 @@ import type { PrintifyProduct } from "../../../../types/api";
 import Cart from "./components/Cart";
 import OrderLogsModal from "./components/OrderLogsModal";
 import ProductCard from "./components/ProductCard";
+import { useMenCart } from "./context/MenCartContext";
 
 const initialState = {
   products: [],
-  cart: [],
   loading: true,
   showCart: false,
 };
@@ -26,22 +26,6 @@ function reducer(state, action) {
       return { ...state, loading: action.payload };
     case "TOGGLE_CART":
       return { ...state, showCart: action.payload };
-    case "ADD_TO_CART": {
-      const product = action.payload;
-      const exists = state.cart.find(
-        (item) => item.id === product.id && item.variantId === product.variantId
-      );
-      const newCart = exists
-        ? state.cart.map((item) =>
-            item.id === product.id && item.variantId === product.variantId
-              ? { ...item, quantity: (item.quantity || 1) + 1 }
-              : item
-          )
-        : [...state.cart, { ...product, quantity: 1 }];
-      return { ...state, cart: newCart, showCart: true };
-    }
-    case "SET_CART":
-      return { ...state, cart: action.payload };
     default:
       return state;
   }
@@ -49,6 +33,7 @@ function reducer(state, action) {
 
 export default function Store() {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const { cart, addToCart, setCart, totalItems } = useMenCart();
   const sidebarRef = useRef(null);
   const touchStartX = useRef(0);
   const touchCurrentX = useRef(0);
@@ -74,12 +59,9 @@ export default function Store() {
     if (isEnabled) fetchProducts();
   }, [isEnabled]);
 
-  const addToCart = (product) => {
-    dispatch({ type: "ADD_TO_CART", payload: product });
-  };
-
-  const setCart = (newCart) => {
-    dispatch({ type: "SET_CART", payload: newCart });
+  const handleAddToCart = (product) => {
+    addToCart(product);
+    setShowCart(true);
   };
 
   const setShowCart = (val) => {
@@ -97,10 +79,6 @@ export default function Store() {
       setShowCart(false);
     }
   };
-
-  const totalItems = Array.isArray(state.cart)
-    ? state.cart.reduce((sum, item) => sum + (item.quantity || 1), 0)
-    : 0;
 
   return (
     <div className="relative max-w-5xl mx-auto px-6 py-10">
@@ -129,7 +107,7 @@ export default function Store() {
                 <ProductCard
                   key={`${p.id}-${idx}`}
                   product={p}
-                  onAddToCart={addToCart}
+                  onAddToCart={handleAddToCart}
                 />
               ))}
             </div>
@@ -140,7 +118,7 @@ export default function Store() {
             className="fixed bottom-6 right-6 w-32 h-32 bg-[#5E0009] text-white rounded-full flex items-center justify-center shadow-2xl hover:bg-red-800"
           >
             <FaShoppingCart className="text-5xl" />
-            {state.cart.length > 0 && (
+            {cart.length > 0 && (
               <span className="absolute top-2 right-2 bg-white text-[#5E0009] rounded-full px-4 py-2 text-xl font-bold shadow">
                 {totalItems}
               </span>
@@ -148,7 +126,7 @@ export default function Store() {
           </button>
 
           <Cart
-            cart={Array.isArray(state.cart) ? state.cart : []}
+            cart={Array.isArray(cart) ? cart : []}
             setCart={setCart}
             showCart={state.showCart}
             setShowCart={setShowCart}
