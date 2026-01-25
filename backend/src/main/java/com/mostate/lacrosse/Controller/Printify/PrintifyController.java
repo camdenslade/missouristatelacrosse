@@ -1,5 +1,7 @@
 package com.mostate.lacrosse.Controller.Printify;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Value;
 import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Model.PrintifyOrderLog;
 import com.mostate.lacrosse.Service.EmailService;
@@ -28,17 +31,20 @@ public class PrintifyController {
     private final EmailService emailService;
     private final PrintifyOrderLogService orderLogService;
     private final PaymentReceiptService paymentReceiptService;
+    private final String frontendBaseUrl;
 
     public PrintifyController(
         PrintifyService printifyService,
         EmailService emailService,
         PrintifyOrderLogService orderLogService,
-        PaymentReceiptService paymentReceiptService
+        PaymentReceiptService paymentReceiptService,
+        @Value("${app.frontend.base-url}") String frontendBaseUrl
     ) {
         this.printifyService = printifyService;
         this.emailService = emailService;
         this.orderLogService = orderLogService;
         this.paymentReceiptService = paymentReceiptService;
+        this.frontendBaseUrl = frontendBaseUrl;
     }
 
     @GetMapping("/products")
@@ -138,7 +144,13 @@ public class PrintifyController {
                 .append(s.getCity()).append(", ").append(s.getRegion())
                 .append(" ").append(s.getZip()).append("\n")
                 .append(s.getCountry()).append("\n\n")
-                .append("Thank you for supporting Missouri State Lacrosse!\n\n- Missouri State Lacrosse");
+                .append("Thank you for supporting Missouri State Lacrosse!\n\n")
+                .append("- Missouri State Lacrosse");
+
+            String lookupLink = buildOrderLookupUrl(req.getOrderId());
+            if (lookupLink != null) {
+                body.append("\n\nView or track your order online: ").append(lookupLink);
+            }
 
             emailService.sendEmail(
                 s.getEmail(),
@@ -168,6 +180,20 @@ public class PrintifyController {
         if (first == null) return last;
         if (last == null) return first;
         return (first + " " + last).trim();
+    }
+    
+    private String buildOrderLookupUrl(String orderId) {
+        if (orderId == null || orderId.isBlank()) {
+            return null;
+        }
+        String base = frontendBaseUrl != null ? frontendBaseUrl.trim() : "";
+        while (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        if (base.isEmpty()) {
+            base = "https://missouristatelacrosse.com";
+        }
+        return base + "/order-lookup?orderID=" + URLEncoder.encode(orderId, StandardCharsets.UTF_8);
     }
 
     private static Map<String, Object> asMap(Object value) {

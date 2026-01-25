@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import UnavailableOverlay from "../../../../Global/Common/UnavailableOverlay";
 import { useAuth } from "../../../../Global/Context/AuthContext";
 import { apiRequest } from "../../../../Services/API";
+import { getProgramInfo } from "../../../../Services/programHelper";
 import type { PrintifyProduct } from "../../../../types/api";
 import Cart from "./components/Cart";
 import OrderLogsModal from "./components/OrderLogsModal";
@@ -56,6 +57,8 @@ export default function WStore() {
   const isEnabled = import.meta.env.VITE_TEAMSTORE_ENABLED_WOMEN === "true";
   const { user, roles } = useAuth();
   const [showOrderLogs, setShowOrderLogs] = useState(false);
+  const { program } = getProgramInfo();
+  const orderLookupPath = program === "women" ? "/women/order-lookup" : "/order-lookup";
   
   const isAdmin = roles?.women === "admin";
 
@@ -106,14 +109,22 @@ export default function WStore() {
     <div className="relative max-w-5xl mx-auto px-6 py-10">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Women's Team Store</h1>
-        {isAdmin && (
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <button
+              onClick={() => setShowOrderLogs(true)}
+              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium"
+            >
+              View Orders
+            </button>
+          )}
           <button
-            onClick={() => setShowOrderLogs(true)}
-            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium"
+            onClick={() => navigate(orderLookupPath)}
+            className="px-4 py-2 border border-[#5E0009] text-[#5E0009] rounded text-sm font-medium hover:bg-[#5E0009] hover:text-white"
           >
-            View Orders
+            Lookup Order
           </button>
-        )}
+        </div>
       </div>
 
       {isEnabled ? (

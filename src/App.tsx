@@ -24,6 +24,7 @@ import Settings from "./Men/Local/Pages/Settings/Settings";
 import SponsorMain from "./Men/Local/Pages/Sponsor/SponsorMain";
 import Checkout from "./Men/Local/Pages/Store/Checkout/Checkout";
 import CheckoutSuccess from "./Men/Local/Pages/Store/Checkout/CheckoutSuccess";
+import OrderLookup from "./Men/Local/Pages/Store/OrderLookup";
 import Store from "./Men/Local/Pages/Store/Store";
 
 
@@ -97,6 +98,7 @@ export default function App() {
               }
             />
             <Route path="/store" element={<Store />} />
+            <Route path="/order-lookup" element={<OrderLookup />} />
             <Route path="/donate" element={<Donate />} />
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/sponsorships" element={<SponsorMain />} />
@@ -156,6 +158,7 @@ export default function App() {
               }
             />
             <Route path="/women/store" element={<WStore />} />
+            <Route path="/women/order-lookup" element={<OrderLookup />} />
             <Route path="/women/donate" element={<WDonate />} />
             <Route path="/women/gallery" element={<WGallery />} />
             <Route path="/women/sponsorships" element={<WSponsorMain />} />
