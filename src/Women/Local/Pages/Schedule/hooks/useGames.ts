@@ -209,8 +209,12 @@ export default function useGames() {
           dateValue = dateInput.toDate();
         }
       } else if (typeof dateInput === "string") {
-        const [year, month, day] = dateInput.split("-").map(Number);
-        dateValue = new Date(year, month - 1, day);
+        if (dateInput.includes("T")) {
+          dateValue = new Date(dateInput);
+        } else {
+          const [year, month, day] = dateInput.split("-").map(Number);
+          dateValue = new Date(year, month - 1, day);
+        }
       }
       if (!dateValue) dateValue = new Date();
 

@@ -16,6 +16,9 @@ export function calculateRecord(games){
     else if (result === "L") record[key].l++;
   };
 
+  let gf = 0;
+  let ga = 0;
+
   for (const g of games){
     if (!g?.result) continue;
     const r = g.result;
@@ -23,6 +26,8 @@ export function calculateRecord(games){
     if (g.type) add(g.type, r);
     if (g.isConference) add("conf", r);
     if (g.isDivision) add("div", r);
+    if (typeof g.msuScore === "number") gf += g.msuScore;
+    if (typeof g.oppScore === "number") ga += g.oppScore;
   }
 
   const sorted = games
@@ -54,5 +59,7 @@ export function calculateRecord(games){
     away: `${record.away.w}-${record.away.l}`,
     neutral: `${record.neutral.w}-${record.neutral.l}`,
     streak: record.streak,
+    gf,
+    ga,
   };
 }

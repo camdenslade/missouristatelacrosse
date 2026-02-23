@@ -1,6 +1,8 @@
 // src/Men/Local/Pages/Sponsor/SponsorMain.jsx
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
+import SponsorLogos from "../../../../Global/Common/SponsorLogos";
+import { useSponsors } from "../../../../Global/Common/hooks/useSponsors";
 import { validateText } from "../../../../Global/Common/utils/validation";
 
 export default function SponsorMain() {
@@ -11,6 +13,7 @@ export default function SponsorMain() {
     request: "",
   });
   const [loading, setLoading] = useState(false);
+  const { sponsors } = useSponsors();
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -137,14 +140,22 @@ export default function SponsorMain() {
         <p>Head Coach, Missouri State Men’s Lacrosse</p>
         <p>
           <a
-            href="mailto:17bcole@gmail.com"
+            href="mailto:17bacole@gmail.com"
             className="text-[#5E0009] hover:underline font-medium"
           >
-            17bcole@gmail.com
+            17bacole@gmail.com
           </a>
         </p>
         <p className="text-gray-700">417-224-9327</p>
       </div>
+
+      {/* Current Sponsors */}
+      {sponsors.length > 0 && (
+        <div className="border-t pt-6 mb-8">
+          <h3 className="text-xl font-bold text-[#5E0009] mb-4">Our Current Sponsors</h3>
+          <SponsorLogos sponsors={sponsors} layout="grid" maxHeight={120} />
+        </div>
+      )}
 
       {/* Contact Us Button */}
       <div className="text-center">

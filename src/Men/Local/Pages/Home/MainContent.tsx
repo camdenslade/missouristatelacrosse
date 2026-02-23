@@ -3,6 +3,8 @@ import { useEffect, useLayoutEffect, useReducer, useState } from "react";
 import type { FormEvent } from "react";
 import { motion } from "framer-motion";
 
+import SponsorLogos from "../../../../Global/Common/SponsorLogos";
+import { useSponsors } from "../../../../Global/Common/hooks/useSponsors";
 import { validateText, validateUrl } from "../../../../Global/Common/utils/validation";
 import { useAuth } from "../../../../Global/Context/AuthContext";
 import { apiRequest } from "../../../../Services/API";
@@ -43,6 +45,7 @@ const preloadImages = (urls: string[]) =>
 export default function MainContent() {
   const { roles } = useAuth();
   const menRole = roles?.men;
+  const { sponsors } = useSponsors();
 
   const [articles, setArticles] = useState<ApiArticle[]>([]);
   const [slides, setSlides] = useState<string[]>([]);
@@ -154,20 +157,29 @@ export default function MainContent() {
   return (
     <>
       {activeFundraiser && (
-        <div className="sticky top-0 bg-[#5E0009] text-white px-8 py-3 shadow-md flex flex-col md:flex-row items-center justify-between gap-4 z-30">
-          <p className="font-semibold text-center text-base md:text-lg">
-            {activeFundraiser.title}
-          </p>
-          {activeFundraiser.link && (
-            <a
-              href={activeFundraiser.link}
-              target="_blank"
-              rel="noreferrer"
-              className="bg-white text-[#5E0009] font-semibold px-5 py-2 hover:bg-gray-200 transition"
-            >
-              Go to Fundraiser
-            </a>
-          )}
+        <div className="sticky top-0 z-30 bg-gradient-to-r from-[#5E0009] via-[#7a1020] to-[#5E0009] text-white shadow-lg overflow-hidden">
+          <div className="relative px-6 py-3">
+            {/* Shimmer sweep */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shimmer_3s_ease-in-out_infinite] pointer-events-none" />
+            <style>{`@keyframes shimmer{0%,100%{transform:translateX(-100%)}50%{transform:translateX(100%)}}`}</style>
+
+            <div className="flex flex-col md:flex-row items-center justify-between gap-3 relative">
+              <p className="font-bold text-lg md:text-xl tracking-wide text-center md:text-left">
+                {activeFundraiser.title}
+              </p>
+
+              {activeFundraiser.link && (
+                <a
+                  href={activeFundraiser.link}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="bg-white text-[#5E0009] font-bold px-6 py-2.5 hover:bg-yellow-300 transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap"
+                >
+                  Donate Now
+                </a>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -351,6 +363,11 @@ export default function MainContent() {
           Partner with Missouri State Lacrosse through various sponsorship opportunities.
           Your business can help support student-athletes and grow the game we love.
         </p>
+        {sponsors.length > 0 && (
+          <div className="mb-8">
+            <SponsorLogos sponsors={sponsors} layout="row" maxHeight={80} />
+          </div>
+        )}
         <a
           href="/sponsorships"
           className="inline-block bg-[#5E0009] text-white px-8 py-3 font-semibold hover:bg-red-800 transition"

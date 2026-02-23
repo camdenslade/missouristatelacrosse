@@ -11,10 +11,20 @@ export type BoxScore = Record<string, BoxScoreEntry>;
 
 export type PlayerStat = {
   name?: string;
+  number?: string | number | null;
+  gamesPlayed?: number;
+  gamesStarted?: number;
   goals?: number;
   assists?: number;
+  shotsOnGoal?: number;
   groundBalls?: number;
+  causedTurnovers?: number;
+  turnovers?: number;
+  faceoffWins?: number;
+  faceoffLosses?: number;
   saves?: number;
+  goalsAllowed?: number;
+  isGoalie?: boolean;
 };
 
 export type ScheduleGame = {

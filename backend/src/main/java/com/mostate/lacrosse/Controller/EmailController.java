@@ -74,7 +74,7 @@ public class EmailController {
 
         String adminRecipient = program.equals("women")
                 ? "mostatewomenslax@gmail.com"
-                : "17bcole@gmail.com";
+                : "17bacole@gmail.com";
 
         emailService.sendEmail(adminRecipient, "New Sponsor Inquiry", adminBody);
 

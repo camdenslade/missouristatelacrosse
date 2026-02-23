@@ -3,7 +3,10 @@ import { useMemo, useReducer } from "react";
 
 import AccountRequests from "./Tabs/AccountRequests";
 import EmailCenter from "./Tabs/EmailCenter";
+import ManageEvents from "./Tabs/ManageEvents";
 import ManagePlayers from "./Tabs/ManagePlayers";
+import ManageRaffles from "./Tabs/ManageRaffles";
+import ManageSponsors from "./Tabs/ManageSponsors";
 
 const initialState = { activeTab: "players" };
 
@@ -25,6 +28,9 @@ export default function WAdminDashboard(){
       { id: "players", label: "Manage Players" },
       { id: "requests", label: "Account Requests" },
       { id: "email", label: "Email Center" },
+      { id: "sponsors", label: "Sponsors" },
+      { id: "events", label: "Events" },
+      { id: "raffles", label: "Raffles" },
     ],
     []
   );
@@ -37,6 +43,12 @@ export default function WAdminDashboard(){
         return <AccountRequests />;
       case "email":
         return <EmailCenter />;
+      case "sponsors":
+        return <ManageSponsors />;
+      case "events":
+        return <ManageEvents />;
+      case "raffles":
+        return <ManageRaffles />;
       default:
         return null;
     }

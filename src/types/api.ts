@@ -105,6 +105,14 @@ export interface ApiFundraiser {
   active?: boolean | null;
 }
 
+export interface ApiSponsor {
+  id: string;
+  name?: string | null;
+  logo?: string | null;
+  link?: string | null;
+  displayOrder?: number | null;
+}
+
 export interface ApiGalleryFolder {
   folder: string;
   images: string[];
@@ -179,6 +187,92 @@ export interface ApiOrderLog {
   requestPayload?: string | null;
   responsePayload?: string | null;
   timestamp?: string | null;
+}
+
+export type EventFieldType = "text" | "number" | "select" | "checkbox";
+
+export interface ApiEventField {
+  id: string;
+  label: string;
+  type: EventFieldType;
+  required: boolean;
+  options?: string[];
+}
+
+export interface ApiEvent {
+  id: string;
+  name: string;
+  slug: string;
+  address?: string | null;
+  mapsLink?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  description?: string | null;
+  image?: string | null;
+  fields: ApiEventField[];
+  price?: number | null;
+  teamSize: number;
+  published: boolean;
+  registrationCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ApiEventRegistration {
+  id: string;
+  eventId: string;
+  payerName?: string | null;
+  payerEmail?: string | null;
+  paypalOrderId?: string | null;
+  amountPaid?: number | null;
+  paid: boolean;
+  paidAt?: string | null;
+  formData: Record<string, unknown>;
+  teamId?: string | null;
+  teammateEmails?: string[] | null;
+  teamComplete?: boolean | null;
+  createdAt?: string;
+}
+
+export interface ApiEventTeamCheck {
+  found: boolean;
+  teamId?: string | null;
+  registrantName?: string | null;
+  registrantEmail?: string | null;
+}
+
+export interface ApiRaffle {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  image?: string | null;
+  ticketPrice?: number | null;
+  maxTicketsPerPerson?: number | null;
+  allowBids: boolean;
+  published: boolean;
+  status: "active" | "closed" | "drawn";
+  endTime?: string | null;
+  winnerName?: string | null;
+  winnerEmail?: string | null;
+  entryCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ApiRaffleEntry {
+  id: string;
+  raffleId: string;
+  payerName?: string | null;
+  payerEmail?: string | null;
+  payerPhone?: string | null;
+  paypalOrderId?: string | null;
+  amountPaid?: number | null;
+  ticketCount: number;
+  bidAmount?: number | null;
+  paid: boolean;
+  paidAt?: string | null;
+  createdAt?: string;
 }
 
 export interface PublicOrderItem {

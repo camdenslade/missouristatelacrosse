@@ -60,41 +60,77 @@ public class PrintifyService {
 
     public List<Map<String, Object>> getProducts() {
         try {
-            String url = baseUrl + "/shops/" + shopId + "/products.json";
-
             HttpHeaders headers = createPrintifyHeaders();
             HttpEntity<Void> request = new HttpEntity<>(headers);
-            ResponseEntity<Map<String, Object>> response = rest.exchange(
-                url,
-                HttpMethod.GET,
-                request,
-                MAP_RESPONSE
-            );
-
-            Object dataRaw = response.getBody() != null ? response.getBody().get("data") : null;
-            if (!(dataRaw instanceof List<?> dataList)) return List.of();
 
             List<Map<String, Object>> products = new java.util.ArrayList<>();
+            int page = 1;
 
-            for (Object obj : dataList) {
-                Map<String, Object> product = castMap(obj);
+            while (true) {
+                String url = baseUrl + "/shops/" + shopId + "/products.json?page=" + page;
+                ResponseEntity<Map<String, Object>> response = rest.exchange(
+                    url,
+                    HttpMethod.GET,
+                    request,
+                    MAP_RESPONSE
+                );
 
-                List<Map<String, Object>> variants = castMapList(product.get("variants"));
-                for (Map<String, Object> variant : variants) {
+                Object dataRaw = response.getBody() != null ? response.getBody().get("data") : null;
+                if (!(dataRaw instanceof List<?> dataList) || dataList.isEmpty()) break;
 
-                    Object priceObj = variant.get("price");
-                    if (priceObj == null) {
-                        continue;
+                for (Object obj : dataList) {
+                    Map<String, Object> product = castMap(obj);
+
+                    List<Map<String, Object>> variants = castMapList(product.get("variants"));
+
+                    // Only keep variants that are enabled on the Printify dashboard
+                    List<Map<String, Object>> enabledVariants = new java.util.ArrayList<>();
+                    java.util.Set<Object> enabledOptionIds = new java.util.HashSet<>();
+
+                    for (Map<String, Object> variant : variants) {
+                        Object enabled = variant.get("is_enabled");
+                        if (!(Boolean.TRUE.equals(enabled))) {
+                            continue;
+                        }
+
+                        Object priceObj = variant.get("price");
+                        if (priceObj == null) {
+                            continue;
+                        }
+                        double basePrice = (priceObj instanceof Number n) ? n.doubleValue() / 100.0 :
+                            Double.parseDouble(priceObj.toString()) / 100.0;
+
+                        double adjusted = Math.round(((basePrice + 5) / 5)) * 5;
+
+                        variant.put("our_price", (int) (adjusted * 100));
+                        enabledVariants.add(variant);
+
+                        // Collect option value IDs used by enabled variants
+                        Object optionIds = variant.get("options");
+                        if (optionIds instanceof List<?> ids) {
+                            enabledOptionIds.addAll(ids);
+                        }
                     }
-                    double basePrice = (priceObj instanceof Number n) ? n.doubleValue() / 100.0 :
-                        Double.parseDouble(priceObj.toString()) / 100.0;
 
-                    double adjusted = Math.round(((basePrice + 5) / 5)) * 5;
+                    product.put("variants", enabledVariants);
 
-                    variant.put("our_price", (int) (adjusted * 100));
+                    // Filter product options to only include values present in enabled variants
+                    List<Map<String, Object>> options = castMapList(product.get("options"));
+                    for (Map<String, Object> option : options) {
+                        List<Map<String, Object>> values = castMapList(option.get("values"));
+                        List<Map<String, Object>> filteredValues = values.stream()
+                            .filter(v -> enabledOptionIds.contains(v.get("id")))
+                            .collect(Collectors.toList());
+                        option.put("values", filteredValues);
+                    }
+
+                    // Skip products with no enabled variants
+                    if (!enabledVariants.isEmpty()) {
+                        products.add(product);
+                    }
                 }
 
-                products.add(product);
+                page++;
             }
 
             return products;

@@ -106,7 +106,7 @@ export default function OrderLookup() {
   }, [shipping]);
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6 p-6">
       <div className="bg-white border border-gray-200 rounded p-6 shadow-sm space-y-3">
         <h1 className="text-2xl font-bold text-[#5E0009]">Order Lookup</h1>
         <p className="text-sm text-gray-600">

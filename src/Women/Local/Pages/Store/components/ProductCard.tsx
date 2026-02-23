@@ -4,6 +4,7 @@ import { useState } from "react";
 type ProductVariant = {
   id: string;
   price: number;
+  our_price: number;
   options?: string[];
 };
 
@@ -92,9 +93,9 @@ export default function ProductCard({
     : null;
 
   const basePrice = selectedVariant
-    ? selectedVariant.price / 100
+    ? selectedVariant.our_price / 100
     : variants.length
-    ? Math.min(...variants.map((v) => v.price)) / 100
+    ? Math.min(...variants.map((v) => v.our_price)) / 100
     : 0;
   const imageSrc = (product.images || []).find((img) => img?.src)?.src || "";
 
@@ -112,42 +113,60 @@ export default function ProductCard({
       title: product.title,
       variantId: selectedVariant.id,
       size: allOneSize ? "One size" : selectedSize,
-      price: selectedVariant.price / 100,
+      price: selectedVariant.our_price / 100,
       image: imageSrc
     });
   };
 
   return (
-    <div className="border p-4 shadow hover:shadow-lg transition">
-      <img
-        src={imageSrc}
-        alt={product.title}
-        className="w-full h-64 object-contain mb-4"
-      />
+    <div className="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg hover:border-gray-300 transition-all duration-200 flex flex-col h-full">
+      {/* Product image */}
+      <div className="bg-gray-50 p-6">
+        <img
+          src={imageSrc}
+          alt={product.title}
+          className="w-full h-56 object-contain group-hover:scale-105 transition-transform duration-300"
+        />
+      </div>
 
-      <h2 className="text-xl font-semibold mb-1">{product.title}</h2>
-      <p className="text-lg font-bold mb-3">${basePrice.toFixed(2)}</p>
-      {!allOneSize && sizes.length > 0 && (
-        <select
-          value={selectedSize}
-          onChange={(e) => setSelectedSize(e.target.value)}
-          className="border w-full p-2 mb-3"
-        >
-          <option value="">Select Size</option>
-          {sizes.map(size => (
-            <option key={size} value={size}>
-              {size}
-            </option>
-          ))}
-        </select>
-      )}
+      {/* Product details */}
+      <div className="p-5 flex flex-col flex-1">
+        <h2 className="font-semibold text-gray-900 leading-snug mb-2 line-clamp-2">
+          {product.title}
+        </h2>
 
-      <button
-        onClick={handleAdd}
-        className="bg-[#5E0009] text-white w-full py-2 font-semibold hover:bg-red-800 transition"
-      >
-        Add to Cart
-      </button>
+        <p className="text-xl font-bold text-[#5E0009] mb-4">
+          ${basePrice.toFixed(2)}
+        </p>
+
+        <div className="mt-auto pt-3">
+          {!allOneSize && sizes.length > 0 && (
+            <div className="mb-3">
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                Size
+              </label>
+              <select
+                value={selectedSize}
+                onChange={(e) => setSelectedSize(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:border-transparent transition"
+              >
+                <option value="">Select Size</option>
+                {sizes.map(size => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <button
+            onClick={handleAdd}
+            className="w-full bg-[#5E0009] text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-red-800 active:scale-[0.98] transition-all"
+          >
+            Add to Cart
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

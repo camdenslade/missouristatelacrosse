@@ -156,7 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const userRoles = data.roles || {};
         const currentRole =
-          userRoles[program]?.toLowerCase() || "player";
+          userRoles[program]?.toLowerCase() || null;
         const displayName =
           data.displayName ||
           currentUser.displayName ||
@@ -189,7 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           })
         );
 
-        if (!data.playerId && currentRole === "player" && displayName) {
+        if (!data.playerId && currentRole && ["player", "admin"].includes(currentRole) && displayName) {
           await tryAutoLinkPlayer(currentUser, displayName, program);
         }
       } catch (err) {
@@ -242,9 +242,19 @@ async function tryAutoLinkPlayer(
       start + 1
     ).slice(-2)}`;
 
-    const player = await apiRequest<{ id?: string }>(
+    let player = await apiRequest<{ id?: string; email?: string }>(
       `/api/players/search?name=${encodeURIComponent(displayName)}&season=${encodeURIComponent(currentSeason)}`
     ).catch(() => null);
+
+    if (!player?.id && firebaseUser.email) {
+      const allPlayers = await apiRequest<{ id?: string; email?: string }[]>(
+        `/api/players?season=${encodeURIComponent(currentSeason)}`
+      ).catch(() => []);
+      const emailLower = firebaseUser.email.toLowerCase();
+      player = allPlayers.find(
+        (p) => p.email && p.email.toLowerCase() === emailLower
+      ) || null;
+    }
 
     if (player?.id) {
       const playerId = player.id;

@@ -103,8 +103,6 @@ export default function Payments() {
     let match: ApiPlayer | null = null;
     if (linkedPlayer) match = linkedPlayer;
     if (!match && programRole === "parent" && seasonPlayers.length > 0) match = seasonPlayers[0];
-    if (!match && programRole === "admin" && seasonPlayers.length > 0) match = seasonPlayers[0];
-    if (!match && seasonPlayers.length > 0) match = seasonPlayers[0];
 
     if (match) dispatch({ type: "SET_SELECTED_PLAYER", player: match });
   }, [seasonPlayers, state.selectedPlayer, programRole, linkedPlayer]);

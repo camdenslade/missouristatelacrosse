@@ -274,7 +274,7 @@ class PrintifyServiceTest {
 
     @Test
     void testGetProducts_IncludesUserAgentHeader() {
-        // Arrange
+        // Arrange — page 1 returns one product, page 2 returns empty to end pagination
         Map<String, Object> responseBody = new HashMap<>();
         Map<String, Object> product = new HashMap<>();
         product.put("id", "prod-1");
@@ -282,10 +282,15 @@ class PrintifyServiceTest {
         product.put("variants", List.of(new HashMap<>()));
         responseBody.put("data", List.of(product));
 
-        ResponseEntity<Map<String, Object>> response = new ResponseEntity<>(responseBody, HttpStatus.OK);
+        Map<String, Object> emptyResponse = new HashMap<>();
+        emptyResponse.put("data", List.of());
+
+        ResponseEntity<Map<String, Object>> page1 = new ResponseEntity<>(responseBody, HttpStatus.OK);
+        ResponseEntity<Map<String, Object>> page2 = new ResponseEntity<>(emptyResponse, HttpStatus.OK);
 
         when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), ArgumentMatchers.<ParameterizedTypeReference<Map<String, Object>>>any()))
-            .thenReturn(response);
+            .thenReturn(page1)
+            .thenReturn(page2);
 
         // Act
         List<Map<String, Object>> products = printifyService.getProducts();
@@ -295,11 +300,11 @@ class PrintifyServiceTest {
 
         // Verify headers include User-Agent
         ArgumentCaptor<HttpEntity<?>> entityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
-        verify(restTemplate).exchange(anyString(), eq(HttpMethod.GET), entityCaptor.capture(), ArgumentMatchers.<ParameterizedTypeReference<Map<String, Object>>>any());
-        
+        verify(restTemplate, atLeastOnce()).exchange(anyString(), eq(HttpMethod.GET), entityCaptor.capture(), ArgumentMatchers.<ParameterizedTypeReference<Map<String, Object>>>any());
+
         HttpEntity<?> capturedEntity = entityCaptor.getValue();
         HttpHeaders headers = capturedEntity.getHeaders();
-        
+
         assertEquals("MissouriStateLacrosse/1.0", headers.getFirst("User-Agent"));
         assertTrue(headers.getFirst("Authorization").startsWith("Bearer"));
     }

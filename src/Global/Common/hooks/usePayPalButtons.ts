@@ -104,16 +104,22 @@ export default function usePayPalButtons(
           { method: "POST" }
         );
 
-        await apiRequest("/api/email/confirm-donation", {
+        // Fire-and-forget — don't block onSuccess on email delivery
+        apiRequest("/api/email/confirm-donation", {
           method: "POST",
           json: {
             orderId: captureData.id,
             payerEmail: captureData.payer?.email_address,
             amount,
           },
-        });
+        }).catch((err) => console.error("Donation confirmation email failed:", err));
 
-        onSuccess?.(captureData, amount);
+        // Wrap so any post-capture error never surfaces as "Payment failed"
+        try {
+          await onSuccess?.(captureData, amount);
+        } catch (err) {
+          console.error("Post-capture handler failed:", err);
+        }
       },
 
       onError: (err) => {

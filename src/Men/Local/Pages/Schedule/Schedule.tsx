@@ -1,6 +1,6 @@
 // src/Men/Local/Pages/Schedule/Schedule.jsx
 import { addHours, isWithinInterval, parseISO, subHours } from "date-fns";
-import { useEffect, useReducer } from "react";
+import { useEffect, useMemo, useReducer } from "react";
 import type { ReactElement } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getCurrentYear, setCurrentYear } from "../../../../Services/yearHelper";
@@ -10,6 +10,7 @@ import RecordGrid from "./components/RecordGrid";
 import { calculateRecord } from "./hooks/recordUtils";
 import useCountdown from "./hooks/useCountdown";
 import useGames from "./hooks/useGames";
+import usePlayers from "../Roster/contenthooks/usePlayers";
 import LiveGameUI from "./Live/LiveGameUI";
 import LiveGameViewer from "./Live/LiveGameViewer";
 import ScheduleFormModal from "./Modals/ScheduleForm";
@@ -94,6 +95,7 @@ export default function Schedule({ userRole }: { userRole?: string | null }) {
   const { season } = useParams();
   const navigate = useNavigate();
   const { fetchGames, saveGame, removeGame } = useGames();
+  const { fetchPlayers, players: allPlayers } = usePlayers();
   const [state, dispatch] = useReducer(reducer, initialState);
   const {
     games,
@@ -130,6 +132,7 @@ export default function Schedule({ userRole }: { userRole?: string | null }) {
 
   useEffect(() => {
     loadSeason();
+    fetchPlayers();
   }, [selectedSeason]);
 
   useEffect(() => {
@@ -137,6 +140,14 @@ export default function Schedule({ userRole }: { userRole?: string | null }) {
     const interval = setInterval(loadSeason, 30000);
     return () => clearInterval(interval);
   }, [games]);
+
+  const numberMap = useMemo(() => {
+    const map = new Map<string, string | number>();
+    for (const p of allPlayers.filter((p) => p.season === selectedSeason)) {
+      if (p.name && p.number != null) map.set(p.name.toLowerCase(), p.number);
+    }
+    return map;
+  }, [allPlayers, selectedSeason]);
 
   const record = calculateRecord(games);
   const now = new Date();
@@ -187,7 +198,7 @@ export default function Schedule({ userRole }: { userRole?: string | null }) {
   };
 
   return (
-    <div className="max-w-full text-black relative">
+    <div className="max-w-full text-black relative py-6">
       <div className="flex justify-between items-center px-6 mt-4">
         <select
           value={selectedSeason}
@@ -254,6 +265,7 @@ export default function Schedule({ userRole }: { userRole?: string | null }) {
                   game={g}
                   index={i}
                   isAdmin={userRole?.toLowerCase() === "admin"}
+                  numberMap={numberMap}
                   onEdit={(g) => dispatch({ type: "EDIT_GAME", game: g })}
                   onDelete={async (g) => {
                     if (confirm(`Delete ${g.opponent}?`)) {
@@ -314,6 +326,7 @@ export default function Schedule({ userRole }: { userRole?: string | null }) {
           }
           game={selectedGame}
           onSave={handleSaveScore}
+          players={allPlayers.filter((p) => p.season === selectedSeason)}
         />
       )}
     </div>

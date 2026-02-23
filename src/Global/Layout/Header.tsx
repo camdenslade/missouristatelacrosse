@@ -59,7 +59,7 @@ export default function Header({ onManageArticles, onManageArticlesWomen, onAuth
   
 
   const linkHover =
-    "hover:text-[#D3D3D3] transition-colors duration-200 ease-in-out";
+    "text-xs font-semibold uppercase tracking-widest hover:text-white/70 transition-colors duration-200";
   const programLink = (path) =>
     `${base}${path.startsWith("/") ? path : `/${path}`}`;
 
@@ -79,8 +79,8 @@ export default function Header({ onManageArticles, onManageArticlesWomen, onAuth
   }, []);
 
   return (
-    <header className="bg-[#5E0009] text-white w-full shadow-md sticky top-0 z-50">
-      <div className="w-full px-4 py-4 flex items-center">
+    <header className="bg-[#5E0009] text-white w-full shadow-lg sticky top-0 z-50 border-b border-white/10">
+      <div className="w-full px-6 py-3 flex items-center">
         <Link
           to={programLink("")}
           className="inline-flex items-center"
@@ -89,18 +89,46 @@ export default function Header({ onManageArticles, onManageArticlesWomen, onAuth
           <img
             src="/assets/msu.png"
             alt="Missouri State Lacrosse"
-            className="h-8 sm:h-10 md:h-12 object-contain"
+            className="h-9 sm:h-10 md:h-11 object-contain"
           />
         </Link>
 
-        <div className="ml-auto flex items-center gap-6">
-          <nav className="hidden md:flex items-center gap-6">
+        <div className="ml-auto flex items-center gap-5">
+          <nav className="hidden md:flex items-center gap-5">
             <Link to={programLink("")} className={linkHover}>Home</Link>
-            <Link to={programLink("/schedule")} className={linkHover}>Schedule</Link>
+            <div className="relative group flex items-center">
+              <Link to={programLink("/schedule")} className={linkHover}>Schedule</Link>
+              <div className="absolute left-0 top-full pt-2 hidden group-hover:block z-50 min-w-[140px]">
+                <div className="bg-white text-gray-800 shadow-xl rounded-md overflow-hidden border border-gray-100 text-xs font-semibold uppercase tracking-widest">
+                  <Link to={programLink("/schedule")} className="block px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                    Schedule
+                  </Link>
+                  <Link to={programLink("/stats")} className="block px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                    Stats
+                  </Link>
+                </div>
+              </div>
+            </div>
             <Link to={programLink("/roster")} className={linkHover}>Roster</Link>
-            <Link to={programLink("/store")} className={linkHover}>Team Store</Link>
+            <Link to={programLink("/store")} className={linkHover}>Store</Link>
             <Link to={programLink("/recruitment")} className={linkHover}>Recruitment</Link>
-            <Link to={programLink("/donate")} className={linkHover}>Donate</Link>
+            <Link to={programLink("/event-signup")} className={linkHover}>Events</Link>
+            <div className="relative group flex items-center">
+              <Link to={programLink("/donate")} className={linkHover}>Donate</Link>
+              <div className="absolute left-0 top-full pt-2 hidden group-hover:block z-50 min-w-[140px]">
+                <div className="bg-white text-gray-800 shadow-xl rounded-md overflow-hidden border border-gray-100 text-xs font-semibold uppercase tracking-widest">
+                  <Link to={programLink("/donate")} className="block px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                    Donate
+                  </Link>
+                  <Link to={programLink("/raffles")} className="block px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                    Raffles
+                  </Link>
+                  <Link to={programLink("/sponsorships")} className="block px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                    Sponsorships
+                  </Link>
+                </div>
+              </div>
+            </div>
             <Link to={programLink("/gallery")} className={linkHover}>Gallery</Link>
             {canSeePayments && (
               <Link to={programLink("/payments")} className={linkHover}>Payments</Link>
@@ -109,7 +137,7 @@ export default function Header({ onManageArticles, onManageArticlesWomen, onAuth
 
           <div className="relative hidden md:block" ref={userMenuRef}>
             <FaUserCircle
-              className="h-8 w-8 cursor-pointer"
+              className="h-7 w-7 cursor-pointer opacity-90 hover:opacity-100 transition-opacity"
               aria-label="User menu"
               onClick={() =>
                 user
@@ -119,20 +147,20 @@ export default function Header({ onManageArticles, onManageArticlesWomen, onAuth
             />
 
             {user && showUserMenu && (
-              <div className="absolute right-0 mt-2 w-56 bg-white text-black shadow-lg rounded z-50">
-                <div className="px-4 py-2 font-bold border-b">
+              <div className="absolute right-0 mt-3 w-56 bg-white text-gray-800 shadow-xl rounded-md overflow-hidden z-50 border border-gray-100">
+                <div className="px-4 py-3 font-bold text-sm border-b border-gray-100 bg-gray-50">
                   {userName || "User"}
                 </div>
                 <button
                   onClick={handleSwitchProgram}
-                  className="block w-full px-4 py-2 text-left hover:bg-gray-200"
+                  className="block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors"
                 >
-                  {isWomen ? "Switch to Men’s Site" : "Switch to Women’s Site"}
+                  {isWomen ? "Switch to Men's Site" : "Switch to Women's Site"}
                 </button>
                 {isGlobalAdmin && (
                   <Link
                     to={programLink("/admin")}
-                    className="block w-full px-4 py-2 text-left hover:bg-gray-200"
+                    className="block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors"
                     onClick={() => dispatch({ type: "CLOSE_USER_MENU" })}
                   >
                     Admin Panel
@@ -140,33 +168,33 @@ export default function Header({ onManageArticles, onManageArticlesWomen, onAuth
                 )}
                 {(isAdmin || isPlayer) && (
                   <button
-                    className="block w-full px-4 py-2 text-left hover:bg-gray-200"
+                    className="block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors"
                     onClick={() => {
-                    (isWomen ? onManageArticlesWomen : onManageArticles)?.();
-                    dispatch({ type: "CLOSE_USER_MENU" });
-                  }}
-
-
+                      (isWomen ? onManageArticlesWomen : onManageArticles)?.();
+                      dispatch({ type: "CLOSE_USER_MENU" });
+                    }}
                   >
                     Manage Articles
                   </button>
                 )}
                 <Link
                   to={programLink("/settings")}
-                  className="block w-full px-4 py-2 text-left hover:bg-gray-200"
+                  className="block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors"
                   onClick={() => dispatch({ type: "CLOSE_USER_MENU" })}
                 >
                   Settings
                 </Link>
-                <button
-                  className="block w-full px-4 py-2 text-left hover:bg-gray-200"
-                  onClick={() => {
-                    signOut();
-                    dispatch({ type: "CLOSE_USER_MENU" });
-                  }}
-                >
-                  Sign Out
-                </button>
+                <div className="border-t border-gray-100">
+                  <button
+                    className="block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors text-red-600"
+                    onClick={() => {
+                      signOut();
+                      dispatch({ type: "CLOSE_USER_MENU" });
+                    }}
+                  >
+                    Sign Out
+                  </button>
+                </div>
               </div>
             )}
           </div>

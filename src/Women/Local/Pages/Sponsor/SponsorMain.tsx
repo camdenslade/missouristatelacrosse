@@ -1,6 +1,8 @@
 // src/Women/Local/Pages/Sponsor/SponsorMain.jsx
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
+import SponsorLogos from "../../../../Global/Common/SponsorLogos";
+import { useSponsors } from "../../../../Global/Common/hooks/useSponsors";
 import { validateText } from "../../../../Global/Common/utils/validation";
 
 export default function WSponsorMain() {
@@ -11,6 +13,7 @@ export default function WSponsorMain() {
     request: "",
   });
   const [loading, setLoading] = useState(false);
+  const { sponsors } = useSponsors();
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -76,6 +79,14 @@ export default function WSponsorMain() {
           </a>
         </p>
       </div>
+
+      {/* Current Sponsors */}
+      {sponsors.length > 0 && (
+        <div className="border-t pt-6 mb-8">
+          <h3 className="text-xl font-bold text-[#5E0009] mb-4">Our Current Sponsors</h3>
+          <SponsorLogos sponsors={sponsors} layout="grid" maxHeight={120} />
+        </div>
+      )}
 
       {/* Contact Us Button */}
       <div className="text-center">

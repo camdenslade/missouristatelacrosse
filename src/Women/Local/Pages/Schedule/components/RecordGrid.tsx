@@ -51,6 +51,12 @@ export default function RecordGrid({ record: externalRecord, loading: externalLo
     { label: "Neutral", value: record.neutral },
   ];
 
+  const extraItems = [
+    { label: "GF", value: record.gf ?? 0 },
+    { label: "GA", value: record.ga ?? 0 },
+    { label: "Streak", value: record.streak ?? "-" },
+  ];
+
   if (loading){
     return (
       <div className="max-w-6xl mx-auto grid grid-cols-4 md:grid-cols-8 gap-3 animate-pulse p-3">
@@ -72,6 +78,28 @@ export default function RecordGrid({ record: externalRecord, loading: externalLo
         "
       >
         {items.map((item, idx) => (
+          <div
+            key={idx}
+            className="py-3 hover:bg-[#5E000915] transition-colors duration-200"
+          >
+            <div className="text-xs md:text-sm font-semibold text-gray-600 uppercase tracking-wide">
+              {item.label}
+            </div>
+            <div className="text-xl md:text-2xl font-bold text-[#5E0009]">
+              {item.value}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div
+        className="
+          max-w-6xl mx-auto
+          grid grid-cols-3
+          divide-x divide-gray-400
+          border border-t-0 border-gray-400 text-center
+        "
+      >
+        {extraItems.map((item, idx) => (
           <div
             key={idx}
             className="py-3 hover:bg-[#5E000915] transition-colors duration-200"

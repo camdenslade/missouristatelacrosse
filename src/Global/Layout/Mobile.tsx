@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
 import type { User as FirebaseUser } from "firebase/auth";
+import { Link } from "react-router-dom";
 import type { Program, Role } from "../../types/api";
 
 import { getProgramInfo } from "../../Services/programHelper";
@@ -31,7 +31,7 @@ export default function MobileMenu({
 
   const { program, base } = getProgramInfo();
 
-  const linkHover = "hover:text-[#D3D3D3] transition-colors";
+  const linkHover = "text-sm font-semibold uppercase tracking-wider py-1.5 hover:text-white/70 transition-colors";
   const programLink = (path) =>
     `${base}${path.startsWith("/") ? path : `/${path}`}`;
 
@@ -43,13 +43,16 @@ export default function MobileMenu({
   const isGlobalAdmin = roles?.men === "admin" || roles?.women === "admin";
 
   return (
-    <div className="md:hidden bg-[#5E0009] text-white px-4 pb-4 flex flex-col gap-2">
+    <div className="md:hidden bg-[#5E0009] text-white px-6 pb-5 pt-1 flex flex-col gap-1 border-t border-white/10">
       {/* Public links */}
       <Link to={programLink("")} className={linkHover} onClick={() => setOpen(false)}>
         Home
       </Link>
       <Link to={programLink("/schedule")} className={linkHover} onClick={() => setOpen(false)}>
         Schedule
+      </Link>
+      <Link to={programLink("/stats")} className={`${linkHover} pl-3 text-white/70`} onClick={() => setOpen(false)}>
+        Stats
       </Link>
       <Link to={programLink("/roster")} className={linkHover} onClick={() => setOpen(false)}>
         Roster
@@ -60,8 +63,17 @@ export default function MobileMenu({
       <Link to={programLink("/recruitment")} className={linkHover} onClick={() => setOpen(false)}>
         Recruitment
       </Link>
+      <Link to={programLink("/event-signup")} className={linkHover} onClick={() => setOpen(false)}>
+        Events
+      </Link>
       <Link to={programLink("/donate")} className={linkHover} onClick={() => setOpen(false)}>
         Donate
+      </Link>
+      <Link to={programLink("/raffles")} className={`${linkHover} pl-3 text-white/70`} onClick={() => setOpen(false)}>
+        Raffles
+      </Link>
+      <Link to={programLink("/sponsorships")} className={`${linkHover} pl-3 text-white/70`} onClick={() => setOpen(false)}>
+        Sponsorships
       </Link>
       <Link to={programLink("/gallery")} className={linkHover} onClick={() => setOpen(false)}>
         Gallery
@@ -81,14 +93,14 @@ export default function MobileMenu({
       {/* Authenticated user options */}
       {user ? (
         <>
-          <div className="border-t border-gray-400 my-2"></div>
-          <div className="font-bold px-2">{userName}</div>
+          <div className="border-t border-white/20 my-3"></div>
+          <div className="font-bold text-sm px-1 opacity-80">{userName}</div>
 
           {/* Admin Panel */}
           {isGlobalAdmin && (
             <Link
               to={programLink("/admin")}
-              className="text-left px-2 py-1 hover:text-[#D3D3D3]"
+              className="text-left px-2 py-1 hover:text-white/70 transition-colors"
               onClick={() => setOpen(false)}
             >
               Admin Panel
@@ -98,7 +110,7 @@ export default function MobileMenu({
           {/* Manage Articles */}
           {(isAdmin || isPlayer) && (
             <button
-              className="text-left px-2 py-1 hover:text-[#D3D3D3]"
+              className="text-left px-2 py-1 hover:text-white/70 transition-colors"
               onClick={() => {
                 (program === "women" ? onManageArticlesWomen : onManageArticles)?.();
                 setOpen(false);
@@ -110,14 +122,14 @@ export default function MobileMenu({
 
           <Link
             to={programLink("/settings")}
-            className="text-left px-2 py-1 hover:text-[#D3D3D3]"
+            className="text-left px-2 py-1 hover:text-white/70 transition-colors"
             onClick={() => setOpen(false)}
           >
             Settings
           </Link>
 
           <button
-            className="text-left px-2 py-1 hover:text-[#D3D3D3]"
+            className="text-left px-2 py-1 hover:text-white/70 transition-colors"
             onClick={() => {
               signOut();
               setOpen(false);
@@ -128,7 +140,7 @@ export default function MobileMenu({
         </>
       ) : (
         <button
-          className="text-left px-2 py-1 hover:text-[#D3D3D3]"
+          className="text-left px-2 py-1 hover:text-white/70 transition-colors"
           onClick={() => {
             onAuthOpen?.();
             setOpen(false);

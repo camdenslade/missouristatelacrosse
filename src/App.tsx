@@ -25,6 +25,11 @@ import SponsorMain from "./Men/Local/Pages/Sponsor/SponsorMain";
 import Checkout from "./Men/Local/Pages/Store/Checkout/Checkout";
 import CheckoutSuccess from "./Men/Local/Pages/Store/Checkout/CheckoutSuccess";
 import OrderLookup from "./Men/Local/Pages/Store/OrderLookup";
+import EventDetail from "./Men/Local/Pages/EventSignup/EventDetail";
+import EventSignup from "./Men/Local/Pages/EventSignup/EventSignup";
+import RaffleDetail from "./Men/Local/Pages/Raffles/RaffleDetail";
+import Raffles from "./Men/Local/Pages/Raffles/Raffles";
+import Stats from "./Men/Local/Pages/Stats/Stats";
 import Store from "./Men/Local/Pages/Store/Store";
 
 
@@ -42,6 +47,11 @@ import WSettings from "./Women/Local/Pages/Settings/Settings";
 import WSponsorMain from "./Women/Local/Pages/Sponsor/SponsorMain";
 import WCheckout from "./Women/Local/Pages/Store/Checkout/Checkout";
 import WCheckoutSuccess from "./Women/Local/Pages/Store/Checkout/CheckoutSuccess";
+import WEventDetail from "./Women/Local/Pages/EventSignup/EventDetail";
+import WEventSignup from "./Women/Local/Pages/EventSignup/EventSignup";
+import WRaffleDetail from "./Women/Local/Pages/Raffles/RaffleDetail";
+import WRaffles from "./Women/Local/Pages/Raffles/Raffles";
+import WStats from "./Women/Local/Pages/Stats/Stats";
 import WStore from "./Women/Local/Pages/Store/Store";
 
 export default function App() {
@@ -63,14 +73,14 @@ export default function App() {
 
   return (
     <Router>
-      <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-white">
         <Header
           onAuthOpen={() => setShowAuthModal(true)}
           onManageArticles={() => setShowManageArticles(true)}
           onManageArticlesWomen={() => setShowManageArticlesWomen(true)}
         />
 
-        <main className="flex-1 w-full px-4 py-8">
+        <main className="flex-1 w-full">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route
@@ -88,6 +98,14 @@ export default function App() {
             <Route
               path="/roster/:season"
               element={<Roster userRole={menRole} />}
+            />
+            <Route
+              path="/stats"
+              element={<Navigate to={`/stats/${activeSeason}`} replace />}
+            />
+            <Route
+              path="/stats/:season"
+              element={<Stats />}
             />
             <Route
               path="/payments"
@@ -119,6 +137,10 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/event-signup" element={<EventSignup />} />
+            <Route path="/event-signup/:slug" element={<EventDetail />} />
+            <Route path="/raffles" element={<Raffles />} />
+            <Route path="/raffles/:slug" element={<RaffleDetail />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/checkout-success" element={<CheckoutSuccess />} />
             <Route path="/pending-approval" element={<PendingApproval />} />
@@ -148,6 +170,14 @@ export default function App() {
             <Route
               path="/women/roster/:season"
               element={<WRoster userRole={womenRole} />}
+            />
+            <Route
+              path="/women/stats"
+              element={<Navigate to={`/women/stats/${activeSeason}`} replace />}
+            />
+            <Route
+              path="/women/stats/:season"
+              element={<WStats />}
             />
             <Route
               path="/women/payments"
@@ -182,6 +212,10 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/women/event-signup" element={<WEventSignup />} />
+            <Route path="/women/event-signup/:slug" element={<WEventDetail />} />
+            <Route path="/women/raffles" element={<WRaffles />} />
+            <Route path="/women/raffles/:slug" element={<WRaffleDetail />} />
             <Route
               path="/women/checkout"
               element={<WCheckout />}

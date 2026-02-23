@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import usePayPalButtons from "../../../../Global/Common/hooks/usePayPalButtons";
+import SponsorLogos from "../../../../Global/Common/SponsorLogos";
+import { useSponsors } from "../../../../Global/Common/hooks/useSponsors";
 import UnavailableOverlay from "../../../../Global/Common/UnavailableOverlay";
 
 export default function WDonate() {
@@ -10,6 +12,7 @@ export default function WDonate() {
   const [confirmedAmount, setConfirmedAmount] = useState<number | null>(null);
   const navigate = useNavigate();
 
+  const { sponsors } = useSponsors();
   const isEnabled = import.meta.env.VITE_DONATE_ENABLED_WOMEN === "true";
 
   const handleConfirm = () => {
@@ -32,7 +35,7 @@ export default function WDonate() {
   usePayPalButtons(confirmedAmount, "paypal-donate-buttons", handleSuccess);
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-gray-50 p-6">
+    <div className="relative min-h-screen flex flex-col items-center justify-center bg-gray-50 p-6">
       <div className="max-w-md w-full bg-white shadow-lg rounded-xl p-8 flex flex-col items-center gap-6 text-center">
         <h1 className="text-3xl font-bold text-[#5E0009]">
           Support Missouri State Women's Lacrosse
@@ -89,6 +92,15 @@ export default function WDonate() {
           </button>
         </div>
       </div>
+
+      {sponsors.length > 0 && (
+        <div className="max-w-lg w-full mt-8 text-center">
+          <p className="text-sm text-gray-500 uppercase tracking-wide mb-3">
+            Proudly Supported By
+          </p>
+          <SponsorLogos sponsors={sponsors} layout="row" maxHeight={80} />
+        </div>
+      )}
     </div>
   );
 }
