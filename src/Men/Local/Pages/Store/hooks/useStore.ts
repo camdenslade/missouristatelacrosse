@@ -1,5 +1,6 @@
 // src/Men/Local/Pages/Store/hooks/useStore.js
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { apiRequest } from "../../../../../Services/API";
 
 const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
@@ -109,22 +110,48 @@ export default function useStore(
             { method: "POST" }
           );
 
-          // Create Printify order
-          await apiRequest("/api/printify/create-order", {
-            method: "POST",
-            json: {
-              orderId: orderID,
-              items: cart.map((item) => ({
-                productId: item.id,
-                variantId: item.variantId,
-                quantity: item.quantity || 1,
-                size: item.size,
-                price: item.price,
-              })),
-              shipping,
-              donation,
-            },
-          });
+          // Split cart into Printify items vs custom (non-Printify) items
+          const printifyItems = cart.filter((item) => !item.isCustom);
+          const customItems = cart.filter((item) => item.isCustom);
+
+          if (printifyItems.length > 0 || customItems.length > 0) {
+            await apiRequest("/api/printify/create-order", {
+              method: "POST",
+              json: {
+                orderId: orderID,
+                items: printifyItems.map((item) => ({
+                  productId: item.id,
+                  variantId: item.variantId,
+                  quantity: item.quantity || 1,
+                  size: item.size,
+                  price: item.price,
+                })),
+                customItems: customItems.map((item) => ({
+                  productId: (item as any)._customProductId ?? String(item.id).replace(/^custom-(\d+).*/, "$1"),
+                  variantId: (item as any)._customVariantId ?? null,
+                  variantLabel: item.variantLabel || item.size || "",
+                  quantity: item.quantity || 1,
+                })),
+                shipping,
+                donation,
+              },
+            });
+          }
+
+          // Send receipt email (non-blocking)
+          try {
+            await apiRequest("/api/email/receipt", {
+              method: "POST",
+              json: {
+                email: shipping?.email,
+                name: `${shipping?.first_name || ""} ${shipping?.last_name || ""}`.trim(),
+                orderId: orderID,
+                body: `Thank you for your order from Missouri State Lacrosse! Your order ID is ${orderID}.`,
+              },
+            });
+          } catch (emailErr) {
+            console.warn("Receipt email failed (non-blocking):", emailErr);
+          }
 
           // Clear cart only after fulfillment request
           if (typeof setCart === "function") {
@@ -137,14 +164,14 @@ export default function useStore(
           }
         } catch (err) {
           console.error("ERROR during PayPal onApprove:", err);
-          alert("Payment was captured but fulfillment failed. Please contact support.");
+          toast.error("Payment was captured but fulfillment failed. Please contact support.");
           throw err;
         }
       },
 
       onError(err) {
         console.error("PayPal error:", err);
-        alert("Payment failed. Try again.");
+        toast.error("Payment failed. Try again.");
       },
     });
 

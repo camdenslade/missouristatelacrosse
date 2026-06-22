@@ -1,11 +1,13 @@
 // src/Women/Local/Pages/Store/components/ProductCard.jsx
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 type ProductVariant = {
   id: string;
   price: number;
   our_price: number;
   options?: string[];
+  sku?: string;
 };
 
 type ProductImage = {
@@ -26,14 +28,17 @@ type CartItem = {
   size: string;
   price: number;
   image: string;
+  sku?: string;
 };
 
 export default function ProductCard({
   product,
   onAddToCart,
+  isAdmin = false,
 }: {
   product: Product;
   onAddToCart: (item: CartItem) => void;
+  isAdmin?: boolean;
 }) {
   const sizeOrder = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"];
   const variants = Array.isArray(product.variants) ? product.variants : [];
@@ -86,7 +91,15 @@ export default function ProductCard({
   }
 
 
-  const selectedVariant = allOneSize
+  // Custom products use numeric option IDs; handle them separately
+  const isCustomProduct = !!(product as any).isCustom;
+  const [selectedCustomVariantId, setSelectedCustomVariantId] = useState<string>(() =>
+    isCustomProduct && variants.length > 0 ? String(variants[0].id) : ""
+  );
+
+  const selectedVariant = isCustomProduct
+    ? variants.find(v => String(v.id) === selectedCustomVariantId) || variants[0] || null
+    : allOneSize
     ? variants[0] || null
     : sizes.length > 0
     ? variants.find((v) => v.options?.[sizeIndex] === selectedSize) || null
@@ -99,29 +112,43 @@ export default function ProductCard({
     : 0;
   const imageSrc = (product.images || []).find((img) => img?.src)?.src || "";
 
+  const isOutOfStock = selectedVariant && (selectedVariant as any)._stock === 0;
+
   const handleAdd = () => {
     if (!selectedVariant) {
-      return alert("No available variant for this product.");
+      toast.error("No available variant for this product.");
+      return;
     }
 
     if (!allOneSize && !selectedSize) {
-      return alert("Please select a size.");
+      toast.error("Please select a size.");
+      return;
     }
 
+    if (isOutOfStock) {
+      toast.error("This option is out of stock.");
+      return;
+    }
+
+    const sv = selectedVariant as any;
     onAddToCart({
       id: product.id,
       title: product.title,
       variantId: selectedVariant.id,
       size: allOneSize ? "One size" : selectedSize,
       price: selectedVariant.our_price / 100,
-      image: imageSrc
-    });
+      image: imageSrc,
+      sku: selectedVariant.sku,
+      isCustom: !!(product as any).isCustom,
+      variantLabel: sv._customVariantLabel || selectedSize || "",
+      _customVariantId: sv._customVariantId,
+    } as any);
   };
 
   return (
     <div className="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg hover:border-gray-300 transition-all duration-200 flex flex-col h-full">
       {/* Product image */}
-      <div className="bg-gray-50 p-6">
+      <div className="bg-gray-50 p-6 relative">
         <img
           src={imageSrc}
           alt={product.title}
@@ -140,7 +167,26 @@ export default function ProductCard({
         </p>
 
         <div className="mt-auto pt-3">
-          {!allOneSize && sizes.length > 0 && (
+          {isCustomProduct && variants.length > 1 && (
+            <div className="mb-3">
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                Option
+              </label>
+              <select
+                value={selectedCustomVariantId}
+                onChange={e => setSelectedCustomVariantId(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:border-transparent transition"
+              >
+                {variants.map(v => (
+                  <option key={v.id} value={String(v.id)}>
+                    {(v as any)._customVariantLabel || v.id}
+                    {(v as any)._stock === 0 ? " – Out of Stock" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {!isCustomProduct && !allOneSize && sizes.length > 0 && (
             <div className="mb-3">
               <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
                 Size
@@ -161,9 +207,10 @@ export default function ProductCard({
           )}
           <button
             onClick={handleAdd}
-            className="w-full bg-[#5E0009] text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-red-800 active:scale-[0.98] transition-all"
+            disabled={!!isOutOfStock}
+            className="w-full bg-[#5E0009] text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-red-800 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Add to Cart
+            {isOutOfStock ? "Out of Stock" : "Add to Cart"}
           </button>
         </div>
       </div>

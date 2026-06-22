@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useState } from "react";
+import toast from "react-hot-toast";
+import { useConfirm } from "../../../../Global/Common/components/ConfirmModal";
 import { uploadCompressedImage } from "../../../../Global/Common/hooks/uploadHelper";
 import {
   addAdminEntry,
@@ -9,11 +11,15 @@ import {
   fetchAdminRaffles,
   fetchRaffleEntries,
   reopenRaffle,
+  setupRaffleStream,
+  toggleRaffleStream,
   updateRaffle,
 } from "../../../../Global/Common/hooks/useRaffles";
+import StreamPlayer from "../../../../Global/Common/components/StreamPlayer";
+import { getProgramInfo } from "../../../../Services/programHelper";
 import type { ApiRaffle, ApiRaffleEntry } from "../../../../types/api";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers
 
 function toLocalInput(iso: string): string {
   const d = new Date(iso);
@@ -31,9 +37,11 @@ function fmtDate(iso: string | null | undefined) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-// ─── State ────────────────────────────────────────────────────────────────────
+// State
 
 type View = "list" | "form" | "entries";
+
+type ImageItem = { preview: string; file: File | null; url: string | null };
 
 type FormState = {
   name: string;
@@ -43,7 +51,6 @@ type FormState = {
   allowBids: boolean;
   published: boolean;
   endTime: string;
-  image: string;
 };
 
 function emptyForm(): FormState {
@@ -55,7 +62,6 @@ function emptyForm(): FormState {
     allowBids: false,
     published: false,
     endTime: "",
-    image: "",
   };
 }
 
@@ -68,8 +74,15 @@ function raffleToForm(r: ApiRaffle): FormState {
     allowBids: r.allowBids ?? false,
     published: r.published ?? false,
     endTime: r.endTime ? toLocalInput(r.endTime) : "",
-    image: r.image ?? "",
   };
+}
+
+function raffleToImages(r: ApiRaffle): ImageItem[] {
+  if (r.images && r.images.length > 0) {
+    return r.images.map(url => ({ preview: url, file: null, url }));
+  }
+  if (r.image) return [{ preview: r.image, file: null, url: r.image }];
+  return [];
 }
 
 type AddEntryForm = {
@@ -166,9 +179,10 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-// ─── Component ─────────────────────────────────────────────────────────────────
+// Component
 
 export default function ManageRaffles() {
+  const confirm = useConfirm();
   const [state, dispatch] = useReducer(reducer, {
     view: "list",
     raffles: [],
@@ -186,8 +200,7 @@ export default function ManageRaffles() {
     addEntryError: "",
   });
 
-  const imageFileRef = useRef<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageItems, setImageItems] = useState<ImageItem[]>([]);
 
   useEffect(() => {
     fetchAdminRaffles()
@@ -209,13 +222,19 @@ export default function ManageRaffles() {
       return;
     }
     dispatch({ type: "SAVE_START" });
-    const imageUrl = imageFileRef.current
-      ? await uploadCompressedImage(imageFileRef.current, "raffles")
-      : f.image || undefined;
+    const uploadedUrls = await Promise.all(
+      imageItems.map(item =>
+        item.file
+          ? uploadCompressedImage(item.file, "raffles")
+          : Promise.resolve(item.url as string)
+      )
+    );
+    const images = uploadedUrls.filter(Boolean) as string[];
     const payload = {
       name: f.name.trim(),
       description: f.description.trim() || undefined,
-      image: imageUrl || undefined,
+      images,
+      image: images[0] || undefined,
       ticketPrice: f.ticketPrice ? parseFloat(f.ticketPrice) : null,
       maxTicketsPerPerson: f.maxTicketsPerPerson ? parseInt(f.maxTicketsPerPerson, 10) : null,
       allowBids: f.allowBids,
@@ -227,40 +246,40 @@ export default function ManageRaffles() {
       const saved = state.editingId
         ? await updateRaffle(state.editingId, payload)
         : await createRaffle(payload);
-      imageFileRef.current = null;
+      setImageItems([]);
       dispatch({ type: "SAVE_DONE", raffle: saved });
     } catch {
       dispatch({ type: "SET_ERROR", msg: "Failed to save raffle. Please try again." });
     }
-  }, [state.form, state.editingId]);
+  }, [state.form, state.editingId, imageItems]);
 
   const handleDelete = useCallback(async (id: string) => {
-    if (!confirm("Delete this raffle and all its entries?")) return;
+    if (!await confirm("Delete this raffle and all its entries?")) return;
     try {
       await deleteRaffle(id);
       dispatch({ type: "DELETE_DONE", id });
     } catch {
-      alert("Failed to delete raffle.");
+      toast.error("Failed to delete raffle.");
     }
-  }, []);
+  }, [confirm]);
 
   const handleDraw = useCallback(async (raffle: ApiRaffle) => {
-    if (!confirm(`Draw a winner for "${raffle.name}"? This will pick randomly from paid entries.`)) return;
+    if (!await confirm(`Draw a winner for "${raffle.name}"? This will pick randomly from paid entries.`)) return;
     try {
       const updated = await drawRaffleWinner(raffle.id);
       dispatch({ type: "UPDATE_RAFFLE", raffle: updated });
-      alert(`Winner: ${updated.winnerName} (${updated.winnerEmail})`);
+      toast.success(`Winner: ${updated.winnerName} (${updated.winnerEmail})`);
     } catch {
-      alert("No paid entries found, or draw failed.");
+      toast.error("No paid entries found, or draw failed.");
     }
-  }, []);
+  }, [confirm]);
 
   const handleClose = useCallback(async (raffle: ApiRaffle) => {
     try {
       const updated = await closeRaffle(raffle.id);
       dispatch({ type: "UPDATE_RAFFLE", raffle: updated });
     } catch {
-      alert("Failed to close raffle.");
+      toast.error("Failed to close raffle.");
     }
   }, []);
 
@@ -269,9 +288,48 @@ export default function ManageRaffles() {
       const updated = await reopenRaffle(raffle.id);
       dispatch({ type: "UPDATE_RAFFLE", raffle: updated });
     } catch {
-      alert("Failed to reopen raffle.");
+      toast.error("Failed to reopen raffle.");
     }
   }, []);
+
+  const { program } = getProgramInfo();
+
+  const handleStreamSetup = useCallback(async () => {
+    if (!state.selectedRaffle) return;
+    try {
+      const updated = await setupRaffleStream(state.selectedRaffle.id);
+      dispatch({ type: "UPDATE_RAFFLE", raffle: updated });
+    } catch {
+      toast.error("Failed to set up stream.");
+    }
+  }, [state.selectedRaffle]);
+
+  const handleToggleLive = useCallback(async () => {
+    if (!state.selectedRaffle) return;
+    try {
+      const updated = await toggleRaffleStream(state.selectedRaffle.id);
+      dispatch({ type: "UPDATE_RAFFLE", raffle: updated });
+      toast.success(updated.isLive ? "Stream is now live!" : "Stream ended.");
+    } catch {
+      toast.error("Failed to update stream status.");
+    }
+  }, [state.selectedRaffle]);
+
+  const handlePickWinner = useCallback(async (entry: ApiRaffleEntry) => {
+    if (!state.selectedRaffle) return;
+    if (!await confirm(`Pick "${entry.payerName}" as the winner?`)) return;
+    try {
+      const updated = await updateRaffle(state.selectedRaffle.id, {
+        winnerName: entry.payerName ?? undefined,
+        winnerEmail: entry.payerEmail ?? undefined,
+        status: "drawn",
+      });
+      dispatch({ type: "UPDATE_RAFFLE", raffle: updated });
+      toast.success(`Winner set: ${updated.winnerName}`);
+    } catch {
+      toast.error("Failed to set winner.");
+    }
+  }, [state.selectedRaffle, confirm]);
 
   const handleAddEntry = useCallback(async () => {
     if (!state.selectedRaffle) return;
@@ -303,15 +361,15 @@ export default function ManageRaffles() {
         dispatch={dispatch}
         onSave={handleSave}
         onCancel={() => {
-          imageFileRef.current = null;
-          setImagePreview(null);
+          setImageItems([]);
           dispatch({ type: "SET_VIEW", view: "list" });
         }}
-        imagePreview={imagePreview}
-        onImageChange={(file, preview) => {
-          imageFileRef.current = file;
-          setImagePreview(preview);
+        imageItems={imageItems}
+        onAddImage={(file) => {
+          const preview = URL.createObjectURL(file);
+          setImageItems(prev => [...prev, { preview, file, url: null }]);
         }}
+        onRemoveImage={(idx) => setImageItems(prev => prev.filter((_, i) => i !== idx))}
       />
     );
   }
@@ -322,10 +380,14 @@ export default function ManageRaffles() {
         raffle={state.selectedRaffle!}
         entries={state.entries}
         loading={state.entriesLoading}
+        program={program}
         onBack={() => dispatch({ type: "SET_VIEW", view: "list" })}
         onDraw={handleDraw}
         onClose={handleClose}
         onReopen={handleReopen}
+        onPickWinner={handlePickWinner}
+        onStreamSetup={handleStreamSetup}
+        onToggleLive={handleToggleLive}
         addEntryOpen={state.addEntryOpen}
         addEntryForm={state.addEntryForm}
         addEntrySubmitting={state.addEntrySubmitting}
@@ -340,9 +402,9 @@ export default function ManageRaffles() {
   // List view
   const statusBadge = (r: ApiRaffle) => {
     if (!r.published) return <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">Draft</span>;
-    if (r.status === "drawn") return <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">Drawn</span>;
-    if (r.status === "closed") return <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 font-medium">Closed</span>;
-    return <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">Active</span>;
+    if (r.status === "drawn") return <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium">Drawn</span>;
+    if (r.status === "closed") return <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium">Closed</span>;
+    return <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-medium">Active</span>;
   };
 
   return (
@@ -351,8 +413,7 @@ export default function ManageRaffles() {
         <h2 className="text-xl font-bold">Raffles</h2>
         <button
           onClick={() => {
-            imageFileRef.current = null;
-            setImagePreview(null);
+            setImageItems([]);
             dispatch({ type: "OPEN_CREATE" });
           }}
           className="px-4 py-2 bg-[#5E0009] text-white rounded hover:bg-[#7a0010] text-sm font-semibold"
@@ -430,8 +491,7 @@ export default function ManageRaffles() {
                       )}
                       <button
                         onClick={() => {
-                          imageFileRef.current = null;
-                          setImagePreview(raffle.image || null);
+                          setImageItems(raffleToImages(raffle));
                           dispatch({ type: "OPEN_EDIT", raffle });
                         }}
                         className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium"
@@ -456,22 +516,24 @@ export default function ManageRaffles() {
   );
 }
 
-// ─── Raffle form ──────────────────────────────────────────────────────────────
+// Raffle form
 
 function RaffleForm({
   state,
   dispatch,
   onSave,
   onCancel,
-  imagePreview,
-  onImageChange,
+  imageItems,
+  onAddImage,
+  onRemoveImage,
 }: {
   state: State;
   dispatch: React.Dispatch<Action>;
   onSave: () => void;
   onCancel: () => void;
-  imagePreview: string | null;
-  onImageChange: (file: File | null, preview: string | null) => void;
+  imageItems: ImageItem[];
+  onAddImage: (file: File) => void;
+  onRemoveImage: (idx: number) => void;
 }) {
   const f = state.form;
   const input = "w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]";
@@ -505,34 +567,37 @@ function RaffleForm({
           />
         </div>
 
-        {/* Image */}
+        {/* Photos */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
-          <input
-            type="file"
-            accept="image/*"
-            className="text-sm text-gray-600 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
-            onChange={(e) => {
-              const file = e.target.files?.[0] ?? null;
-              const preview = file ? URL.createObjectURL(file) : (f.image || null);
-              onImageChange(file, preview);
-            }}
-          />
-          {imagePreview && (
-            <div className="mt-2 flex items-center gap-3">
-              <img src={imagePreview} alt="Preview" className="h-20 w-32 object-cover rounded border border-gray-200" />
-              <button
-                type="button"
-                onClick={() => {
-                  onImageChange(null, null);
-                  dispatch({ type: "SET_FORM", key: "image", value: "" });
+          <label className="block text-sm font-medium text-gray-700 mb-1">Photos</label>
+          <div className="flex flex-wrap gap-3 mt-2">
+            {imageItems.map((item, idx) => (
+              <div key={idx} className="relative">
+                <img src={item.preview} alt="" className="h-20 w-24 object-cover rounded border border-gray-200" />
+                <button
+                  type="button"
+                  onClick={() => onRemoveImage(idx)}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 leading-none"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            <label className="h-20 w-24 border-2 border-dashed border-gray-300 rounded flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 text-gray-400 text-xs text-center gap-1">
+              <span className="text-lg leading-none">+</span>
+              <span>Add Photo</span>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) onAddImage(file);
+                  e.target.value = "";
                 }}
-                className="text-xs text-red-500 hover:text-red-700"
-              >
-                Remove
-              </button>
-            </div>
-          )}
+              />
+            </label>
+          </div>
         </div>
 
         {/* Mode toggle */}
@@ -628,16 +693,39 @@ function RaffleForm({
   );
 }
 
-// ─── Entries view ─────────────────────────────────────────────────────────────
+// Stream key reveal field
+
+function StreamKeyField({ value }: { value: string }) {
+  const [revealed, setRevealed] = useState(false);
+  return (
+    <div className="flex items-center gap-2 flex-1">
+      <code className="bg-white border border-gray-200 rounded px-2 py-1 flex-1 truncate">
+        {revealed ? value : "•".repeat(value.length)}
+      </code>
+      <button onClick={() => setRevealed(r => !r)} className="text-gray-400 hover:text-gray-700 shrink-0">
+        {revealed ? "Hide" : "Reveal"}
+      </button>
+      <button onClick={() => navigator.clipboard.writeText(value)} className="text-gray-400 hover:text-gray-700 shrink-0">
+        Copy
+      </button>
+    </div>
+  );
+}
+
+// Entries view
 
 function EntriesView({
   raffle,
   entries,
   loading,
+  program,
   onBack,
   onDraw,
   onClose,
   onReopen,
+  onPickWinner,
+  onStreamSetup,
+  onToggleLive,
   addEntryOpen,
   addEntryForm,
   addEntrySubmitting,
@@ -649,10 +737,14 @@ function EntriesView({
   raffle: ApiRaffle;
   entries: ApiRaffleEntry[];
   loading: boolean;
+  program: string;
   onBack: () => void;
   onDraw: (r: ApiRaffle) => void;
   onClose: (r: ApiRaffle) => void;
   onReopen: (r: ApiRaffle) => void;
+  onPickWinner: (e: ApiRaffleEntry) => void;
+  onStreamSetup: () => void;
+  onToggleLive: () => void;
   addEntryOpen: boolean;
   addEntryForm: AddEntryForm;
   addEntrySubmitting: boolean;
@@ -681,9 +773,56 @@ function EntriesView({
       {/* Winner banner */}
       {raffle.winnerName && (
         <div className="mb-4 bg-purple-50 border border-purple-200 rounded-lg px-4 py-3 text-sm text-purple-800">
-          🏆 <strong>Winner:</strong> {raffle.winnerName} ({raffle.winnerEmail})
+          <strong>Winner:</strong> {raffle.winnerName} ({raffle.winnerEmail})
         </div>
       )}
+
+      {/* Stream Drawing */}
+      <div className="mb-5 border border-gray-200 rounded-lg p-4 bg-gray-50">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-semibold text-gray-700">Live Drawing Stream</p>
+          {raffle.isLive && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-700 font-medium animate-pulse">LIVE</span>
+          )}
+        </div>
+        {!raffle.streamKey ? (
+          <button
+            onClick={onStreamSetup}
+            className="px-3 py-1.5 text-sm bg-gray-800 text-white rounded hover:bg-gray-900 font-medium"
+          >
+            Setup Stream
+          </button>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-gray-500 w-20 shrink-0">RTMP URL</span>
+              <code className="bg-white border border-gray-200 rounded px-2 py-1 flex-1 truncate">{raffle.rtmpsUrl}</code>
+              <button onClick={() => navigator.clipboard.writeText(raffle.rtmpsUrl ?? "")} className="text-gray-400 hover:text-gray-700 shrink-0">Copy</button>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-gray-500 w-20 shrink-0">Stream Key</span>
+              <StreamKeyField value={raffle.streamKey} />
+            </div>
+            <button
+              onClick={onToggleLive}
+              className={`mt-1 px-3 py-1.5 text-sm rounded font-medium text-white ${raffle.isLive ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}`}
+            >
+              {raffle.isLive ? "End Stream" : "Go Live"}
+            </button>
+            {raffle.isLive && raffle.hlsUrl && (
+              <div className="mt-3">
+                <StreamPlayer
+                  signedUrl={raffle.hlsUrl}
+                  sessionToken={null}
+                  gameId={raffle.id}
+                  program={program}
+                  onSessionExpired={() => {}}
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Action buttons */}
       <div className="flex gap-2 mb-5 flex-wrap">
@@ -809,6 +948,7 @@ function EntriesView({
                 )}
                 <th className="px-4 py-2 font-medium">Paid</th>
                 <th className="px-4 py-2 font-medium">Date</th>
+                <th className="px-4 py-2 font-medium"></th>
               </tr>
             </thead>
             <tbody>
@@ -824,12 +964,20 @@ function EntriesView({
                     <td className="px-4 py-2">{e.ticketCount}</td>
                   )}
                   <td className="px-4 py-2">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${e.paid ? "bg-green-100 text-green-700" : "bg-red-50 text-red-500"}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${e.paid ? "bg-gray-100 text-gray-700" : "bg-gray-50 text-gray-500"}`}>
                       {e.paid ? `$${Number(e.amountPaid ?? 0).toFixed(2)}` : "Unpaid"}
                     </span>
                   </td>
                   <td className="px-4 py-2 text-gray-500 text-xs">
                     {e.createdAt ? new Date(e.createdAt).toLocaleDateString() : "—"}
+                  </td>
+                  <td className="px-4 py-2">
+                    <button
+                      onClick={() => onPickWinner(e)}
+                      className="text-xs px-2 py-1 rounded bg-purple-50 text-purple-700 hover:bg-purple-100 font-medium"
+                    >
+                      Pick
+                    </button>
                   </td>
                 </tr>
               ))}

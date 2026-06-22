@@ -71,6 +71,11 @@ export default function Raffles() {
       .then(setRaffles)
       .catch(() => setRaffles([]))
       .finally(() => setLoading(false));
+
+    const interval = setInterval(() => {
+      fetchRaffles().then(setRaffles).catch(() => {});
+    }, 30_000);
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {
@@ -122,12 +127,15 @@ function RaffleCard({ raffle, onEnter }: { raffle: ApiRaffle; onEnter: () => voi
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-1">
             <h2 className="text-xl font-bold text-gray-900">{raffle.name}</h2>
+            {raffle.isLive && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-red-600 text-white font-semibold animate-pulse">LIVE</span>
+            )}
             {raffle.allowBids && (
-              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Bid</span>
+              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">Bid</span>
             )}
             {isClosed && (
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                raffle.status === "drawn" ? "bg-purple-100 text-purple-700" : "bg-yellow-100 text-yellow-700"
+                raffle.status === "drawn" ? "bg-gray-100 text-gray-600" : "bg-gray-100 text-gray-600"
               }`}>
                 {raffle.status === "drawn" ? "Winner Drawn" : "Closed"}
               </span>
@@ -139,7 +147,7 @@ function RaffleCard({ raffle, onEnter }: { raffle: ApiRaffle; onEnter: () => voi
           )}
 
           {raffle.winnerName && (
-            <p className="text-sm text-purple-700 font-medium mb-1">🏆 Winner: {raffle.winnerName}</p>
+            <p className="text-sm text-purple-700 font-medium mb-1">Winner: {raffle.winnerName}</p>
           )}
 
           {raffle.endTime && (
@@ -166,7 +174,15 @@ function RaffleCard({ raffle, onEnter }: { raffle: ApiRaffle; onEnter: () => voi
               {raffle.allowBids ? "min bid" : "per ticket"}
             </div>
           </div>
-          {!isClosed && (
+          {raffle.isLive && (
+            <button
+              onClick={onEnter}
+              className="px-5 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors text-sm"
+            >
+              Watch Live
+            </button>
+          )}
+          {!isClosed && !raffle.isLive && (
             <button
               onClick={onEnter}
               className="px-5 py-2 bg-[#5E0009] text-white rounded-lg font-semibold hover:bg-[#7a0010] transition-colors text-sm"

@@ -194,7 +194,7 @@ export default function GameRow({
                     </tr>
                     <tr>
                       <td className="px-1 font-semibold text-gray-800">
-                        {game.opponent ? game.opponent.slice(0, 4).toUpperCase() : "OPP"}
+                        {game.opponent ? game.opponent.slice(0, 3).toUpperCase() : "OPP"}
                       </td>
                       {quarters.map(([q, val]) => (
                         <td key={q} className="px-1.5 py-0.5 text-center text-gray-600">

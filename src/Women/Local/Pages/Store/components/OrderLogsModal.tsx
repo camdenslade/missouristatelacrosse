@@ -129,8 +129,8 @@ export default function OrderLogsModal({ isOpen, onClose }) {
                       <span
                         className={`px-2 py-1 rounded text-xs font-medium ${
                           order.success
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
+                            ? "bg-gray-100 text-gray-700"
+                            : "bg-gray-100 text-gray-500"
                         }`}
                       >
                         {order.success ? "Success" : "Failed"}

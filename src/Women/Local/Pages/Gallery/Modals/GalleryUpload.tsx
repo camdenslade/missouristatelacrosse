@@ -1,6 +1,7 @@
 // src/Women/Local/Pages/Gallery/Modals/GalleryUpload.jsx
 import { Image as ImageIcon, Loader2, X } from "lucide-react";
 import { useEffect, useReducer } from "react";
+import toast from "react-hot-toast";
 
 import useGames from "../../Schedule/hooks/useGames";
 import { uploadGallery } from "../hooks/galleryService";
@@ -71,7 +72,7 @@ export default function GalleryUploadModal({ onClose, onUpload }){
 
     try{
       await uploadGallery(folder, files);
-      alert("Photos uploaded successfully!");
+      toast.success("Photos uploaded successfully!");
       onUpload?.();
       onClose();
       dispatch({ type: "UPLOAD_SUCCESS" });

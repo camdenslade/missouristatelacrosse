@@ -1,5 +1,6 @@
 // src/Men/Local/Pages/Roster/components/RosterForm.jsx
 import { useReducer, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import type { ChangeEvent, FormEvent } from "react";
 
 import Modal from "../../../../../Global/Common/Modal";
@@ -198,7 +199,7 @@ export default function RosterFormModal({
       onClose();
     } catch (err) {
       console.error("Error saving roster entry:", err);
-      alert("Failed to save. Please try again.");
+      toast.error("Failed to save. Please try again.");
     }
   };
 

@@ -4,9 +4,17 @@ import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +37,7 @@ import com.mostate.lacrosse.Repository.EventTeamRepository;
 import com.mostate.lacrosse.Repository.PaymentReceiptRepository;
 import com.mostate.lacrosse.Service.EmailService;
 import com.mostate.lacrosse.Service.S3Service;
+import com.mostate.lacrosse.Utils.JsonUtils;
 import com.mostate.lacrosse.Utils.TextSanitizer;
 
 @RestController
@@ -137,12 +146,23 @@ public class EventsController {
         @PathVariable UUID id,
         @RequestParam String email
     ) {
-        return registrationRepo
-            .findByTeammateEmailAndEventIdAndPaidTrue(email.trim().toLowerCase(), id)
-            .map(r -> ResponseEntity.ok(new TeamCheckResponse(
-                true, r.getTeamId(), r.getPayerName(), r.getPayerEmail()
-            )))
-            .orElse(ResponseEntity.ok(new TeamCheckResponse(false, null, null, null)));
+        String normalized = email.trim().toLowerCase();
+
+        // Check if this email was listed as a teammate by someone already registered
+        var byTeammate = registrationRepo.findByTeammateEmailAndEventIdAndPaidTrue(normalized, id);
+        if (byTeammate.isPresent()) {
+            EventRegistration r = byTeammate.get();
+            return ResponseEntity.ok(new TeamCheckResponse(true, r.getTeamId(), r.getPayerName(), r.getPayerEmail()));
+        }
+
+        // Fallback: check if this email belongs to a payer who has a team (covers 2-person team joining)
+        var byPayer = registrationRepo.findByPayerEmailAndEventIdAndPaidTrue(normalized, id);
+        if (byPayer.isPresent() && byPayer.get().getTeamId() != null) {
+            EventRegistration r = byPayer.get();
+            return ResponseEntity.ok(new TeamCheckResponse(true, r.getTeamId(), r.getPayerName(), r.getPayerEmail()));
+        }
+
+        return ResponseEntity.ok(new TeamCheckResponse(false, null, null, null));
     }
 
     // ── Public: submit registration after PayPal capture ─────────────────────
@@ -155,6 +175,9 @@ public class EventsController {
     ) {
         Event event = eventRepo.findById(id).orElse(null);
         if (event == null) return ResponseEntity.notFound().build();
+
+        String teamNameFieldId = findTeamNameFieldId(event);
+        String normalizedTeamName = getNormalizedTeamName(payload.formData(), teamNameFieldId);
 
         // Validate that the PayPal order was actually captured (free events pass null)
         boolean isFree = event.getPrice() == null || event.getPrice().compareTo(BigDecimal.ZERO) == 0;
@@ -174,7 +197,10 @@ public class EventsController {
             if (payload.teamId() != null) {
                 // Person B joining an existing team
                 resolvedTeamId = payload.teamId();
-            } else {
+            } else if (normalizedTeamName != null) {
+                resolvedTeamId = findTeamIdByNormalizedName(id, normalizedTeamName, teamNameFieldId);
+            }
+            if (resolvedTeamId == null) {
                 // Person A starting a new team
                 EventTeam team = new EventTeam();
                 team.setEventId(id);
@@ -215,6 +241,147 @@ public class EventsController {
         notifyTeammates(event, program, reg.getPayerName(), reg.getPayerEmail(), teammateEmails);
 
         return ResponseEntity.ok(toRegResponse(reg));
+    }
+
+    @PostMapping("/admin/teams/backfill")
+    public ResponseEntity<?> backfillTeams(@RequestBody BackfillTeamsRequest request) {
+        List<UUID> eventIds = request.eventIds() != null ? new ArrayList<>(request.eventIds()) : new ArrayList<>();
+        if (eventIds.isEmpty()) {
+            eventIds = eventRepo.findAllByOrderByStartTimeAsc().stream().map(Event::getId).toList();
+        }
+
+        int totalUpdated = 0;
+        int totalTeamsCreated = 0;
+        Map<String, Integer> eventsUpdated = new LinkedHashMap<>();
+
+        for (UUID eventId : eventIds) {
+            Event event = eventRepo.findById(eventId).orElse(null);
+            if (event == null || event.getTeamSize() <= 1) continue;
+            String fieldId = findTeamNameFieldId(event);
+            if (fieldId == null) continue;
+            BackfillStats stats = backfillEventTeams(event, fieldId);
+            if (stats.updated > 0) {
+                eventsUpdated.put(event.getId().toString(), stats.updated);
+            }
+            totalUpdated += stats.updated;
+            totalTeamsCreated += stats.teamsCreated;
+        }
+
+        return ResponseEntity.ok(Map.of(
+            "registrationsUpdated", totalUpdated,
+            "teamsCreated", totalTeamsCreated,
+            "events", eventsUpdated
+        ));
+    }
+
+    @PostMapping("/{eventId}/teams/pair")
+    public ResponseEntity<?> pairTeam(
+        @PathVariable UUID eventId,
+        @RequestBody PairTeamRequest request
+    ) {
+        Event event = eventRepo.findById(eventId).orElse(null);
+        if (event == null) return ResponseEntity.notFound().build();
+        if (event.getTeamSize() <= 1) {
+            return ResponseEntity.badRequest().body("Event is not a team event");
+        }
+        List<UUID> registrationIds = request.registrationIds();
+        if (registrationIds == null || registrationIds.isEmpty()) {
+            return ResponseEntity.badRequest().body("registrationIds required");
+        }
+        String teamName = TextSanitizer.clean(request.teamName());
+        if (teamName == null || teamName.isBlank()) {
+            return ResponseEntity.badRequest().body("teamName is required");
+        }
+
+        String fieldId = findTeamNameFieldId(event);
+        if (fieldId == null) {
+            return ResponseEntity.badRequest().body("Team name field not configured");
+        }
+
+        List<EventRegistration> regs = registrationRepo.findAllById(registrationIds)
+            .stream()
+            .filter(reg -> eventId.equals(reg.getEventId()))
+            .collect(Collectors.toList());
+        if (regs.isEmpty()) {
+            return ResponseEntity.badRequest().body("No matching registrations found");
+        }
+
+        UUID teamId = regs.stream()
+            .map(EventRegistration::getTeamId)
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElse(createTeam(eventId));
+
+        for (EventRegistration reg : regs) {
+            reg.setTeamId(teamId);
+            reg.setFormData(setTeamNameInFormData(reg.getFormData(), fieldId, teamName));
+        }
+
+        registrationRepo.saveAll(regs);
+        evaluateTeamCompletion(teamId, event);
+
+        return ResponseEntity.ok(Map.of(
+            "teamId", teamId,
+            "teamName", teamName,
+            "registrations", regs.stream().map(EventRegistration::getId).toList()
+        ));
+    }
+
+    @PostMapping("/{eventId}/teams/{teamId}/remind")
+    public ResponseEntity<?> remindTeam(
+        @PathVariable UUID eventId,
+        @PathVariable UUID teamId,
+        @RequestBody TeamReminderRequest request
+    ) {
+        Event event = eventRepo.findById(eventId).orElse(null);
+        if (event == null) return ResponseEntity.notFound().build();
+        EventTeam team = teamRepo.findById(teamId).orElse(null);
+        if (team == null) return ResponseEntity.notFound().build();
+
+        List<EventRegistration> members = registrationRepo.findAllByTeamId(teamId);
+        if (members.isEmpty()) {
+            return ResponseEntity.badRequest().body("Team has no registrations yet");
+        }
+
+        Set<String> registeredEmails = members.stream()
+            .map(EventRegistration::getPayerEmail)
+            .filter(Objects::nonNull)
+            .map(email -> email.trim().toLowerCase(Locale.ROOT))
+            .collect(Collectors.toSet());
+
+        Set<String> pendingEmails = new LinkedHashSet<>();
+        for (EventRegistration member : members) {
+            for (String teammate : member.getTeammateEmails()) {
+                if (teammate == null) continue;
+                String trimmed = teammate.trim();
+                if (trimmed.isEmpty()) continue;
+                pendingEmails.add(trimmed);
+            }
+        }
+        pendingEmails.removeIf(email -> registeredEmails.contains(email.toLowerCase(Locale.ROOT)));
+
+        if (pendingEmails.isEmpty()) {
+            return ResponseEntity.ok(Map.of("sentEmails", 0));
+        }
+
+        String program = request.program() != null ? request.program() : "men";
+        Map<String, Object> prefill = buildPrefillData(members.get(0));
+        String prefillJson = prefill.isEmpty() ? null : JsonUtils.toJson(prefill);
+        String subject = "%s: Reminder to finish your team registration".formatted(event.getName());
+        String teamNameFieldId = findTeamNameFieldId(event);
+        String teamName = extractTeamName(members, teamNameFieldId);
+        String captainName = members.get(0).getPayerName();
+        String captainEmail = members.get(0).getPayerEmail();
+
+        int sent = 0;
+        for (String to : pendingEmails) {
+            String link = buildTeamInviteLink(event, program, teamId, to, prefillJson);
+            String body = buildTeamReminderBody(event, program, teamName, captainName, captainEmail, link);
+            emailService.sendEmail(to, subject, body);
+            sent++;
+        }
+
+        return ResponseEntity.ok(Map.of("sentEmails", sent));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -259,7 +426,7 @@ public class EventsController {
         }
     }
 
-    private static final java.time.Duration IMAGE_TTL = java.time.Duration.ofMinutes(15);
+    private static final java.time.Duration IMAGE_TTL = S3Service.IMAGE_TTL;
 
     private EventResponse toResponse(Event e) {
         // Count registrations for this event
@@ -301,6 +468,238 @@ public class EventsController {
             .filter(val -> payerEmail == null || !val.equals(payerEmail))
             .distinct()
             .collect(Collectors.toList());
+    }
+
+    private Map<String, Object> buildPrefillData(EventRegistration registration) {
+        if (registration == null) return Map.of();
+        Map<String, Object> raw = JsonUtils.readMap(registration.getFormData());
+        if (raw.isEmpty()) return Map.of();
+        Map<String, Object> copy = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> entry : raw.entrySet()) {
+            Object value = entry.getValue();
+            if (value == null) continue;
+            String stringValue = value.toString().trim();
+            if (stringValue.isEmpty()) continue;
+            copy.put(entry.getKey(), value);
+        }
+        return copy;
+    }
+
+    private String buildTeamInviteLink(
+        Event event,
+        String program,
+        UUID teamId,
+        String email,
+        String prefillJson
+    ) {
+        StringBuilder builder = new StringBuilder(buildEventLink(event, program));
+        builder.append("?teamId=").append(teamId);
+        if (email != null && !email.isBlank()) {
+            builder.append("&teammateEmail=").append(URLEncoder.encode(email, StandardCharsets.UTF_8));
+        }
+        if (prefillJson != null && !prefillJson.isBlank()) {
+            builder.append("&prefill=").append(URLEncoder.encode(prefillJson, StandardCharsets.UTF_8));
+        }
+        return builder.toString();
+    }
+
+    private String findTeamNameFieldId(Event event) {
+        if (event == null || event.getFields() == null) return null;
+        for (Object obj : JsonUtils.readList(event.getFields())) {
+            if (!(obj instanceof Map<?, ?> field)) continue;
+            Object label = field.get("label");
+            if (label == null || !label.toString().toLowerCase().contains("team name")) continue;
+            Object id = field.get("id");
+            if (id != null) return id.toString();
+        }
+        return null;
+    }
+
+    private static final Map<String, String> NUMBER_WORD_MAP = Map.ofEntries(
+        Map.entry("zero", "0"),
+        Map.entry("one", "1"),
+        Map.entry("two", "2"),
+        Map.entry("three", "3"),
+        Map.entry("four", "4"),
+        Map.entry("five", "5"),
+        Map.entry("six", "6"),
+        Map.entry("seven", "7"),
+        Map.entry("eight", "8"),
+        Map.entry("nine", "9"),
+        Map.entry("ten", "10"),
+        Map.entry("eleven", "11"),
+        Map.entry("twelve", "12"),
+        Map.entry("thirteen", "13"),
+        Map.entry("fourteen", "14"),
+        Map.entry("fifteen", "15"),
+        Map.entry("sixteen", "16"),
+        Map.entry("seventeen", "17"),
+        Map.entry("eighteen", "18"),
+        Map.entry("nineteen", "19"),
+        Map.entry("twenty", "20")
+    );
+
+    private static final Pattern NUMBER_WORD_PATTERN = Pattern.compile(
+        "\\b(" + String.join("|", NUMBER_WORD_MAP.keySet()) + ")\\b",
+        Pattern.CASE_INSENSITIVE
+    );
+
+    private String getNormalizedTeamName(String formData, String fieldId) {
+        String raw = getTeamNameFromFormData(formData, fieldId);
+        return normalizeTeamNameForMatching(raw);
+    }
+
+    private BackfillStats backfillEventTeams(Event event, String fieldId) {
+        List<EventRegistration> regs = registrationRepo.findAllByEventId(event.getId());
+        Map<String, List<EventRegistration>> grouped = new LinkedHashMap<>();
+        for (EventRegistration reg : regs) {
+            String normalized = getNormalizedTeamName(reg.getFormData(), fieldId);
+            if (normalized == null) continue;
+            grouped.computeIfAbsent(normalized, key -> new ArrayList<>()).add(reg);
+        }
+
+        int updated = 0;
+        int teamsCreated = 0;
+        Set<UUID> canonicalIds = new LinkedHashSet<>();
+
+        for (List<EventRegistration> bucket : grouped.values()) {
+            if (bucket.isEmpty()) continue;
+            UUID canonicalId = bucket.stream()
+                .map(EventRegistration::getTeamId)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+            if (canonicalId == null) {
+                canonicalId = createTeam(event.getId());
+                teamsCreated++;
+            }
+            canonicalIds.add(canonicalId);
+            for (EventRegistration reg : bucket) {
+                if (!canonicalId.equals(reg.getTeamId())) {
+                    reg.setTeamId(canonicalId);
+                    registrationRepo.save(reg);
+                    updated++;
+                }
+            }
+        }
+
+        canonicalIds.forEach(teamId -> evaluateTeamCompletion(teamId, event));
+        return new BackfillStats(updated, teamsCreated);
+    }
+
+    private static String getTeamNameFromFormData(String formData, String fieldId) {
+        if (formData == null || fieldId == null) return null;
+        Map<String, Object> data = JsonUtils.readMap(formData);
+        Object value = data.get(fieldId);
+        if (value == null) return null;
+        String trimmed = value.toString().trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private static String setTeamNameInFormData(String formData, String fieldId, String teamName) {
+        Map<String, Object> data = JsonUtils.readMap(formData);
+        data.put(fieldId, teamName);
+        return JsonUtils.toJson(data);
+    }
+
+    private static String normalizeTeamNameForMatching(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) return null;
+        String lower = trimmed.toLowerCase(Locale.ROOT);
+        String replaced = replaceNumberWords(lower);
+        String sanitized = replaced.replaceAll("[^a-z0-9]", "");
+        return sanitized.isEmpty() ? null : sanitized;
+    }
+
+    private static String replaceNumberWords(String value) {
+        Matcher matcher = NUMBER_WORD_PATTERN.matcher(value);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            String replacement = NUMBER_WORD_MAP.get(matcher.group().toLowerCase(Locale.ROOT));
+            matcher.appendReplacement(sb, replacement != null ? replacement : matcher.group());
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
+    }
+
+    private UUID createTeam(UUID eventId) {
+        EventTeam team = new EventTeam();
+        team.setEventId(eventId);
+        return teamRepo.save(team).getId();
+    }
+
+    private void evaluateTeamCompletion(UUID teamId, Event event) {
+        if (teamId == null || event == null) return;
+        long paidCount = registrationRepo.countByTeamIdAndPaidTrue(teamId);
+        EventTeam team = teamRepo.findById(teamId).orElse(null);
+        if (team == null) return;
+        boolean shouldComplete = paidCount >= event.getTeamSize();
+        if (team.isComplete() != shouldComplete) {
+            team.setComplete(shouldComplete);
+            teamRepo.save(team);
+        }
+    }
+
+    private record BackfillStats(int updated, int teamsCreated) {}
+
+    private UUID findTeamIdByNormalizedName(UUID eventId, String normalizedName, String fieldId) {
+        if (normalizedName == null || fieldId == null) return null;
+        for (EventRegistration reg : registrationRepo.findAllByEventId(eventId)) {
+            if (reg.getTeamId() == null) continue;
+            String existingName = getTeamNameFromFormData(reg.getFormData(), fieldId);
+            String normalizedExisting = normalizeTeamNameForMatching(existingName);
+            if (normalizedName.equals(normalizedExisting)) {
+                return reg.getTeamId();
+            }
+        }
+        return null;
+    }
+
+    private String extractTeamName(List<EventRegistration> members, String fieldId) {
+        if (fieldId == null || members == null) return null;
+        for (EventRegistration reg : members) {
+            Map<String, Object> data = JsonUtils.readMap(reg.getFormData());
+            Object value = data.get(fieldId);
+            if (value == null) continue;
+            String trimmed = value.toString().trim();
+            if (!trimmed.isEmpty()) {
+                return trimmed;
+            }
+        }
+        return null;
+    }
+
+    private String buildTeamReminderBody(
+        Event event,
+        String program,
+        String teamName,
+        String captainName,
+        String captainEmail,
+        String link
+    ) {
+        String programLabel = programLabel(program);
+        String identity = (captainName != null && !captainName.isBlank())
+            ? captainName
+            : (captainEmail != null && !captainEmail.isBlank() ? captainEmail : "A teammate");
+        String teamText = teamName != null
+            ? "Your team <strong>" + teamName + "</strong> still needs to finish registration for this event."
+            : "Your team still needs to finish registration for this event.";
+        String contact = (captainEmail != null && !captainEmail.isBlank())
+            ? "<p>Have questions? Reply to " + captainEmail + ".</p>"
+            : "";
+
+        return "<div style='font-family:sans-serif;max-width:500px'>"
+            + "<h2 style='color:#5E0009'>Missouri State Lacrosse</h2>"
+            + "<p>Hi there,</p>"
+            + "<p>" + identity + " has invited you to join Missouri State " + programLabel + " Lacrosse for "
+            + "<strong>" + event.getName() + "</strong>.</p>"
+            + "<p>" + teamText + "</p>"
+            + "<p>The link below will pre-fill the team-specific info we already captured so you can finish fast:</p>"
+            + "<p><a href='" + link + "'>Complete your registration</a></p>"
+            + contact
+            + "<p>Go Bears!</p>"
+            + "</div>";
     }
 
     private void notifyTeammates(
@@ -430,5 +829,18 @@ public class EventsController {
         UUID teamId,
         String registrantName,
         String registrantEmail
+    ) {}
+
+    public record TeamReminderRequest(
+        String program
+    ) {}
+
+    public record BackfillTeamsRequest(
+        List<UUID> eventIds
+    ) {}
+
+    public record PairTeamRequest(
+        List<UUID> registrationIds,
+        String teamName
     ) {}
 }

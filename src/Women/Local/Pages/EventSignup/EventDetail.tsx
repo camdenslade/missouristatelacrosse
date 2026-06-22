@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   checkTeammate,
   fetchEventBySlug,
@@ -9,7 +9,7 @@ import usePayPalButtons from "../../../../Global/Common/hooks/usePayPalButtons";
 import { getProgramInfo } from "../../../../Services/programHelper";
 import type { ApiEvent, ApiEventField, ApiEventTeamCheck } from "../../../../types/api";
 
-// ── State ─────────────────────────────────────────────────────────────────────
+// State
 
 type Status = "loading" | "ready" | "not_found" | "success" | "error";
 
@@ -109,7 +109,7 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
+// Helpers
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "TBD";
@@ -141,12 +141,13 @@ function isFormComplete(
   return true;
 }
 
-// ── Main component ─────────────────────────────────────────────────────────────
+// Main component
 
 export default function EventDetail() {
   const { slug } = useParams<{ slug: string }>();
   const { base } = getProgramInfo();
   const navigate = useNavigate();
+  const location = useLocation();
   const [state, dispatch] = useReducer(reducer, undefined, init);
 
   // Load event
@@ -159,6 +160,7 @@ export default function EventDetail() {
 
   // Team-check debounce refs
   const teamCheckTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
+  const prefillApplied = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -186,6 +188,33 @@ export default function EventDetail() {
       }
     }, 600);
   };
+
+  useEffect(() => {
+    if (!state.event || prefillApplied.current) return;
+    const params = new URLSearchParams(location.search);
+    const inviteEmail = params.get("teammateEmail");
+    const prefillParam = params.get("prefill");
+    if (prefillParam) {
+      try {
+        const parsed = JSON.parse(prefillParam);
+        if (parsed && typeof parsed === "object") {
+          for (const [key, value] of Object.entries(parsed)) {
+            if (value === null || value === undefined) continue;
+            if (typeof value === "object") continue;
+            const safeValue =
+              typeof value === "boolean" ? value : String(value);
+            dispatch({ type: "SET_FIELD", key, value: safeValue });
+          }
+        }
+      } catch {
+        // ignore malformed prefill data
+      }
+    }
+    if (inviteEmail && state.event.teamSize > 1) {
+      handleTeammateEmailChange(0, inviteEmail);
+    }
+    prefillApplied.current = true;
+  }, [handleTeammateEmailChange, location.search, state.event]);
 
   // PayPal integration
   const isFree = !state.event?.price || Number(state.event.price) <= 0;
@@ -224,7 +253,8 @@ export default function EventDetail() {
   const { paypalLoaded } = usePayPalButtons(
     canPay && !isFree ? Number(state.event?.price) : null,
     "event-paypal-buttons",
-    handleSuccess as Parameters<typeof usePayPalButtons>[2]
+    handleSuccess as Parameters<typeof usePayPalButtons>[2],
+    "pay"
   );
 
   const handleFreeSubmit = async () => {
@@ -244,7 +274,7 @@ export default function EventDetail() {
     }
   };
 
-  // ── Render states ────────────────────────────────────────────────────────────
+  // Render states
 
   if (state.status === "loading") {
     return (
@@ -444,7 +474,7 @@ export default function EventDetail() {
   );
 }
 
-// ── Dynamic field renderer ─────────────────────────────────────────────────────
+// Dynamic field renderer
 
 function DynamicField({
   field,
@@ -503,12 +533,12 @@ function DynamicField({
   );
 }
 
-// ── Success screen ─────────────────────────────────────────────────────────────
+// Success screen
 
 function SuccessScreen({ event, onBack }: { event: ApiEvent; onBack: () => void }) {
   return (
     <div className="max-w-xl mx-auto px-4 py-16 text-center">
-      <div className="text-5xl mb-4">🎉</div>
+
       <h2 className="text-2xl font-bold text-gray-900 mb-2">You're registered!</h2>
       <p className="text-gray-500 mb-1">
         You have successfully registered for <strong>{event.name}</strong>.

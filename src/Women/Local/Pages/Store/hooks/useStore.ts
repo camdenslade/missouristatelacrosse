@@ -1,5 +1,6 @@
 // src/Women/Local/Pages/Store/hooks/useStore.js
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { apiRequest } from "../../../../../Services/API";
 
 const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
@@ -20,7 +21,10 @@ export default function useStore(
   finalTotal: number,
   containerId = "paypal-buttons-container",
   setCart: SetCartFn | null = null,
-  navigate: NavigateFn | null = null
+  navigate: NavigateFn | null = null,
+  cart: any[] = [],
+  shipping: any = null,
+  donation = 0
 ) {
   const [paypalLoaded, setPaypalLoaded] = useState(false);
   const [resolvedClientId, setResolvedClientId] = useState(clientId || "");
@@ -85,25 +89,59 @@ export default function useStore(
       },
 
       async onApprove(data) {
-        const orderID = data.orderID;
+        try {
+          const orderID = data.orderID;
 
-        const order = await apiRequest<Record<string, unknown>>(
-          `/api/paypal/capture?orderID=${orderID}`,
-          { method: "POST" }
-        );
+          const order = await apiRequest<Record<string, unknown>>(
+            `/api/paypal/capture?orderID=${orderID}`,
+            { method: "POST" }
+          );
 
-        if (setCart) {
-          setCart([]);
-        }
+          // Split cart into Printify items vs custom (non-Printify) items
+          const printifyItems = cart.filter((item) => !item.isCustom);
+          const customItems = cart.filter((item) => item.isCustom);
 
-        if (navigate) {
-          navigate("/checkout/success", { state: { order } });
+          if ((printifyItems.length > 0 || customItems.length > 0) && shipping) {
+            await apiRequest("/api/printify/create-order", {
+              method: "POST",
+              json: {
+                orderId: orderID,
+                items: printifyItems.map((item) => ({
+                  productId: item.id,
+                  variantId: item.variantId,
+                  quantity: item.quantity || 1,
+                  size: item.size,
+                  price: item.price,
+                })),
+                customItems: customItems.map((item) => ({
+                  productId: (item as any)._customProductId ?? String(item.id).replace(/^custom-(\d+).*/, "$1"),
+                  variantId: (item as any)._customVariantId ?? null,
+                  variantLabel: item.variantLabel || item.size || "",
+                  quantity: item.quantity || 1,
+                })),
+                shipping,
+                donation,
+              },
+            });
+          }
+
+          if (setCart) {
+            setCart([]);
+          }
+
+          if (navigate) {
+            navigate("/checkout/success", { state: { order } });
+          }
+        } catch (err) {
+          console.error("ERROR during PayPal onApprove:", err);
+          toast.error("Payment was captured but fulfillment failed. Please contact support.");
+          throw err;
         }
       },
 
       onError(err) {
         console.error(err);
-        alert("Payment failed. Try again.");
+        toast.error("Payment failed. Try again.");
       }
     });
 
@@ -120,7 +158,7 @@ export default function useStore(
         console.log("Error: ", e);
       }
     };
-  }, [paypalLoaded, finalTotal, containerId, resolvedClientId, setCart, navigate]);
+  }, [paypalLoaded, finalTotal, containerId, resolvedClientId, setCart, navigate, cart, shipping, donation]);
 
   return { paypalLoaded };
 }

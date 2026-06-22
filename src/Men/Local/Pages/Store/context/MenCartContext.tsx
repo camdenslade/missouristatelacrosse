@@ -10,6 +10,7 @@ type CartItem = {
   color?: string;
   size?: string;
   image?: string;
+  sku?: string;
 };
 
 type CartSetter = (

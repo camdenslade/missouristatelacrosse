@@ -1,0 +1,20 @@
+export type Player = {
+  id?: string;
+  name: string;
+  email?: string | null;
+  season?: string;
+  year?: string;
+  number?: string | number;
+  position?: string;
+  classYear?: string;
+  height?: string;
+  weight?: string;
+  hometown?: string;
+  state?: string;
+  highSchool?: string;
+  previousSchool?: string;
+  photo?: string;
+  balance?: number;
+  userID?: string;
+  data?: Record<string, string | null | undefined>;
+};

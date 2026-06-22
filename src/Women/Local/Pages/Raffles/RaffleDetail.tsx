@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useReducer } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import usePayPalButtons from "../../../../Global/Common/hooks/usePayPalButtons";
 import { enterRaffle, fetchRaffleBySlug } from "../../../../Global/Common/hooks/useRaffles";
 import { getProgramInfo } from "../../../../Services/programHelper";
+import StreamPlayer from "../../../../Global/Common/components/StreamPlayer";
+import LiveChat from "../../../../Global/Common/components/LiveChat";
 import type { ApiRaffle } from "../../../../types/api";
 
-// ── State ─────────────────────────────────────────────────────────────────────
+// State
 
 type Status = "loading" | "ready" | "not_found" | "success" | "error";
 
@@ -62,7 +64,7 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
+// Helpers
 
 function fmtDate(iso: string | null | undefined) {
   if (!iso) return "TBD";
@@ -86,11 +88,44 @@ function calcAmount(raffle: ApiRaffle, ticketCount: string, bidAmount: string): 
   }
 }
 
-// ── Component ──────────────────────────────────────────────────────────────────
+// Gallery
+
+function RaffleGallery({ raffle }: { raffle: ApiRaffle }) {
+  const photos = raffle.images?.length ? raffle.images : raffle.image ? [raffle.image] : [];
+  const [active, setActive] = useState(0);
+  if (photos.length === 0) return null;
+  return (
+    <div className="mb-4">
+      <img
+        src={photos[active]}
+        alt=""
+        className="w-full max-h-80 object-contain bg-gray-50 rounded-lg"
+      />
+      {photos.length > 1 && (
+        <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
+          {photos.map((url, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setActive(idx)}
+              className={`shrink-0 h-16 w-20 rounded border-2 overflow-hidden transition-colors ${
+                idx === active ? "border-[#5E0009]" : "border-transparent"
+              }`}
+            >
+              <img src={url} alt="" className="h-full w-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Component
 
 export default function RaffleDetail() {
   const { slug } = useParams<{ slug: string }>();
-  const { base } = getProgramInfo();
+  const { base, program } = getProgramInfo();
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(reducer, undefined, init);
 
@@ -101,6 +136,13 @@ export default function RaffleDetail() {
       .catch(() => dispatch({ type: "NOT_FOUND" }));
   }, [slug]);
 
+  const handleRefresh = useCallback(() => {
+    if (!slug) return;
+    fetchRaffleBySlug(slug)
+      .then((r) => dispatch({ type: "SET_RAFFLE", raffle: r }))
+      .catch(() => {});
+  }, [slug]);
+
   const isFormComplete = state.raffle
     ? state.payerName.trim() !== "" && state.payerEmail.trim() !== ""
     : false;
@@ -109,21 +151,25 @@ export default function RaffleDetail() {
   const amount = state.raffle && !isFree ? calcAmount(state.raffle, state.ticketCount, state.bidAmount) : null;
   const canPay = isFormComplete && (isFree || amount !== null);
 
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
   const handleSuccess = useCallback(
     async (captureData: { id: string }) => {
-      if (!state.raffle) return;
+      const s = stateRef.current;
+      if (!s.raffle) return;
       dispatch({ type: "SUBMIT_START" });
       const payload = {
-        payerName: state.payerName.trim(),
-        payerEmail: state.payerEmail.trim(),
-        payerPhone: state.payerPhone.trim() || undefined,
+        payerName: s.payerName.trim(),
+        payerEmail: s.payerEmail.trim(),
+        payerPhone: s.payerPhone.trim() || undefined,
         paypalOrderId: captureData.id,
-        ticketCount: state.raffle.allowBids ? 1 : parseInt(state.ticketCount, 10) || 1,
-        bidAmount: state.raffle.allowBids ? parseFloat(state.bidAmount) : undefined,
+        ticketCount: s.raffle.allowBids ? 1 : parseInt(s.ticketCount, 10) || 1,
+        bidAmount: s.raffle.allowBids ? parseFloat(s.bidAmount) : undefined,
       };
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
-          await enterRaffle(state.raffle.id, payload);
+          await enterRaffle(s.raffle.id, payload);
           dispatch({ type: "SUCCESS" });
           return;
         } catch {
@@ -135,7 +181,7 @@ export default function RaffleDetail() {
         msg: `Your payment was received but your entry couldn't be recorded. Please contact us and provide your PayPal order ID: ${captureData.id}`,
       });
     },
-    [state]
+    [] // stable — reads fresh state via ref, never causes PayPal to reinitialize
   );
 
   const { paypalLoaded } = usePayPalButtons(
@@ -160,7 +206,7 @@ export default function RaffleDetail() {
     }
   };
 
-  // ── Render states ─────────────────────────────────────────────────────────
+  // Render states
 
   if (state.status === "loading") {
     return (
@@ -184,7 +230,7 @@ export default function RaffleDetail() {
   if (state.status === "success") {
     return (
       <div className="max-w-xl mx-auto px-4 py-16 text-center">
-        <div className="text-5xl mb-4">🎉</div>
+
         <h2 className="text-2xl font-bold text-gray-900 mb-2">You're entered!</h2>
         <p className="text-gray-500 mb-1">
           Good luck in <strong>{state.raffle.name}</strong>!
@@ -213,19 +259,47 @@ export default function RaffleDetail() {
         Back to raffles
       </button>
 
+      {/* Live drawing stream */}
+      {raffle.isLive && raffle.hlsUrl ? (
+        <div className="mb-8 border border-red-200 rounded-xl overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border-b border-red-200">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-red-600 text-white font-semibold animate-pulse">LIVE</span>
+            <span className="text-sm font-semibold text-gray-800">Live Drawing</span>
+          </div>
+          <StreamPlayer
+            signedUrl={raffle.hlsUrl}
+            sessionToken={null}
+            gameId={raffle.id}
+            program={program}
+            onSessionExpired={() => {}}
+          />
+          <div className="border-t border-gray-200">
+            <LiveChat
+              gameId={raffle.id}
+              program={program}
+              sessionToken={null}
+              displayName=""
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="mb-6 flex items-center justify-between text-sm text-gray-400 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
+          <span>Live drawing will appear here when it begins.</span>
+          <button onClick={handleRefresh} className="text-[#5E0009] hover:underline font-medium">Refresh</button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-6 pb-4 border-b border-gray-200">
-        {raffle.image && (
-          <img src={raffle.image} alt={raffle.name} className="w-full max-h-80 object-contain bg-gray-50 rounded-lg mb-4" />
-        )}
+        <RaffleGallery raffle={raffle} />
         <div className="flex flex-wrap items-center gap-2 mb-1">
           <h1 className="text-2xl font-bold text-gray-900">{raffle.name}</h1>
           {raffle.allowBids && (
-            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Bid</span>
+            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">Bid</span>
           )}
           {isClosed && (
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-              raffle.status === "drawn" ? "bg-purple-100 text-purple-700" : "bg-yellow-100 text-yellow-700"
+              raffle.status === "drawn" ? "bg-gray-100 text-gray-600" : "bg-gray-100 text-gray-600"
             }`}>
               {raffle.status === "drawn" ? "Winner Drawn" : "Closed"}
             </span>
@@ -233,7 +307,7 @@ export default function RaffleDetail() {
         </div>
         {raffle.description && <p className="text-gray-500 text-sm mb-2">{raffle.description}</p>}
         {raffle.winnerName && (
-          <p className="text-sm text-purple-700 font-medium">🏆 Winner: {raffle.winnerName}</p>
+          <p className="text-sm text-purple-700 font-medium">Winner: {raffle.winnerName}</p>
         )}
         <div className="text-sm text-gray-600 space-y-0.5 mt-2">
           {raffle.endTime && (

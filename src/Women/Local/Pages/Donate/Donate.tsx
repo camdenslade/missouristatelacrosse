@@ -1,6 +1,7 @@
 // src/Women/Pages/Donate/Donate.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 import usePayPalButtons from "../../../../Global/Common/hooks/usePayPalButtons";
 import SponsorLogos from "../../../../Global/Common/SponsorLogos";
@@ -18,7 +19,7 @@ export default function WDonate() {
   const handleConfirm = () => {
     const val = parseFloat(donationAmount);
     if (!isNaN(val) && val > 0) setConfirmedAmount(val);
-    else alert("Please enter a valid donation amount.");
+    else toast.error("Please enter a valid donation amount.");
   };
 
   const handleSuccess = (captureData: unknown, amount: number) => {

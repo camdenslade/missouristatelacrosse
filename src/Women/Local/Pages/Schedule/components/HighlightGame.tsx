@@ -126,14 +126,14 @@ export default function NextGameSection({ game, countdown, prev, lastGame }){
       {/* LIVE badge */}
       {isLive && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-[#5E0009] text-white font-bold text-sm rounded-full animate-pulse shadow-md">
-          🔴 LIVE NOW
+          LIVE NOW
         </div>
       )}
 
       {/* Opponent section */}
       <div className="flex flex-col items-center justify-center gap-4 sm:gap-6 md:flex-row md:gap-10 mt-2">
         {activeGame.awayLogo && (
-          <div className="h-24 w-24 sm:h-32 sm:w-32 md:h-44 md:w-44 flex-shrink-0">
+          <div className="h-24 w-24 sm:h-32 sm:w-32 md:h-44 md:w-44 shrink-0">
             {activeGame.awayLink ? (
               <a
                 href={activeGame.awayLink}

@@ -28,7 +28,7 @@ public class TeamsController {
 
     @GetMapping
     public ResponseEntity<List<TeamResponse>> list() {
-        java.time.Duration ttl = java.time.Duration.ofMinutes(15);
+        java.time.Duration ttl = S3Service.IMAGE_TTL;
         return ResponseEntity.ok(teamRepository.findAll().stream()
             .map(team -> toResponse(team, ttl))
             .toList());
@@ -38,7 +38,7 @@ public class TeamsController {
     public ResponseEntity<TeamResponse> create(@RequestBody Team team) {
         sanitizeTeam(team);
         Team saved = teamRepository.save(team);
-        return ResponseEntity.ok(toResponse(saved, java.time.Duration.ofMinutes(15)));
+        return ResponseEntity.ok(toResponse(saved, S3Service.IMAGE_TTL));
     }
 
     @PutMapping("/{id}")
@@ -51,7 +51,7 @@ public class TeamsController {
         existing.setLogoUrl(TextSanitizer.clean(payload.getLogoUrl()));
         existing.setLink(TextSanitizer.clean(payload.getLink()));
         Team saved = teamRepository.save(existing);
-        return ResponseEntity.ok(toResponse(saved, java.time.Duration.ofMinutes(15)));
+        return ResponseEntity.ok(toResponse(saved, S3Service.IMAGE_TTL));
     }
 
     private void sanitizeTeam(Team team) {

@@ -34,6 +34,18 @@ public class ProgramFilter extends OncePerRequestFilter {
         FilterChain filterChain
     ) throws ServletException, IOException {
         String path = request.getRequestURI();
+
+        // Internal MediaMTX auth callback — no X-Program header, use default tenant
+        if ("/api/stream/rtmp/auth".equals(path)) {
+            TenantContext.setTenant(defaultProgram);
+            try {
+                filterChain.doFilter(request, response);
+            } finally {
+                TenantContext.clear();
+            }
+            return;
+        }
+
         boolean isApiRequest = path != null && path.startsWith("/api");
         boolean isPreflight = "OPTIONS".equalsIgnoreCase(request.getMethod());
         String headerProgram = normalizeProgram(request.getHeader(headerName));

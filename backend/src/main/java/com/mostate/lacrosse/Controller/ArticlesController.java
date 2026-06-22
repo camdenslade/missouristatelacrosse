@@ -35,7 +35,7 @@ public class ArticlesController {
         @RequestParam(defaultValue = "false") boolean published,
         @RequestParam(required = false) Integer limit
     ) {
-        java.time.Duration ttl = java.time.Duration.ofMinutes(15);
+        java.time.Duration ttl = S3Service.IMAGE_TTL;
         if (published) {
             List<Article> articles = repository.findAllByPublishedTrueOrderByCreatedAtDesc();
             if (limit != null && limit > 0 && articles.size() > limit) {
@@ -68,7 +68,7 @@ public class ArticlesController {
     public ResponseEntity<ArticleResponse> create(@RequestBody Article article) {
         Article sanitized = sanitizeArticle(article);
         Article saved = repository.save(sanitized);
-        return ResponseEntity.ok(toResponse(saved, java.time.Duration.ofMinutes(15)));
+        return ResponseEntity.ok(toResponse(saved, S3Service.IMAGE_TTL));
     }
 
     @PutMapping("/{id}")
@@ -84,7 +84,7 @@ public class ArticlesController {
         existing.setPublished(payload.isPublished());
 
         Article saved = repository.save(existing);
-        return ResponseEntity.ok(toResponse(saved, java.time.Duration.ofMinutes(15)));
+        return ResponseEntity.ok(toResponse(saved, S3Service.IMAGE_TTL));
     }
 
     @DeleteMapping("/{id}")

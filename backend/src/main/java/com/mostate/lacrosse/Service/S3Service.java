@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -21,6 +22,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 
 @Service
 public class S3Service {
+    public static final Duration IMAGE_TTL = Duration.ofHours(2);
     private final S3Presigner presigner;
     private final S3Client s3Client;
     private final String bucket;
@@ -92,6 +94,17 @@ public class S3Service {
         return s3Client.getObject(request);
     }
 
+    public void deleteObject(String key) {
+        if (bucket == null || bucket.isBlank()) {
+            throw new IllegalStateException("S3 bucket is not configured");
+        }
+        DeleteObjectRequest request = DeleteObjectRequest.builder()
+            .bucket(bucket)
+            .key(key)
+            .build();
+        s3Client.deleteObject(request);
+    }
+
     public String presignGetUrl(String key, Duration ttl) {
         if (bucket == null || bucket.isBlank()) {
             throw new IllegalStateException("S3 bucket is not configured");
@@ -117,7 +130,8 @@ public class S3Service {
         String normalized = key.replace("\\", "/");
         return normalized.startsWith("men/")
             || normalized.startsWith("women/")
-            || normalized.startsWith("logos/");
+            || normalized.startsWith("logos/")
+            || normalized.startsWith("custom-products/");
     }
 
     public String toPresignedUrl(String value, Duration ttl) {

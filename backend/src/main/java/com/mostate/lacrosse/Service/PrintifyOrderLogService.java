@@ -7,6 +7,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.firebase.auth.FirebaseToken;
 import com.mostate.lacrosse.Model.PrintifyOrderLog;
 import com.mostate.lacrosse.Model.UserAccount;
 import com.mostate.lacrosse.Repository.PrintifyOrderLogRepository;
@@ -34,7 +35,7 @@ public class PrintifyOrderLogService {
      * @param program "men" or "women"
      * @return true if user is admin for the program
      */
-    public boolean isAdmin(String userId, String program) {
+    public boolean isAdmin(String userId, String program, FirebaseToken token) {
         if (userId == null || userId.isEmpty() || program == null || program.isEmpty()) {
             return false;
         }
@@ -42,7 +43,7 @@ public class PrintifyOrderLogService {
         try {
             UserAccount user = userRepository.findByFirebaseUid(userId).orElse(null);
             if (user == null || user.getRoles() == null) {
-                return false;
+                return isGeneralAdmin(token);
             }
             Map<String, Object> roles = mapper.readValue(
                 user.getRoles(),
@@ -52,7 +53,7 @@ public class PrintifyOrderLogService {
             return role != null && "admin".equalsIgnoreCase(String.valueOf(role));
         } catch (Exception e) {
             System.err.println("Error checking admin status: " + e.getMessage());
-            return false;
+            return isGeneralAdmin(token);
         }
     }
 
@@ -79,6 +80,14 @@ public class PrintifyOrderLogService {
             return java.util.Optional.empty();
         }
         return orderLogRepo.findFirstByOrderIdOrderByTimestampDesc(orderId);
+    }
+
+    private boolean isGeneralAdmin(FirebaseToken token) {
+        if (token == null) {
+            return false;
+        }
+        Object claim = token.getClaims().get("role");
+        return claim != null && "admin".equalsIgnoreCase(String.valueOf(claim));
     }
 }
 

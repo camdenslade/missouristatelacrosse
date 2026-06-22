@@ -1,5 +1,6 @@
 // src/Women/Local/Pages/Home/SocialFeeds.jsx
 import { useCallback, useEffect, useReducer } from "react";
+import toast from "react-hot-toast";
 import { A11y, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
@@ -92,7 +93,7 @@ export default function SocialFeeds(){
 
     const handleAddPost = useCallback(async () => {
         if (!newUrl.trim().startsWith("https://")){
-        alert("Please enter a valid Instagram post URL.");
+        toast.error("Please enter a valid Instagram post URL.");
         return;
         }
 
@@ -113,7 +114,7 @@ export default function SocialFeeds(){
         await fetchPosts(true);
         } catch (err){
         console.error("Error adding post:", err);
-        alert("Failed to add post. Check console for details.");
+        toast.error("Failed to add post. Check console for details.");
         } finally{
         dispatch({ type: "SET_ADDING", payload: false });
         }

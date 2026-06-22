@@ -10,6 +10,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "raffles")
@@ -46,6 +48,14 @@ public class Raffle {
 
     @Column(name = "winner_email")
     private String winnerEmail;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "stream_data", columnDefinition = "jsonb")
+    private String streamData;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "images", columnDefinition = "jsonb")
+    private String images;
 
     @Column(name = "created_at")
     private Instant createdAt;
@@ -109,4 +119,10 @@ public class Raffle {
 
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getStreamData() { return streamData; }
+    public void setStreamData(String streamData) { this.streamData = streamData; }
+
+    public String getImages() { return images; }
+    public void setImages(String images) { this.images = images; }
 }

@@ -7,6 +7,7 @@ import ManageEvents from "./Tabs/ManageEvents";
 import ManagePlayers from "./Tabs/ManagePlayers";
 import ManageRaffles from "./Tabs/ManageRaffles";
 import ManageSponsors from "./Tabs/ManageSponsors";
+import StreamSetup from "./Tabs/StreamSetup";
 
 const initialState = { activeTab: "players" };
 
@@ -31,6 +32,7 @@ export default function WAdminDashboard(){
       { id: "sponsors", label: "Sponsors" },
       { id: "events", label: "Events" },
       { id: "raffles", label: "Raffles" },
+      { id: "stream", label: "Stream Setup" },
     ],
     []
   );
@@ -49,6 +51,8 @@ export default function WAdminDashboard(){
         return <ManageEvents />;
       case "raffles":
         return <ManageRaffles />;
+      case "stream":
+        return <StreamSetup />;
       default:
         return null;
     }

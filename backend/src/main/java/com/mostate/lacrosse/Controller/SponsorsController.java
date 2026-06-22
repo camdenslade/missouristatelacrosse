@@ -31,7 +31,7 @@ public class SponsorsController {
 
     @GetMapping
     public ResponseEntity<List<SponsorResponse>> list() {
-        Duration ttl = Duration.ofMinutes(15);
+        Duration ttl = S3Service.IMAGE_TTL;
         return ResponseEntity.ok(
             repository.findAllByOrderByDisplayOrderAsc().stream()
                 .map(s -> toResponse(s, ttl))
@@ -42,7 +42,7 @@ public class SponsorsController {
     @GetMapping("/{id}")
     public ResponseEntity<SponsorResponse> get(@PathVariable UUID id) {
         return repository.findById(id)
-            .map(s -> ResponseEntity.ok(toResponse(s, Duration.ofMinutes(15))))
+            .map(s -> ResponseEntity.ok(toResponse(s, S3Service.IMAGE_TTL)))
             .orElse(ResponseEntity.notFound().build());
     }
 
@@ -51,7 +51,7 @@ public class SponsorsController {
         Sponsor sponsor = new Sponsor();
         applyPayload(sponsor, payload);
         Sponsor saved = repository.save(sponsor);
-        return ResponseEntity.ok(toResponse(saved, Duration.ofMinutes(15)));
+        return ResponseEntity.ok(toResponse(saved, S3Service.IMAGE_TTL));
     }
 
     @PutMapping("/{id}")
@@ -65,7 +65,7 @@ public class SponsorsController {
         }
         applyPayload(existing, payload);
         Sponsor saved = repository.save(existing);
-        return ResponseEntity.ok(toResponse(saved, Duration.ofMinutes(15)));
+        return ResponseEntity.ok(toResponse(saved, S3Service.IMAGE_TTL));
     }
 
     @DeleteMapping("/{id}")

@@ -1,6 +1,8 @@
 // src/App.jsx
 import { useState } from "react";
+import { Toaster } from "react-hot-toast";
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { ConfirmProvider } from "./Global/Common/components/ConfirmModal";
 import AuthModal from "./Global/Authentication/AuthModal";
 import PendingApproval from "./Global/Authentication/PendingApproval";
 import ProtectedRoute from "./Global/Authentication/ProtectedRoutes";
@@ -12,6 +14,8 @@ import NotFound from "./Global/NotFound";
 
 import AdminDashboard from "./Men/Local/Admin/AdminDash";
 import Donate from "./Men/Local/Pages/Donate/Donate";
+import Fundraiser from "./Men/Local/Pages/Fundraiser/Fundraiser";
+import FundraiserSuccess from "./Men/Local/Pages/Fundraiser/FundraiserSuccess";
 import Gallery from "./Men/Local/Pages/Gallery/GalleryMain";
 import ManageArticlesModal from "./Men/Local/Pages/Home/Articles/ManageArticles";
 import Home from "./Men/Local/Pages/Home/HomeWrapper";
@@ -31,6 +35,8 @@ import RaffleDetail from "./Men/Local/Pages/Raffles/RaffleDetail";
 import Raffles from "./Men/Local/Pages/Raffles/Raffles";
 import Stats from "./Men/Local/Pages/Stats/Stats";
 import Store from "./Men/Local/Pages/Store/Store";
+import AlumniBudget from "./Men/Local/Pages/AlumniBudget/AlumniBudget";
+import Dues from "./Men/Local/Pages/Dues/Dues";
 
 
 import WAdminDashboard from "./Women/Local/Admin/AdminDash";
@@ -53,6 +59,11 @@ import WRaffleDetail from "./Women/Local/Pages/Raffles/RaffleDetail";
 import WRaffles from "./Women/Local/Pages/Raffles/Raffles";
 import WStats from "./Women/Local/Pages/Stats/Stats";
 import WStore from "./Women/Local/Pages/Store/Store";
+import WAlumniBudget from "./Women/Local/Pages/AlumniBudget/AlumniBudget";
+import WDues from "./Women/Local/Pages/Dues/Dues";
+import SetPassword from "./Global/Authentication/SetPassword";
+import ResetPassword from "./Global/Authentication/ResetPassword";
+import AlumniJoin from "./Global/Authentication/AlumniJoin";
 
 export default function App() {
   const { roles } = useAuth();
@@ -72,6 +83,8 @@ export default function App() {
   const activeSeason = localStorage.getItem("selectedSeason") || getSeasonValue();
 
   return (
+    <ConfirmProvider>
+    <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
     <Router>
       <div className="min-h-screen flex flex-col bg-white">
         <Header
@@ -82,6 +95,9 @@ export default function App() {
 
         <main className="flex-1 w-full">
           <Routes>
+            <Route path="/set-password" element={<SetPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/alumni-join" element={<AlumniJoin />} />
             <Route path="/" element={<Home />} />
             <Route
               path="/schedule"
@@ -118,6 +134,8 @@ export default function App() {
             <Route path="/store" element={<Store />} />
             <Route path="/order-lookup" element={<OrderLookup />} />
             <Route path="/donate" element={<Donate />} />
+            <Route path="/fundraiser" element={<Fundraiser />} />
+            <Route path="/fundraiser/success" element={<FundraiserSuccess />} />
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/sponsorships" element={<SponsorMain />} />
             <Route path="/recruitment" element={<RecruitmentForm userRole={menRole} />} />
@@ -132,7 +150,7 @@ export default function App() {
             <Route
               path="/settings"
               element={
-                <ProtectedRoute allowedRoles={["admin", "player", "parent"]}>
+                <ProtectedRoute allowedRoles={["admin", "player", "parent", "alumni", "coach"]}>
                   <Settings />
                 </ProtectedRoute>
               }
@@ -150,6 +168,22 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={["admin"]}>
                   <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/alumni-budget"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "alumni"]}>
+                  <AlumniBudget />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dues"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "player", "parent"]}>
+                  <Dues />
                 </ProtectedRoute>
               }
             />
@@ -207,7 +241,7 @@ export default function App() {
             <Route
               path="/women/settings"
               element={
-                <ProtectedRoute allowedRoles={["admin", "player", "parent"]}>
+                <ProtectedRoute allowedRoles={["admin", "player", "parent", "alumni", "coach"]}>
                   <WSettings />
                 </ProtectedRoute>
               }
@@ -221,6 +255,23 @@ export default function App() {
               element={<WCheckout />}
             />
             <Route path="/women/checkout-success" element={<WCheckoutSuccess />} />
+            <Route
+              path="/women/alumni-budget"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "alumni"]}>
+                  <WAlumniBudget />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/women/dues"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "player", "parent"]}>
+                  <WDues />
+                </ProtectedRoute>
+              }
+            />
+
             <Route
               path="/women/admin"
               element={
@@ -251,6 +302,7 @@ export default function App() {
         <Footer />
       </div>
     </Router>
+    </ConfirmProvider>
   );
 }
 

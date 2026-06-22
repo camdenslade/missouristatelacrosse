@@ -99,7 +99,7 @@ public class CoachesController {
     private CoachResponse toResponse(Coach coach) {
         Map<String, Object> data = JsonUtils.readMap(coach.getData());
         mergeExtraFields(data);
-        java.time.Duration ttl = java.time.Duration.ofMinutes(15);
+        java.time.Duration ttl = S3Service.IMAGE_TTL;
         return new CoachResponse(
             coach.getId(),
             coach.getName(),

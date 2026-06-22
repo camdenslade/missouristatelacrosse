@@ -1,10 +1,11 @@
 // src/Men/Local/Pages/Gallery/Modals/GalleryUpload.jsx
 import { Image as ImageIcon, Loader2, X } from "lucide-react";
 import { useEffect, useReducer } from "react";
+import toast from "react-hot-toast";
 
+import { validateFolderName, validateText } from "../../../../../Global/Common/utils/validation";
 import useGames from "../../Schedule/hooks/useGames";
 import { uploadGallery } from "../hooks/galleryService";
-import { validateFolderName, validateText } from "../../../../../Global/Common/utils/validation";
 
 const initialState = {
   files: [],
@@ -71,7 +72,7 @@ export default function GalleryUploadModal({ onClose, onUpload }){
 
     try{
       await uploadGallery(folder, files);
-      alert("Photos uploaded successfully!");
+      toast.success("Photos uploaded successfully!");
       onUpload?.();
       onClose();
       dispatch({ type: "UPLOAD_SUCCESS" });
@@ -83,7 +84,7 @@ export default function GalleryUploadModal({ onClose, onUpload }){
 
   return (
     <div
-      className="fixed inset-0 bg-black/30 z-[9999] flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/30 z-9999 flex items-center justify-center p-4"
       onDragOver={(e) => e.preventDefault()}
     >
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg relative p-6">

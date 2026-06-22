@@ -1,21 +1,21 @@
 // src/Men/Local/Pages/Schedule/Schedule.jsx
-import { addHours, isWithinInterval, parseISO, subHours } from "date-fns";
-import { useEffect, useMemo, useReducer } from "react";
+import { addHours, isWithinInterval, parseISO, subHours, subMinutes } from "date-fns";
 import type { ReactElement } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getCurrentYear, setCurrentYear } from "../../../../Services/yearHelper";
+import type { ScheduleGame } from "../../../../types/schedule";
+import usePlayers from "../Roster/contenthooks/usePlayers";
 import GameRow from "./components/GameRow";
 import NextGameSection from "./components/HighlightGame";
 import RecordGrid from "./components/RecordGrid";
 import { calculateRecord } from "./hooks/recordUtils";
 import useCountdown from "./hooks/useCountdown";
 import useGames from "./hooks/useGames";
-import usePlayers from "../Roster/contenthooks/usePlayers";
 import LiveGameUI from "./Live/LiveGameUI";
 import LiveGameViewer from "./Live/LiveGameViewer";
 import ScheduleFormModal from "./Modals/ScheduleForm";
 import ScoreModal from "./Modals/Score";
-import type { ScheduleGame } from "../../../../types/schedule";
 
 const getSeasonValue = (date = new Date()) => {
   const y = date.getFullYear();
@@ -41,6 +41,30 @@ const isGameLive = (g: ScheduleGame | null) => {
   } catch {
     return false;
   }
+};
+
+// Admin sees LiveGameUI for explicitly-live games (isLive=true) or on game day
+const isAdminStreamWindow = (g: ScheduleGame): boolean => {
+  const gData = g.data as Record<string, unknown> | null | undefined;
+  if (gData?.isLive === true) return true;
+  if (!g.date) return false;
+  const today = new Date().toISOString().substring(0, 10);
+  return g.date.substring(0, 10) === today;
+};
+
+// Viewers see LiveGameViewer 15 min before if a stream key is configured.
+// Requires isLive=true (admin explicitly marked live) OR within the time window.
+// Using isLive instead of status prevents the viewer from staying up after a crash
+// because status is never reset when the admin toggles off.
+const isViewerStreamWindow = (g: ScheduleGame): boolean => {
+  if (g.status === "final") return false;
+  const gData = g.data as Record<string, unknown> | null | undefined;
+  if (gData?.isLive === true) return true;
+  const hasStream = !!gData?.streamKey;
+  if (!hasStream) return false;
+  if (!g.dateObj || !g.time || g.time === "TBD") return false;
+  const now = new Date();
+  return isWithinInterval(now, { start: subMinutes(g.dateObj, 15), end: addHours(g.dateObj, 4) });
 };
 
 type ScheduleState = {
@@ -97,6 +121,7 @@ export default function Schedule({ userRole }: { userRole?: string | null }) {
   const { fetchGames, saveGame, removeGame } = useGames();
   const { fetchPlayers, players: allPlayers } = usePlayers();
   const [state, dispatch] = useReducer(reducer, initialState);
+  const [allSeasonGames, setAllSeasonGames] = useState<ScheduleGame[]>([]);
   const {
     games,
     selectedSeason,
@@ -122,11 +147,12 @@ export default function Schedule({ userRole }: { userRole?: string | null }) {
 
   const loadSeason = async () => {
     dispatch({ type: "SET_LOADING", loading: true });
-    const allGames = await fetchGames();
-    const filtered = allGames
+    const fetched = await fetchGames();
+    setAllSeasonGames(fetched);
+    const filtered = fetched
       .filter((g) => g.season === selectedSeason)
       .sort((a, b) => (a.dateObj?.getTime() || 0) - (b.dateObj?.getTime() || 0));
-    localStorage.setItem("games", JSON.stringify(allGames));
+    localStorage.setItem("games", JSON.stringify(fetched));
     dispatch({ type: "SET_GAMES", games: filtered });
   };
 
@@ -134,12 +160,6 @@ export default function Schedule({ userRole }: { userRole?: string | null }) {
     loadSeason();
     fetchPlayers();
   }, [selectedSeason]);
-
-  useEffect(() => {
-    if (!games.some(isGameLive)) return;
-    const interval = setInterval(loadSeason, 30000);
-    return () => clearInterval(interval);
-  }, [games]);
 
   const numberMap = useMemo(() => {
     const map = new Map<string, string | number>();
@@ -149,6 +169,18 @@ export default function Schedule({ userRole }: { userRole?: string | null }) {
     return map;
   }, [allPlayers, selectedSeason]);
 
+  const rosterPlayers = useMemo(
+    () =>
+      allPlayers
+        .filter((p) => p.season === selectedSeason && p.name)
+        .map((p) => ({
+          name: p.name!,
+          number: p.number,
+          position: p.position,
+        })),
+    [allPlayers, selectedSeason]
+  );
+
   const record = calculateRecord(games);
   const now = new Date();
   const nextGame = games.find((g) => g.dateObj && g.dateObj > now) || null;
@@ -157,7 +189,16 @@ export default function Schedule({ userRole }: { userRole?: string | null }) {
       .filter((g) => g.dateObj && g.dateObj <= now && g.result)
       .sort((a, b) => (b.dateObj?.getTime() || 0) - (a.dateObj?.getTime() || 0))[0] || null;
   const { countdown, prev } = useCountdown(nextGame?.dateObj ?? null);
-  const liveGame = games.find((g) => g.status === "live") || null;
+  const liveGame = (() => {
+    if (userRole?.toLowerCase() === "admin") {
+      // Search all games (all seasons) — prefer explicitly-live, then fall back to today
+      const explicitlyLive = allSeasonGames.find(
+        (g) => (g.data as Record<string, unknown> | null | undefined)?.isLive === true
+      );
+      return explicitlyLive || allSeasonGames.find(isAdminStreamWindow) || null;
+    }
+    return games.find(isViewerStreamWindow) || null;
+  })();
 
   const handleSaveScore = async (updated: ScheduleGame) => {
     await saveGame(updated, updated.id);
@@ -180,11 +221,11 @@ export default function Schedule({ userRole }: { userRole?: string | null }) {
 
   const renderDivider = (label: string) => (
     <div className="flex items-center justify-center my-6">
-      <div className="flex-grow border-t-2 border-[#5E0009]" />
+      <div className="grow border-t-2 border-[#5E0009]" />
       <span className="px-4 text-[#5E0009] font-semibold uppercase tracking-wide text-sm">
         {label}
       </span>
-      <div className="flex-grow border-t-2 border-[#5E0009]" />
+      <div className="grow border-t-2 border-[#5E0009]" />
     </div>
   );
 
@@ -225,7 +266,7 @@ export default function Schedule({ userRole }: { userRole?: string | null }) {
 
       {liveGame &&
         (userRole?.toLowerCase() === "admin" ? (
-          <LiveGameUI game={liveGame} />
+          <LiveGameUI game={liveGame} players={rosterPlayers} program="men" />
         ) : (
           <LiveGameViewer game={liveGame} />
         ))}

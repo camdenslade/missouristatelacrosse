@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
+import toast from "react-hot-toast";
 
-export default function ProductCard({ product, onAddToCart }) {
+export default function ProductCard({ product, onAddToCart, isAdmin = false }) {
   const variants = Array.isArray(product.variants) ? product.variants : [];
   const options = Array.isArray(product.options) ? product.options : [];
 
@@ -63,9 +64,15 @@ export default function ProductCard({ product, onAddToCart }) {
     setSelections(prev => ({ ...prev, [optKey]: valueId }));
   };
 
+  const isOutOfStock = selectedVariant && (selectedVariant as any)._stock === 0;
+
   const onAdd = () => {
     if (!selectedVariant) {
-      alert("Please select valid options.");
+      toast.error("Please select valid options.");
+      return;
+    }
+    if (isOutOfStock) {
+      toast.error("This option is out of stock.");
       return;
     }
 
@@ -78,6 +85,7 @@ export default function ProductCard({ product, onAddToCart }) {
       if (val) optionLabels[key] = val.title;
     }
 
+    const sv = selectedVariant as any;
     onAddToCart({
       id: product.id,
       title: product.title,
@@ -87,13 +95,17 @@ export default function ProductCard({ product, onAddToCart }) {
       color: optionLabels["color"] || "",
       size: optionLabels["size"] || "One size",
       image: imageSrc,
+      sku: selectedVariant.sku,
+      isCustom: !!(product as any).isCustom,
+      variantLabel: sv._customVariantLabel || optionLabels["size"] || "",
+      _customVariantId: sv._customVariantId,
     });
   };
 
   return (
     <div className="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg hover:border-gray-300 transition-all duration-200 flex flex-col h-full">
       {/* Product image */}
-      <div className="bg-gray-50 p-6">
+      <div className="bg-gray-50 p-6 relative">
         <img
           src={imageSrc}
           alt={product.title}
@@ -157,10 +169,10 @@ export default function ProductCard({ product, onAddToCart }) {
           })}
           <button
             onClick={onAdd}
-            disabled={!selectedVariant}
+            disabled={!selectedVariant || !!isOutOfStock}
             className="w-full bg-[#5E0009] text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-red-800 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Add to Cart
+            {isOutOfStock ? "Out of Stock" : "Add to Cart"}
           </button>
         </div>
       </div>

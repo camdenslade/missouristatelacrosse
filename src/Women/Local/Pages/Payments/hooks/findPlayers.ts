@@ -1,4 +1,4 @@
-// src/Women/Local/Pages/Payments/hooks/findPlayers.js
+// src/Men/Local/Pages/Payments/hooks/findPlayers.js
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../../../Global/Context/AuthContext";
 import { apiRequest } from "../../../../../Services/API";
@@ -43,9 +43,7 @@ export default function usePlayers(parentProvidedLinkedPlayers: ApiPlayer[] = []
 
       try {
         if (userRole === "admin") {
-          list = await apiRequest<ApiPlayer[]>(
-            `/api/players?season=${encodeURIComponent(currentSeason)}`
-          );
+          list = await apiRequest<ApiPlayer[]>(`/api/players`);
         } else if (userRole === "player") {
           const userRecord = await apiRequest<ApiUser>(`/api/users/${user.uid}`).catch(() => null);
           if (userRecord?.playerId) {

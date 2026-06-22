@@ -1,10 +1,12 @@
 package com.mostate.lacrosse.Config;
 
 import java.util.Map;
+
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import com.fasterxml.jackson.core.type.TypeReference;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.annotation.PostConstruct;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
@@ -49,7 +51,6 @@ public class SecretsConfig {
             setPropertyIfPresent(secrets, "DB_PASSWORD");
             setPropertyIfPresent(secrets, "S3_BUCKET");
             setPropertyIfPresent(secrets, "S3_PUBLIC_BASE_URL");
-
             System.out.println("App secrets loaded successfully from AWS Secrets Manager.");
 
         } catch (Exception e) {
@@ -59,10 +60,13 @@ public class SecretsConfig {
         }
     }
 
-    private void setPropertyIfPresent(Map<String, String> secrets, String key) {
+    private void setPropertyIfPresent(Map<String, String> secrets, String key, String... aliases) {
         String value = secrets.get(key);
         if (value != null) {
             System.setProperty(key, value);
+            for (String alias : aliases) {
+                System.setProperty(alias, value);
+            }
         }
     }
 }

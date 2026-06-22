@@ -1,6 +1,7 @@
 // src/Women/Local/Pages/Sponsor/SponsorForm.jsx
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
+import toast from "react-hot-toast";
 import API_BASE from "../../../../Services/API";
 import { validateEmail, validatePhone, validateText } from "../../../../Global/Common/utils/validation";
 
@@ -25,17 +26,17 @@ export default function SponsorForm() {
       validateText(form.businessName, "Business name", { required: true, max: 100 }) ||
       validateText(form.request, "Request", { required: true, max: 500 });
     if (validationError) {
-      alert(validationError);
+      toast.error(validationError);
       return;
     }
     if (!form.email && !form.phone) {
-      alert("Please provide at least an email or phone number.");
+      toast.error("Please provide at least an email or phone number.");
       return;
     }
     const emailError = form.email ? validateEmail(form.email, { required: false }) : "";
     const phoneError = form.phone ? validatePhone(form.phone, { required: false }) : "";
     if (emailError || phoneError) {
-      alert(emailError || phoneError);
+      toast.error(emailError || phoneError);
       return;
     }
 
@@ -61,12 +62,12 @@ export default function SponsorForm() {
         throw new Error(`Server error: ${text}`);
       }
 
-      alert("Thank you for your interest! Your message has been sent.");
+      toast.success("Thank you for your interest! Your message has been sent.");
       setForm({ businessName: "", email: "", phone: "", request: "" });
       setOpen(false);
     } catch (err) {
       console.error("Sponsor email error:", err);
-      alert("There was an issue sending your message, but we saved your info locally.");
+      toast.error("There was an issue sending your message, but we saved your info locally.");
     } finally {
       setLoading(false);
     }

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.mostate.lacrosse.Model.GalleryFolder;
 import com.mostate.lacrosse.Repository.GalleryFolderRepository;
@@ -34,7 +35,7 @@ public class GalleryController {
 
     @GetMapping
     public ResponseEntity<Map<String, GalleryFolderResponse>> listAll() {
-        java.time.Duration ttl = java.time.Duration.ofMinutes(15);
+        java.time.Duration ttl = S3Service.IMAGE_TTL;
         Map<String, GalleryFolderResponse> data = repository.findAll().stream().collect(Collectors.toMap(
             GalleryFolder::getId,
             folder -> toResponse(folder, ttl)
@@ -49,7 +50,7 @@ public class GalleryController {
         if (existing == null) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(toResponse(existing, java.time.Duration.ofMinutes(15)));
+        return ResponseEntity.ok(toResponse(existing, S3Service.IMAGE_TTL));
     }
 
     @PutMapping("/{folder}")
@@ -64,12 +65,59 @@ public class GalleryController {
             existing.setUrls(JsonUtils.toJson(TextSanitizer.cleanStringList(payload.urls())));
         }
         GalleryFolder saved = repository.save(existing);
-        return ResponseEntity.ok(toResponse(saved, java.time.Duration.ofMinutes(15)));
+        return ResponseEntity.ok(toResponse(saved, S3Service.IMAGE_TTL));
+    }
+
+    @DeleteMapping("/{folder}/photo")
+    public ResponseEntity<GalleryFolderResponse> deletePhoto(
+        @PathVariable String folder,
+        @RequestParam String key
+    ) {
+        String sanitizedFolder = TextSanitizer.clean(folder);
+        String sanitizedKey = s3Service.extractKey(key);
+        if (sanitizedKey == null || !s3Service.isAllowedKey(sanitizedKey)) {
+            return ResponseEntity.badRequest().build();
+        }
+        GalleryFolder existing = repository.findById(sanitizedFolder).orElse(null);
+        if (existing == null) return ResponseEntity.notFound().build();
+
+        try {
+            s3Service.deleteObject(sanitizedKey);
+        } catch (Exception e) {
+            System.err.println("S3 delete failed for key: " + sanitizedKey + " — " + e.getMessage());
+        }
+
+        List<String> filtered = JsonUtils.readList(existing.getUrls()).stream()
+            .map(String::valueOf)
+            .filter(u -> {
+                String storedKey = s3Service.extractKey(u);
+                return !sanitizedKey.equals(storedKey);
+            })
+            .collect(Collectors.toList());
+        existing.setUrls(JsonUtils.toJson(filtered));
+        GalleryFolder saved = repository.save(existing);
+        return ResponseEntity.ok(toResponse(saved, S3Service.IMAGE_TTL));
     }
 
     @DeleteMapping("/{folder}")
     public ResponseEntity<Void> delete(@PathVariable String folder) {
-        repository.deleteById(TextSanitizer.clean(folder));
+        String sanitized = TextSanitizer.clean(folder);
+        repository.findById(sanitized).ifPresent(existing -> {
+            JsonUtils.readList(existing.getUrls()).stream()
+                .map(String::valueOf)
+                .forEach(raw -> {
+                    String key = s3Service.extractKey(raw);
+                    if (key != null && s3Service.isAllowedKey(key)) {
+                        try {
+                            s3Service.deleteObject(key);
+                        } catch (Exception e) {
+                            // Log but don't block deletion if one S3 object fails
+                            System.err.println("Failed to delete S3 object: " + key + " — " + e.getMessage());
+                        }
+                    }
+                });
+            repository.deleteById(sanitized);
+        });
         return ResponseEntity.noContent().build();
     }
 

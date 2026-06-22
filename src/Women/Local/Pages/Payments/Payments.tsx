@@ -1,5 +1,6 @@
 // src/Women/Local/Pages/Payments/Payments.jsx
 import { useEffect, useMemo, useReducer, useState } from "react";
+import toast from "react-hot-toast";
 
 import usePayPalButtons from "../../../../Global/Common/hooks/usePayPalButtons";
 import { useAuth } from "../../../../Global/Context/AuthContext";
@@ -8,7 +9,8 @@ import ParentPlayerSelect from "./components/ParentPlayerSelect";
 import PlayerPaymentDetails from "./components/PlayerPaymentDetails";
 import PlayerTable from "./components/PlayerTable";
 import usePlayers from "./hooks/findPlayers";
-import type { ApiParentRecord, ApiPlayer, ApiUser, ParentLink, Program, Role } from "../../../../types/api";
+import { generateSeasonValues } from "../Roster/hooks/seasonUtils";
+import type { ApiParentRecord, ApiPlayer, ApiUser, DuesPayment, ParentLink, Program, Role } from "../../../../types/api";
 
 const getSeasonValue = (date = new Date()) => {
   const y = date.getFullYear();
@@ -61,22 +63,76 @@ export default function Payments() {
   const [state, dispatch] = useReducer(paymentsReducer, initialState);
   const [linkedPlayerId, setLinkedPlayerId] = useState<string>("");
   const [linkedPlayer, setLinkedPlayer] = useState<ApiPlayer | null>(null);
+  const [ledger, setLedger] = useState<DuesPayment[]>([]);
 
   const currentSeason = getSeasonValue();
   const isWomenSite = window.location.pathname.toLowerCase().includes("/women");
   const program: Program = isWomenSite ? "women" : "men";
 
   const programRole = (roles?.[program] || "") as Role | "";
-  const canAccess = ["admin", "player", "parent"].includes(programRole);
+  const canAccess = ["admin", "player", "parent", "alumni"].includes(programRole);
 
   const { players, setPlayers, loading: loadingPlayers } = usePlayers();
+  const [selectedSeason, setSelectedSeason] = useState(currentSeason);
+
   const seasonPlayers = useMemo(() => {
     if (!players?.length) return [];
-    const filtered = players.filter((p) => p.season === currentSeason);
+    const season = programRole === "admin" ? selectedSeason : currentSeason;
+    const filtered = players.filter((p) => p.season === season);
     return filtered.length ? filtered : players;
-  }, [players, currentSeason]);
+  }, [players, selectedSeason, currentSeason, programRole]);
 
-  usePayPalButtons(state.confirmedAmount, "paypal-payment-buttons");
+  const parentLinkedPlayers = useMemo(() => {
+    if (programRole !== "parent" || !user) return seasonPlayers;
+    return seasonPlayers.filter((p) =>
+      (p.parents || []).some(
+        (link) =>
+          (link.uid && link.uid === user.uid) ||
+          (link.email && user.email && link.email.toLowerCase() === user.email.toLowerCase())
+      )
+    );
+  }, [seasonPlayers, programRole, user]);
+
+  const fetchLedger = async (playerId: string) => {
+    const entries = await apiRequest<DuesPayment[]>(`/api/dues-payments?playerId=${playerId}`).catch(() => []);
+    setLedger(entries ?? []);
+  };
+
+  const handlePaymentSuccess = async (_captureData: unknown, amount: number) => {
+    const player = state.selectedPlayer;
+    if (!player) return;
+    await apiRequest("/api/dues-payments", {
+      method: "POST",
+      json: {
+        playerId: player.id,
+        amount,
+        type: "PAYMENT",
+        note: "PayPal payment",
+        paidByUid: user?.uid ?? null,
+      },
+    });
+    const refreshed = await apiRequest<ApiPlayer>(`/api/players/${player.id}`).catch(() => null);
+    if (refreshed?.id) dispatch({ type: "SET_SELECTED_PLAYER", player: refreshed });
+    await fetchLedger(player.id);
+    dispatch({ type: "SET_FIELD", field: "confirmedAmount", value: null });
+    dispatch({ type: "SET_FIELD", field: "customAmount", value: "" });
+    toast.success(`Payment of $${amount.toFixed(2)} recorded!`);
+  };
+
+  const handleAdminAdjust = async (amount: number, type: "CHARGE" | "CREDIT", note: string) => {
+    const player = state.selectedPlayer;
+    if (!player) return;
+    await apiRequest("/api/dues-payments", {
+      method: "POST",
+      json: { playerId: player.id, amount, type, note: note || null, paidByUid: user?.uid ?? null },
+    });
+    const refreshed = await apiRequest<ApiPlayer>(`/api/players/${player.id}`).catch(() => null);
+    if (refreshed?.id) dispatch({ type: "SET_SELECTED_PLAYER", player: refreshed });
+    await fetchLedger(player.id);
+    toast.success("Balance updated.");
+  };
+
+  usePayPalButtons(state.confirmedAmount, "paypal-payment-buttons", handlePaymentSuccess, "pay");
 
   useEffect(() => {
     if (!user) return;
@@ -102,10 +158,10 @@ export default function Payments() {
 
     let match: ApiPlayer | null = null;
     if (linkedPlayer) match = linkedPlayer;
-    if (!match && programRole === "parent" && seasonPlayers.length > 0) match = seasonPlayers[0];
+    if (!match && programRole === "parent" && parentLinkedPlayers.length > 0) match = parentLinkedPlayers[0];
 
     if (match) dispatch({ type: "SET_SELECTED_PLAYER", player: match });
-  }, [seasonPlayers, state.selectedPlayer, programRole, linkedPlayer]);
+  }, [seasonPlayers, parentLinkedPlayers, state.selectedPlayer, programRole, linkedPlayer]);
 
   useEffect(() => {
     if (!state.selectedPlayerId) return;
@@ -114,6 +170,10 @@ export default function Payments() {
       dispatch({ type: "SET_SELECTED_PLAYER", player: p });
     }
   }, [state.selectedPlayerId, seasonPlayers, state.selectedPlayer]);
+
+  useEffect(() => {
+    if (state.selectedPlayer?.id) fetchLedger(state.selectedPlayer.id);
+  }, [state.selectedPlayer?.id]);
 
   useEffect(() => {
     if (programRole !== "admin" || !seasonPlayers.length) return;
@@ -148,34 +208,17 @@ export default function Payments() {
     }
 
     try {
-      const parentUser = await apiRequest<ApiUser>(`/api/users/by-email?email=${encodeURIComponent(email)}`).catch(() => null);
-      const parentEntry: ParentLink = parentUser?.uid ? { uid: parentUser.uid, email } : { email };
-      const updatedParents = [...existingParents, parentEntry];
-
-      await apiRequest(`/api/players/${player.id}`, {
-        method: "PUT",
-        json: { parents: updatedParents },
+      await apiRequest(`/api/onboard/parent`, {
+        method: "POST",
+        json: { email, program, playerId: player.id },
       });
-
-      if (parentUser?.uid) {
-        const parentRecord = await apiRequest<ApiParentRecord>(`/api/parents/${parentUser.uid}`).catch(() => null);
-        const linkedPlayers = new Set(parentRecord?.linkedPlayers || []);
-        linkedPlayers.add(player.id);
-        await apiRequest(`/api/parents/${parentUser.uid}`, {
-          method: "PUT",
-          json: {
-            email,
-            linkedPlayers: Array.from(linkedPlayers),
-          },
-        });
-      }
 
       const refreshed = await apiRequest<ApiPlayer>(`/api/players/${player.id}`).catch(() => null);
       if (refreshed?.id) {
         dispatch({ type: "SET_SELECTED_PLAYER", player: refreshed });
       }
       dispatch({ type: "SET_FIELD", field: "addParentEmail", value: "" });
-      dispatch({ type: "SET_FIELD", field: "message", value: "Parent linked successfully." });
+      dispatch({ type: "SET_FIELD", field: "message", value: "Parent linked and invite sent!" });
     } catch {
       dispatch({ type: "SET_FIELD", field: "message", value: "Failed to link parent." });
     }
@@ -227,9 +270,13 @@ export default function Payments() {
 
   const handleConfirm = () => {
     const val = parseFloat(state.customAmount);
-    if (!isNaN(val) && val > 0)
-      dispatch({ type: "SET_FIELD", field: "confirmedAmount", value: val });
-    else alert("Please enter a valid amount.");
+    if (isNaN(val) || val <= 0) { toast.error("Please enter a valid amount."); return; }
+    const balance = Number(state.selectedPlayer?.balance ?? 0);
+    if (programRole !== "admin" && balance > 0 && val > balance) {
+      toast.error(`Amount cannot exceed your balance of $${balance.toFixed(2)}.`);
+      return;
+    }
+    dispatch({ type: "SET_FIELD", field: "confirmedAmount", value: val });
   };
 
   if (loading) return <p className="text-gray-600 animate-pulse">Checking permissions...</p>;
@@ -242,11 +289,30 @@ export default function Payments() {
       </div>
     );
 
+  const availableSeasons = useMemo(() => {
+    const base = generateSeasonValues();
+    const fromPlayers = players.map((p) => p.season).filter(Boolean) as string[];
+    return Array.from(new Set([...base, ...fromPlayers])).sort((a, b) => b.localeCompare(a));
+  }, [players]);
+
   return (
     <div className="max-w-6xl mx-auto p-6 bg-white shadow rounded animate-fadeIn text-left">
-      <h1 className="text-2xl font-bold mb-4">
-        Payments - <span className="text-[#5E0009]">{currentSeason}</span> Season
-      </h1>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h1 className="text-2xl font-bold">
+          Payments - <span className="text-[#5E0009]">{programRole === "admin" ? selectedSeason : currentSeason}</span> Season
+        </h1>
+        {programRole === "admin" && (
+          <select
+            value={selectedSeason}
+            onChange={(e) => setSelectedSeason(e.target.value)}
+            className="border border-gray-400 px-3 py-1 rounded text-sm font-medium bg-white shadow-sm hover:border-gray-600 transition-colors"
+          >
+            {availableSeasons.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        )}
+      </div>
 
       {loadingPlayers ? (
         <p className="text-gray-600 animate-pulse">Loading payment data...</p>
@@ -263,7 +329,7 @@ export default function Payments() {
 
           {programRole === "parent" && (
             <ParentPlayerSelect
-              players={seasonPlayers}
+              players={parentLinkedPlayers}
               selectedPlayerId={state.selectedPlayerId}
               setSelectedPlayerId={(id) =>
                 dispatch({ type: "SET_FIELD", field: "selectedPlayerId", value: id })
@@ -283,6 +349,8 @@ export default function Payments() {
                 message={state.message}
                 customAmount={state.customAmount}
                 setCustomAmount={(val) => dispatch({ type: "SET_FIELD", field: "customAmount", value: val })}
+                ledger={ledger}
+                onAdminAdjust={handleAdminAdjust}
               />
 
               <div className="mt-4 flex flex-col items-center">

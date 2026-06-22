@@ -1,5 +1,4 @@
 // src/Women/Local/Pages/Settings/Settings.jsx
-import { sendPasswordResetEmail } from "firebase/auth";
 import { useEffect, useReducer } from "react";
 
 import { useAuth } from "../../../../Global/Context/AuthContext";
@@ -66,7 +65,10 @@ export default function WSettings(){
     if (!currentUser?.email) return;
 
     try{
-      await sendPasswordResetEmail(auth, currentUser.email);
+      await apiRequest("/api/onboard/forgot-password", {
+        method: "POST",
+        json: { email: currentUser.email },
+      });
       dispatch({ type: "SET_MESSAGE", payload: "Password reset email sent!" });
     } catch (err){
       console.error("Error sending reset email:", err);
@@ -77,7 +79,7 @@ export default function WSettings(){
   return (
     <div className="p-6 max-w-lg mx-auto bg-white rounded shadow animate-fadeIn text-left">
       <h1 className="text-2xl font-bold mb-6">
-        Settings — <span className="text-[#5E0009] capitalize">{program}</span> Program
+        Settings: <span className="text-[#5E0009] capitalize">{program}</span> Program
       </h1>
 
       {message && (

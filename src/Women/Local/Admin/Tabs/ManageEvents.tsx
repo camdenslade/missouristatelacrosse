@@ -1,26 +1,43 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+  type Dispatch,
+} from "react";
+import toast from "react-hot-toast";
+import { useConfirm } from "../../../../Global/Common/components/ConfirmModal";
 import { uploadCompressedImage } from "../../../../Global/Common/hooks/uploadHelper";
 import {
   createEvent,
   deleteEvent,
   fetchAdminEvents,
   fetchRegistrations,
+  pairEventTeam,
   updateEvent,
+  sendTeamReminder,
 } from "../../../../Global/Common/hooks/useEvents";
+import {
+  extractTeamNameLabel,
+  getRegistrationTeamName,
+} from "../../../../Global/Common/utils/teamNameHelpers";
 import type {
   ApiEvent,
   ApiEventField,
   ApiEventRegistration,
   EventFieldType,
+  Program,
 } from "../../../../types/api";
 
-// ─── Field builder helpers ────────────────────────────────────────────────────
+// Field builder helpers
 
 function makeField(): ApiEventField {
   return { id: crypto.randomUUID(), label: "", type: "text", required: false };
 }
 
-// ─── State ────────────────────────────────────────────────────────────────────
+// State
 
 type View = "list" | "form" | "submissions";
 
@@ -192,9 +209,11 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-// ─── Component ─────────────────────────────────────────────────────────────────
+// Component
 
 export default function ManageEvents() {
+  const confirm = useConfirm();
+  const program: Program = "women";
   const [state, dispatch] = useReducer(reducer, {
     view: "list",
     events: [],
@@ -259,14 +278,14 @@ export default function ManageEvents() {
   }, [state.form, state.editingId]);
 
   const handleDelete = useCallback(async (id: string) => {
-    if (!confirm("Delete this event and all its registrations?")) return;
+    if (!await confirm("Delete this event and all its registrations?")) return;
     try {
       await deleteEvent(id);
       dispatch({ type: "DELETE_DONE", id });
     } catch {
-      alert("Failed to delete event.");
+      toast.error("Failed to delete event.");
     }
-  }, []);
+  }, [confirm]);
 
   if (state.view === "form") {
     return (
@@ -290,12 +309,14 @@ export default function ManageEvents() {
 
   if (state.view === "submissions") {
     return (
-      <SubmissionsView
-        event={state.selectedEvent!}
-        registrations={state.registrations}
-        loading={state.regsLoading}
-        onBack={() => dispatch({ type: "SET_VIEW", view: "list" })}
-      />
+        <SubmissionsView
+          event={state.selectedEvent!}
+          registrations={state.registrations}
+          loading={state.regsLoading}
+          onBack={() => dispatch({ type: "SET_VIEW", view: "list" })}
+          program={program}
+          dispatch={dispatch}
+        />
     );
   }
 
@@ -357,7 +378,7 @@ export default function ManageEvents() {
                     <span
                       className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                         event.published
-                          ? "bg-green-100 text-green-700"
+                          ? "bg-gray-100 text-gray-700"
                           : "bg-gray-100 text-gray-500"
                       }`}
                     >
@@ -401,7 +422,7 @@ export default function ManageEvents() {
   );
 }
 
-// ─── Event form ────────────────────────────────────────────────────────────────
+// Event form
 
 function EventForm({
   state,
@@ -627,7 +648,7 @@ function EventForm({
   );
 }
 
-// ─── Field editor row ─────────────────────────────────────────────────────────
+// Field editor row
 
 function FieldEditor({
   field,
@@ -757,20 +778,81 @@ function FieldEditor({
   );
 }
 
-// ─── Submissions view ─────────────────────────────────────────────────────────
+// Submissions view
 
 function SubmissionsView({
   event,
   registrations,
   loading,
   onBack,
+  program,
+  dispatch,
 }: {
   event: ApiEvent;
   registrations: ApiEventRegistration[];
   loading: boolean;
   onBack: () => void;
+  program: Program;
+  dispatch: Dispatch<Action>;
 }) {
   const isTeam = event.teamSize > 1;
+  const [sendingReminders, setSendingReminders] = useState<Record<string, boolean>>({});
+  const [pairingTeams, setPairingTeams] = useState<Record<string, boolean>>({});
+  const [pairNameInputs, setPairNameInputs] = useState<Record<string, string>>({});
+
+  const handleReminder = useCallback(
+    async (teamId: string) => {
+      setSendingReminders((prev) => ({ ...prev, [teamId]: true }));
+      try {
+        const { sentEmails } = await sendTeamReminder(event.id, teamId, program);
+        toast.success(
+          `Reminder sent to ${sentEmails} teammate${sentEmails === 1 ? "" : "s"}.`
+        );
+      } catch {
+        toast.error("Failed to send reminder to teammates.");
+      } finally {
+        setSendingReminders((prev) => ({ ...prev, [teamId]: false }));
+      }
+    },
+    [event.id, program]
+  );
+  const reloadRegistrations = useCallback(() => {
+    fetchRegistrations(event.id)
+      .then((regs) => dispatch({ type: "REGS_LOADED", regs }))
+      .catch(() => dispatch({ type: "REGS_LOADED", regs: [] }));
+  }, [dispatch, event.id]);
+
+  const handlePairTeam = useCallback(
+    async (teamId: string, members: ApiEventRegistration[]) => {
+      const name = (pairNameInputs[teamId] ?? "").trim();
+      if (!name) {
+        toast.error("Enter a team name before pairing.");
+        return;
+      }
+      setPairingTeams((prev) => ({ ...prev, [teamId]: true }));
+      try {
+        await pairEventTeam(
+          event.id,
+          members.map((r) => r.id),
+          name
+        );
+        setPairNameInputs((prev) => ({ ...prev, [teamId]: name }));
+        toast.success("Team paired successfully.");
+        reloadRegistrations();
+      } catch {
+        toast.error("Failed to pair the team.");
+      } finally {
+        setPairingTeams((prev) => ({ ...prev, [teamId]: false }));
+      }
+    },
+    [event.id, pairNameInputs, reloadRegistrations]
+  );
+  const teamNameFieldId = useMemo(() => {
+    const match = event.fields.find((field) =>
+      field.label?.toLowerCase().includes("team name")
+    );
+    return match?.id ?? null;
+  }, [event.fields]);
 
   // Parse formData from JSON string if needed
   const parsed = useMemo(
@@ -790,17 +872,33 @@ function SubmissionsView({
     if (!isTeam) return null;
     const map = new Map<string, ApiEventRegistration[]>();
     const solo: ApiEventRegistration[] = [];
+    const nameToKey = new Map<string, string>();
     for (const r of parsed) {
-      if (r.teamId) {
-        const list = map.get(r.teamId) ?? [];
+      const teamNameKey = getRegistrationTeamName(r, teamNameFieldId);
+      let bucketKey: string | null = null;
+
+      if (teamNameKey && nameToKey.has(teamNameKey)) {
+        bucketKey = nameToKey.get(teamNameKey)!;
+      } else if (r.teamId) {
+        bucketKey = r.teamId;
+      } else if (teamNameKey) {
+        bucketKey = `name:${teamNameKey}`;
+      }
+
+      if (bucketKey && teamNameKey && !nameToKey.has(teamNameKey)) {
+        nameToKey.set(teamNameKey, bucketKey);
+      }
+
+      if (bucketKey) {
+        const list = map.get(bucketKey) ?? [];
         list.push(r);
-        map.set(r.teamId, list);
+        map.set(bucketKey, list);
       } else {
         solo.push(r);
       }
     }
     return { map, solo };
-  }, [parsed, isTeam]);
+  }, [parsed, isTeam, teamNameFieldId]);
 
   return (
     <div>
@@ -822,12 +920,84 @@ function SubmissionsView({
         // Team grouped view
         <div className="space-y-4">
           {Array.from(grouped.map.entries()).map(([teamId, members]) => {
-            const complete = members[0]?.teamComplete === true;
+            const completeFromApi = members[0]?.teamComplete === true;
+            const completeByCount =
+              members.length >= event.teamSize && members.every((m) => m.paid);
+            const complete = completeFromApi || completeByCount;
+            const displayTeamId = teamId.startsWith("name:") ? null : teamId;
+            const registered = new Set<string>();
+            const pending = new Set<string>();
+            for (const member of members) {
+              if (member.payerEmail) {
+                registered.add(member.payerEmail.trim().toLowerCase());
+              }
+              (member.teammateEmails ?? []).forEach((email) => {
+                if (!email) return;
+                const trimmed = email.trim();
+                if (!trimmed) return;
+                pending.add(trimmed);
+              });
+            }
+            const teamLabel = extractTeamNameLabel(members, teamNameFieldId);
+            const primaryRegistrant =
+              members[0]?.payerName?.trim() ||
+              members[0]?.payerEmail?.trim() ||
+              null;
+            const toRemind = Array.from(pending).filter(
+              (email) => !registered.has(email.toLowerCase())
+            );
+            const pendingCount = toRemind.length;
+            const pendingText =
+              pendingCount > 0
+                ? `${pendingCount} teammate${pendingCount > 1 ? "s" : ""} pending`
+                : !complete && members.length < event.teamSize
+                  ? "Team incomplete (no teammate emails)"
+                  : "All teammates registered";
+            const isSending = sendingReminders[teamId] ?? false;
             return (
               <div key={teamId} className="border border-gray-200 rounded-lg overflow-hidden">
-                <div className={`flex items-center gap-3 px-4 py-2 text-sm font-medium ${complete ? "bg-green-50 text-green-700" : "bg-yellow-50 text-yellow-700"}`}>
+              <div className={`flex items-center gap-3 px-4 py-2 text-sm font-medium ${complete ? "bg-green-50 text-green-700" : "bg-yellow-50 text-yellow-700"}`}>
+                <div className="flex flex-col gap-0.5">
                   <span>{complete ? "✓ Team Complete" : "⏳ Incomplete"}</span>
-                  <span className="text-xs font-normal text-gray-400 ml-auto">Team ID: {teamId.slice(0, 8)}…</span>
+                  {teamLabel && (
+                    <span className="text-xs font-normal text-gray-500">Team: {teamLabel}</span>
+                  )}
+                  {primaryRegistrant && (
+                    <span className="text-xs font-normal text-gray-500">Lead: {primaryRegistrant}</span>
+                  )}
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <input
+                      className="text-xs px-2 py-1 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#5E0009]"
+                      placeholder="Pair team name"
+                      value={pairNameInputs[teamId] ?? teamLabel ?? ""}
+                      onChange={(e) =>
+                        setPairNameInputs((prev) => ({ ...prev, [teamId]: e.target.value }))
+                      }
+                    />
+                    <button
+                      onClick={() => handlePairTeam(teamId, members)}
+                      disabled={pairingTeams[teamId]}
+                      className="text-xs px-2 py-1 rounded border border-[#5E0009] text-[#5E0009] font-medium disabled:opacity-50"
+                    >
+                      {pairingTeams[teamId] ? "Pairing…" : "Pair team"}
+                    </button>
+                  </div>
+                </div>
+                {displayTeamId && (
+                  <div className="ml-auto flex items-center gap-3">
+                      <span className="text-xs font-normal text-gray-400">
+                        Team ID: {displayTeamId.slice(0, 8)}…
+                      </span>
+                      <span className="text-xs text-gray-500">{pendingText}</span>
+                      <button
+                        onClick={() => handleReminder(teamId)}
+                        disabled={pendingCount === 0 || isSending}
+                        className="text-xs px-2 py-1 rounded border border-[#5E0009] text-[#5E0009] font-medium disabled:opacity-50"
+                      >
+                        {isSending ? "Sending…" : "Remind teammates"}
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="divide-y divide-gray-100">
                   {members.map((r) => (
@@ -860,7 +1030,7 @@ function SubmissionsView({
   );
 }
 
-// ─── Single registration row ──────────────────────────────────────────────────
+// Single registration row
 
 function RegistrationRow({
   reg,
@@ -888,7 +1058,7 @@ function RegistrationRow({
         <div className="text-right text-xs text-gray-500">
           <span
             className={`px-2 py-0.5 rounded-full font-medium ${
-              reg.paid ? "bg-green-100 text-green-700" : "bg-red-50 text-red-500"
+              reg.paid ? "bg-gray-100 text-gray-700" : "bg-gray-50 text-gray-500"
             }`}
           >
             {reg.paid ? `Paid $${Number(reg.amountPaid ?? 0).toFixed(2)}` : "Unpaid"}

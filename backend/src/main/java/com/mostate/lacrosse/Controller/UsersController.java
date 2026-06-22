@@ -81,6 +81,13 @@ public class UsersController {
     public ResponseEntity<UserResponse> getByPlayer(@PathVariable UUID playerId) {
         UserAccount user = repository.findFirstByPlayerId(playerId).orElse(null);
         if (user == null) {
+            // playerId stores the profile UUID; fall back to player.userUid → firebaseUid lookup
+            Player player = playerRepository.findById(playerId).orElse(null);
+            if (player != null && player.getUserUid() != null && !player.getUserUid().isBlank()) {
+                user = repository.findByFirebaseUid(player.getUserUid()).orElse(null);
+            }
+        }
+        if (user == null) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(toResponse(user));

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.mostate.lacrosse.Config.TenantContext;
 import com.mostate.lacrosse.Model.Game;
 import com.mostate.lacrosse.Repository.GameRepository;
 import com.mostate.lacrosse.Repository.TeamRepository;
@@ -28,20 +30,23 @@ public class GamesController {
     private final GameRepository gameRepository;
     private final TeamRepository teamRepository;
     private final S3Service s3Service;
+    private final SimpMessagingTemplate broker;
 
     public GamesController(
         GameRepository gameRepository,
         TeamRepository teamRepository,
-        S3Service s3Service
+        S3Service s3Service,
+        SimpMessagingTemplate broker
     ) {
         this.gameRepository = gameRepository;
         this.teamRepository = teamRepository;
         this.s3Service = s3Service;
+        this.broker = broker;
     }
 
     @GetMapping
     public ResponseEntity<List<GameResponse>> list() {
-        java.time.Duration ttl = java.time.Duration.ofMinutes(15);
+        java.time.Duration ttl = S3Service.IMAGE_TTL;
         return ResponseEntity.ok(gameRepository.findAllByOrderByDateAsc().stream()
             .map(game -> toResponse(game, ttl))
             .toList());
@@ -50,7 +55,7 @@ public class GamesController {
     @GetMapping("/{id}")
     public ResponseEntity<GameResponse> get(@PathVariable UUID id) {
         return gameRepository.findById(id)
-            .map(game -> ResponseEntity.ok(toResponse(game, java.time.Duration.ofMinutes(15))))
+            .map(game -> ResponseEntity.ok(toResponse(game, S3Service.IMAGE_TTL)))
             .orElse(ResponseEntity.notFound().build());
     }
 
@@ -60,7 +65,7 @@ public class GamesController {
         applyPayload(game, payload);
         Game saved = gameRepository.save(game);
         syncTeamFromGame(saved);
-        return ResponseEntity.ok(toResponse(saved, java.time.Duration.ofMinutes(15)));
+        return ResponseEntity.ok(toResponse(saved, S3Service.IMAGE_TTL));
     }
 
     @PutMapping("/{id}")
@@ -72,7 +77,13 @@ public class GamesController {
         applyPayload(existing, payload);
         Game saved = gameRepository.save(existing);
         syncTeamFromGame(saved);
-        return ResponseEntity.ok(toResponse(saved, java.time.Duration.ofMinutes(15)));
+        GameResponse response = toResponse(saved, S3Service.IMAGE_TTL);
+        // Broadcast live update so viewers don't have to poll
+        String program = TenantContext.getTenant();
+        if (program != null) {
+            broker.convertAndSend("/topic/game/" + program + "/" + id, response);
+        }
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")

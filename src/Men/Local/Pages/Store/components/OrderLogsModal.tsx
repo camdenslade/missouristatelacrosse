@@ -2,8 +2,7 @@
 import { useEffect, useState } from "react";
 import Modal from "../../../../../Global/Common/Modal";
 import { useAuth } from "../../../../../Global/Context/AuthContext";
-import API_BASE from "../../../../../Services/API";
-import { getProgramInfo } from "../../../../../Services/programHelper";
+import { apiRequest } from "../../../../../Services/API";
 
 type OrderLog = {
   id: string;
@@ -33,7 +32,6 @@ type OrderLookupResponse = {
 
 export default function OrderLogsModal({ isOpen, onClose }) {
   const { user } = useAuth();
-  const { program } = getProgramInfo();
   const [orders, setOrders] = useState<OrderLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,21 +56,15 @@ export default function OrderLogsModal({ isOpen, onClose }) {
       return;
     }
     try {
-      const response = await fetch(
-        `${API_BASE}/api/admin/printify/orders?userId=${user.uid}&program=${program}&limit=100`
+      const data = await apiRequest<OrderLog[]>(
+        `/api/admin/printify/orders?userId=${user.uid}&limit=100`
       );
-
-      if (!response.ok) {
-        if (response.status === 403) {
-          throw new Error("Admin access required");
-        }
-        throw new Error(`Failed to fetch orders: ${response.status}`);
-      }
-
-      const data = (await response.json()) as OrderLog[];
       setOrders(data);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to fetch order logs.";
+      let message = err instanceof Error ? err.message : "Failed to fetch order logs.";
+      if (message.includes("Admin access required")) {
+        message = "Admin access required";
+      }
       setError(message);
       console.error("Error fetching order logs:", err);
     } finally {
@@ -136,19 +128,17 @@ export default function OrderLogsModal({ isOpen, onClose }) {
                 }
                 setLookupLoading(true);
                 try {
-                  const res = await fetch(
-                    `${API_BASE}/api/admin/printify/orders/lookup?orderId=${encodeURIComponent(
+                  const data = await apiRequest<OrderLookupResponse>(
+                    `/api/admin/printify/orders/lookup?orderId=${encodeURIComponent(
                       lookupId.trim()
-                    )}&userId=${user.uid}&program=${program}`
+                    )}&userId=${user.uid}`
                   );
-                  if (!res.ok) {
-                    const msg = res.status === 404 ? "Order not found" : `Lookup failed (${res.status})`;
-                    throw new Error(msg);
-                  }
-                  const data = (await res.json()) as OrderLookupResponse;
                   setLookupResult(data);
                 } catch (err) {
-                  const msg = err instanceof Error ? err.message : "Lookup failed";
+                  let msg = err instanceof Error ? err.message : "Lookup failed";
+                  if (msg.includes("Order not found")) {
+                    msg = "Order not found";
+                  }
                   setLookupError(msg);
                 } finally {
                   setLookupLoading(false);
@@ -270,8 +260,8 @@ export default function OrderLogsModal({ isOpen, onClose }) {
                       <span
                         className={`px-2 py-1 rounded text-xs font-medium ${
                           order.success
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
+                            ? "bg-gray-100 text-gray-700"
+                            : "bg-gray-100 text-gray-500"
                         }`}
                       >
                         {order.success ? "Success" : "Failed"}

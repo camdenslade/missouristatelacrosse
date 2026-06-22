@@ -1,9 +1,15 @@
 // src/Men/Local/Pages/Gallery/Modals/GalleryEdit.jsx
-import { Check, Edit3, Folder, Trash2, Upload, X } from "lucide-react";
+import { Check, Edit3, Folder, GripVertical, Trash2, Upload, X } from "lucide-react";
 import { useEffect, useReducer } from "react";
 import type { ChangeEvent } from "react";
+import toast from "react-hot-toast";
+import { useConfirm } from "../../../../../Global/Common/components/ConfirmModal";
+import { DndContext, closestCenter } from "@dnd-kit/core";
+import type { DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, useSortable, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
-import { deleteGallery, getGallery, uploadGallery } from "../hooks/galleryService";
+import { deleteGallery, getGallery, reorderGallery, uploadGallery } from "../hooks/galleryService";
 
 type GalleryEditState = {
   selectedFolder: string;
@@ -61,7 +67,40 @@ type GalleryEditModalProps = {
   onRefresh?: () => void;
 };
 
+function SortablePhoto({ url, index, onDelete }: { url: string; index: number; onDelete: (url: string) => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: url });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+  return (
+    <div ref={setNodeRef} style={style} className="relative group">
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute top-1 left-1 bg-black bg-opacity-50 text-white p-1 rounded cursor-grab z-10 opacity-0 group-hover:opacity-100 transition"
+        title="Drag to reorder"
+      >
+        <GripVertical size={14} />
+      </div>
+      <img
+        src={url}
+        alt={`Photo ${index}`}
+        className="rounded-lg shadow-md w-full h-40 object-cover"
+      />
+      <button
+        onClick={() => onDelete(url)}
+        className="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
+      >
+        <Trash2 size={14} />
+      </button>
+    </div>
+  );
+}
+
 export default function GalleryEditModal({ galleries = {}, onClose, onRefresh }: GalleryEditModalProps){
+  const confirm = useConfirm();
   const [state, dispatch] = useReducer(reducer, initialState);
   const { selectedFolder, currentName, editingName, uploading, progress, localImages, loadingImages } = state;
 
@@ -93,16 +132,16 @@ export default function GalleryEditModal({ galleries = {}, onClose, onRefresh }:
     }
     try{
       const data = await getGallery(selectedFolder);
-      if (!data) return alert("Folder not found.");
+      if (!data) { toast.error("Folder not found."); return; }
 
       await uploadGallery(currentName, []);
       await deleteGallery(selectedFolder);
-      alert("Folder renamed!");
+      toast.success("Folder renamed!");
       dispatch({ type: "SET_FOLDER", folder: currentName });
       onRefresh?.();
     } catch (err){
       console.error("Rename failed:", err);
-      alert("Rename failed.");
+      toast.error("Rename failed.");
     } finally{
       dispatch({ type: "TOGGLE_EDIT" });
     }
@@ -117,31 +156,64 @@ export default function GalleryEditModal({ galleries = {}, onClose, onRefresh }:
       await uploadGallery(selectedFolder, files);
       const updated = await getGallery(selectedFolder);
       dispatch({ type: "SET_IMAGES", images: updated?.urls || [] });
-      alert("Photos added successfully!");
+      toast.success("Photos added successfully!");
       onRefresh?.();
     } catch (err){
       console.error("Failed to add photos:", err);
-      alert("Upload failed.");
+      toast.error("Upload failed.");
     } finally{
       dispatch({ type: "SET_UPLOAD", value: false });
     }
   };
 
+  const handleDeleteGallery = async () => {
+    if (!selectedFolder) return;
+    if (!await confirm(`Delete the entire "${selectedFolder}" gallery and all its photos? This cannot be undone.`)) return;
+    try {
+      await deleteGallery(selectedFolder);
+      onRefresh?.();
+      onClose();
+    } catch (err) {
+      console.error("Failed to delete gallery:", err);
+      toast.error("Delete failed.");
+    }
+  };
+
   const handleDeleteImage = async (url: string) => {
     if (!selectedFolder) return;
-    if (!window.confirm("Delete this photo?")) return;
-    const lastSegment = url.split("/").pop() || "";
-    const fileName = decodeURIComponent(lastSegment.split("?")[0]);
+    if (!await confirm("Delete this photo?")) return;
+
+    let s3Key: string;
+    try {
+      const urlObj = new URL(url);
+      s3Key = decodeURIComponent(urlObj.pathname.substring(1));
+    } catch {
+      s3Key = decodeURIComponent(url.split("?")[0].split("/").pop() || url);
+    }
 
     try{
-      await deleteGallery(selectedFolder, fileName);
+      await deleteGallery(selectedFolder, s3Key);
       const updated = await getGallery(selectedFolder);
       dispatch({ type: "SET_IMAGES", images: updated?.urls || [] });
-      alert("Photo deleted!");
+      toast.success("Photo deleted!");
       onRefresh?.();
     } catch (err){
       console.error("Failed to delete photo:", err);
-      alert("Delete failed.");
+      toast.error("Delete failed.");
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = localImages.indexOf(active.id as string);
+    const newIndex = localImages.indexOf(over.id as string);
+    const reordered = arrayMove(localImages, oldIndex, newIndex);
+    dispatch({ type: "SET_IMAGES", images: reordered });
+    try {
+      await reorderGallery(selectedFolder, reordered);
+    } catch {
+      toast.error("Failed to save order.");
     }
   };
 
@@ -214,6 +286,13 @@ export default function GalleryEditModal({ galleries = {}, onClose, onRefresh }:
                   disabled={uploading}
                 />
               </label>
+
+              <button
+                onClick={handleDeleteGallery}
+                className="flex items-center gap-1 bg-red-700 text-white px-3 py-2 rounded hover:bg-red-900 text-sm"
+              >
+                <Trash2 size={14} /> Delete Gallery
+              </button>
             </div>
           )}
         </div>
@@ -233,23 +312,15 @@ export default function GalleryEditModal({ galleries = {}, onClose, onRefresh }:
               Loading images...
             </div>
           ) : localImages.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {localImages.map((url, i) => (
-                <div key={i} className="relative group">
-                  <img
-                    src={url}
-                    alt={`Photo ${i}`}
-                    className="rounded-lg shadow-md w-full h-40 object-cover"
-                  />
-                  <button
-                    onClick={() => handleDeleteImage(url)}
-                    className="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+            <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={localImages} strategy={rectSortingStrategy}>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {localImages.map((url, i) => (
+                    <SortablePhoto key={url} url={url} index={i} onDelete={handleDeleteImage} />
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+            </DndContext>
           ) : (
             <p className="text-gray-500 italic text-center">No photos yet.</p>
           )

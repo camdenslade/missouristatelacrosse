@@ -53,21 +53,15 @@ export async function uploadGallery(folderName: string, files: File[]): Promise<
  * @returns {Promise<void>}
  */
 
-export async function deleteGallery(folderName: string, fileName?: string): Promise<void>{
+export async function deleteGallery(folderName: string, s3Key?: string): Promise<void>{
     if (!folderName) throw new Error("Missing folder name");
 
     try{
-    if (fileName){
-        const snapshot = await apiRequest<GalleryFolder>(`/api/gallery/${folderName}`).catch(() => null);
-        const urls = (snapshot?.urls || []).filter(
-          (u: string) => !u.includes(fileName)
-        );
-      await apiRequest(`/api/gallery/${folderName}`, {
-        method: "PUT",
-        json: { urls },
+    if (s3Key){
+      await apiRequest(`/api/gallery/${folderName}/photo?key=${encodeURIComponent(s3Key)}`, {
+        method: "DELETE",
       });
-
-      console.log(`Deleted file "${fileName}" from ${folderName}`);
+      console.log(`Deleted photo "${s3Key}" from ${folderName}`);
     } else{
       await apiRequest(`/api/gallery/${folderName}`, { method: "DELETE" });
       console.log(`Deleted entire folder "${folderName}"`);
@@ -85,5 +79,13 @@ export async function getGallery(folderName?: string){
     return await apiRequest<GalleryFolder>(`/api/gallery/${folderName}`);
   }
   return await apiRequest<Record<string, GalleryFolder>>("/api/gallery");
+}
+
+export async function reorderGallery(folderName: string, urls: string[]): Promise<void> {
+  if (!folderName) throw new Error("Missing folder name");
+  await apiRequest(`/api/gallery/${folderName}`, {
+    method: "PUT",
+    json: { urls },
+  });
 }
 

@@ -1,6 +1,7 @@
 // src/Women/Local/Pages/Sponsor/SponsorMain.jsx
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
+import toast from "react-hot-toast";
 import SponsorLogos from "../../../../Global/Common/SponsorLogos";
 import { useSponsors } from "../../../../Global/Common/hooks/useSponsors";
 import { validateText } from "../../../../Global/Common/utils/validation";
@@ -26,7 +27,7 @@ export default function WSponsorMain() {
       validateText(form.contactInfo, "Contact information", { required: true, max: 120 }) ||
       validateText(form.request, "Request", { required: true, max: 500 });
     if (validationError) {
-      alert(validationError);
+      toast.error(validationError);
       return;
     }
     setLoading(true);
@@ -38,12 +39,12 @@ export default function WSponsorMain() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to submit");
-      alert("Thank you! Your sponsorship inquiry has been submitted.");
+      toast.success("Thank you! Your sponsorship inquiry has been submitted.");
       setForm({ businessName: "", contactInfo: "", request: "" });
       setOpen(false);
     } catch (err) {
       console.error("Error submitting sponsor request:", err);
-      alert("There was an issue submitting your request. Please try again later.");
+      toast.error("There was an issue submitting your request. Please try again later.");
     } finally {
       setLoading(false);
     }

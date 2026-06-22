@@ -26,5 +26,6 @@ public interface EventRegistrationRepository extends JpaRepository<EventRegistra
         @Param("teammateEmail") String teammateEmail,
         @Param("eventId") UUID eventId
     );
+    Optional<EventRegistration> findByPayerEmailAndEventIdAndPaidTrue(String payerEmail, UUID eventId);
     long countByTeamIdAndPaidTrue(UUID teamId);
 }

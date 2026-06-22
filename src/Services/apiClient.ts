@@ -18,11 +18,16 @@ async function getAuthToken(): Promise<string | null> {
   }
 }
 
+function getUserId(): string | null {
+  return auth.currentUser?.uid ?? null;
+}
+
 export async function apiRequest<T = unknown>(endpoint: string, options: ApiOptions = {}): Promise<T> {
   const base = (API_BASE || "").replace(/\/+$/, "");
   const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
   const token = await getAuthToken();
   const program = getActiveProgram();
+  const userId = getUserId();
   let url = `${base}${path}`;
 
   if (program && !/[?&]program=/.test(url)) {
@@ -37,6 +42,9 @@ export async function apiRequest<T = unknown>(endpoint: string, options: ApiOpti
   }
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
+  }
+  if (userId) {
+    headers.set("X-User-Id", userId);
   }
 
   const config: RequestInit = {

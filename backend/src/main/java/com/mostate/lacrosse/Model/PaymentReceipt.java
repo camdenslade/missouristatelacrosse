@@ -40,6 +40,8 @@ public class PaymentReceipt {
     @Column(columnDefinition = "jsonb")
     private String payload;
 
+    private String source;
+
     @Column(name = "receipt_sent_at")
     private Instant receiptSentAt;
 
@@ -87,6 +89,9 @@ public class PaymentReceipt {
 
     public String getPayload() { return payload; }
     public void setPayload(String payload) { this.payload = payload; }
+
+    public String getSource() { return source; }
+    public void setSource(String source) { this.source = source; }
 
     public Instant getReceiptSentAt() { return receiptSentAt; }
     public void setReceiptSentAt(Instant receiptSentAt) { this.receiptSentAt = receiptSentAt; }

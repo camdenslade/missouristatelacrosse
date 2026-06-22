@@ -1,6 +1,6 @@
 export type Program = "men" | "women";
 
-export type Role = "admin" | "player" | "parent" | "user" | "coach";
+export type Role = "admin" | "player" | "parent" | "user" | "coach" | "alumni";
 
 export type JsonValue =
   | string
@@ -126,6 +126,16 @@ export interface ApiGroup {
   createdBy?: string | null;
 }
 
+export interface DuesPayment {
+  id: string;
+  playerId: string;
+  amount: number;
+  type: "PAYMENT" | "CHARGE" | "CREDIT" | "ADJUSTMENT";
+  note?: string | null;
+  paidByUid?: string | null;
+  createdAt?: string;
+}
+
 export interface ApiParentRecord {
   uid?: string | null;
   email?: string | null;
@@ -152,6 +162,7 @@ export interface PrintifyProductVariant {
   id: number | string;
   options: Array<number | string>;
   our_price: number;
+  sku?: string;
 }
 
 export interface PrintifyProductImage {
@@ -166,6 +177,23 @@ export interface PrintifyProduct {
   images?: PrintifyProductImage[];
 }
 
+export interface CustomProductVariant {
+  id: number;
+  label: string;
+  price: number;
+  stock: number;
+}
+
+export interface ApiCustomProduct {
+  id: number;
+  title: string;
+  price: number;
+  pictureUrl: string;
+  description?: string | null;
+  active: boolean;
+  variants: CustomProductVariant[];
+}
+
 export interface CartItem {
   id: string | number;
   title: string;
@@ -175,6 +203,11 @@ export interface CartItem {
   color?: string;
   size?: string;
   image?: string;
+  sku?: string;
+  /** set to true for custom (non-Printify) products */
+  isCustom?: boolean;
+  /** human-readable variant label for custom products */
+  variantLabel?: string;
 }
 
 export interface ApiOrderLog {
@@ -247,6 +280,7 @@ export interface ApiRaffle {
   slug: string;
   description?: string | null;
   image?: string | null;
+  images?: string[] | null;
   ticketPrice?: number | null;
   maxTicketsPerPerson?: number | null;
   allowBids: boolean;
@@ -258,6 +292,10 @@ export interface ApiRaffle {
   entryCount?: number;
   createdAt?: string;
   updatedAt?: string;
+  streamKey?: string | null;
+  rtmpsUrl?: string | null;
+  hlsUrl?: string | null;
+  isLive?: boolean;
 }
 
 export interface ApiRaffleEntry {
@@ -273,6 +311,36 @@ export interface ApiRaffleEntry {
   paid: boolean;
   paidAt?: string | null;
   createdAt?: string;
+}
+
+export interface ApiStreamKey {
+  id: string;
+  keyCode: string;
+  tier: "ONE_SCREEN" | "TWO_SCREEN";
+  displayName: string;
+  email: string;
+  activeSessions: number;
+  activatedAt?: string | null;
+  expiresAt?: string | null;
+  createdAt?: string;
+}
+
+export interface ApiStreamConfig {
+  cloudflareInputUid?: string | null;
+  rtmpsUrl?: string | null;
+  rtmpsKey?: string | null;
+  hlsUrl?: string | null;
+  isLive?: boolean;
+  isPaywalled?: boolean;
+  priceOneScreen?: number | null;
+  priceTwoScreen?: number | null;
+}
+
+export interface ChatMsg {
+  id: string;
+  displayName: string;
+  message: string;
+  createdAt: string;
 }
 
 export interface PublicOrderItem {

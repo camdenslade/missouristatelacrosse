@@ -1,5 +1,5 @@
 // src/Men/Local/Pages/Roster/Roster.jsx
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { getCurrentYear, setCurrentYear } from "../../../../Services/yearHelper";
@@ -33,6 +33,7 @@ export default function Roster({ userRole }: RosterProps){
 
   const [state, dispatch] = useRosterState(normalizedSeason);
   const { selectedSeason, showModal, isCoach, editingItem, loading } = state;
+  const [searchQuery, setSearchQuery] = useState("");
 
   const {
     players,
@@ -64,6 +65,13 @@ export default function Roster({ userRole }: RosterProps){
     [players, selectedSeason]
   );
 
+  const displayedPlayers = useMemo(
+    () => searchQuery.trim()
+      ? filteredPlayers.filter((p) => p.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+      : filteredPlayers,
+    [filteredPlayers, searchQuery]
+  );
+
   const filteredCoaches = useMemo(
     () => coaches.filter((c) => c.season === selectedSeason),
     [coaches, selectedSeason]
@@ -78,6 +86,7 @@ export default function Roster({ userRole }: RosterProps){
   }, [dispatch, fetchPlayers, fetchCoaches, selectedSeason]);
 
   const handleSeasonChange = (val: string) => {
+    setSearchQuery("");
     dispatch({ type: "SET_SEASON", payload: val });
     setCurrentYear(val);
     localStorage.setItem("selectedSeason", val);
@@ -101,7 +110,7 @@ export default function Roster({ userRole }: RosterProps){
     <div className="max-w-full px-4 py-8">
       <style>{rosterPrintStyle}</style>
 
-      <div className="no-print flex flex-col sm:flex-row justify-between items-center mb-6">
+      <div className="no-print flex flex-col sm:flex-row justify-between items-center gap-3 mb-6">
         <select
           value={selectedSeason}
           onChange={(e) => handleSeasonChange(e.target.value)}
@@ -111,9 +120,16 @@ export default function Roster({ userRole }: RosterProps){
             <option key={s} value={s}>{displaySeasonLabel(s)} Season</option>
           ))}
         </select>
+        <input
+          type="text"
+          placeholder="Search players..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="border border-gray-300 rounded-md px-3 py-1 text-sm w-full sm:w-48 focus:outline-none focus:ring-1 focus:ring-[#5E0009]"
+        />
         <button
           onClick={handlePrint}
-          className="print-button mt-4 sm:mt-0 bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-md px-4 py-2 text-sm font-medium"
+          className="print-button mt-0 bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-md px-4 py-2 text-sm font-medium"
         >
           Print Roster
         </button>
@@ -141,12 +157,13 @@ export default function Roster({ userRole }: RosterProps){
           )}
 
           <div className="flex flex-col gap-0 print:hidden no-print">
-            {filteredPlayers.length ? (
-              filteredPlayers.map((p, i) => (
+            {displayedPlayers.length ? (
+              displayedPlayers.map((p, i) => (
                 <PlayerRow
                   key={p.id}
                   player={p}
                   index={i}
+                  season={selectedSeason}
                   isAdmin={userRole === "admin"}
                   onEdit={(item) => dispatch({ type: "OPEN_MODAL", item })}
                   onDelete={() => handleDelete(p, false)}
@@ -154,7 +171,7 @@ export default function Roster({ userRole }: RosterProps){
               ))
             ) : (
               <div className="text-center text-gray-500 py-10">
-                No players found for {displaySeasonLabel(selectedSeason)}.
+                {searchQuery ? `No players matching "${searchQuery}".` : `No players found for ${displaySeasonLabel(selectedSeason)}.`}
               </div>
             )}
           </div>

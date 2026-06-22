@@ -177,7 +177,7 @@ public class PlayersController {
             player.getParents(),
             new TypeReference<List<ParentLink>>() {}
         );
-        java.time.Duration ttl = java.time.Duration.ofMinutes(15);
+        java.time.Duration ttl = S3Service.IMAGE_TTL;
         return new PlayerResponse(
             player.getId(),
             player.getName(),

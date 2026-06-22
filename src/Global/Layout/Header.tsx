@@ -54,7 +54,9 @@ export default function Header({ onManageArticles, onManageArticlesWomen, onAuth
   const isAdmin = programRole === "admin";
   const isPlayer = programRole === "player";
   const isParent = programRole === "parent";
+  const isAlumni = programRole === "alumni";
   const canSeePayments = user && (isAdmin || isPlayer || isParent);
+  const canSeeAlumni = user && (isAdmin || isAlumni);
   const isGlobalAdmin = roles?.men === "admin" || roles?.women === "admin";
   
 
@@ -132,6 +134,18 @@ export default function Header({ onManageArticles, onManageArticlesWomen, onAuth
             <Link to={programLink("/gallery")} className={linkHover}>Gallery</Link>
             {canSeePayments && (
               <Link to={programLink("/payments")} className={linkHover}>Payments</Link>
+            )}
+            {canSeeAlumni && (
+              <div className="relative group flex items-center">
+                <span className={`${linkHover} cursor-default`}>Alumni</span>
+                <div className="absolute left-0 top-full pt-2 hidden group-hover:block z-50 min-w-40">
+                  <div className="bg-white text-gray-800 shadow-xl rounded-md overflow-hidden border border-gray-100 text-xs font-semibold uppercase tracking-widest">
+                    <Link to={programLink("/alumni-budget")} className="block px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                      Program Budget
+                    </Link>
+                  </div>
+                </div>
+              </div>
             )}
           </nav>
 

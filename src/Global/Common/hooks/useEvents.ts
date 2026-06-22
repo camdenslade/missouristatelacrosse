@@ -4,6 +4,7 @@ import type {
   ApiEventField,
   ApiEventRegistration,
   ApiEventTeamCheck,
+  Program,
 } from "../../../types/api";
 
 type EventPayload = {
@@ -106,4 +107,29 @@ export async function registerForEvent(
       formData: JSON.stringify(payload.formData),
     },
   });
+}
+
+export async function sendTeamReminder(
+  eventId: string,
+  teamId: string,
+  program: Program
+): Promise<{ sentEmails: number }> {
+  return apiRequest<{ sentEmails: number }>(`/api/events/${eventId}/teams/${teamId}/remind`, {
+    method: "POST",
+    json: { program },
+  });
+}
+
+export async function pairEventTeam(
+  eventId: string,
+  registrationIds: string[],
+  teamName: string
+): Promise<{ teamId: string; teamName: string; registrations: string[] }> {
+  return apiRequest<{ teamId: string; teamName: string; registrations: string[] }>(
+    `/api/events/${eventId}/teams/pair`,
+    {
+      method: "POST",
+      json: { registrationIds, teamName },
+    }
+  );
 }

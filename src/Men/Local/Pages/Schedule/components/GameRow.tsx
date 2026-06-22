@@ -98,7 +98,7 @@ export default function GameRow({
           </div>
 
           {/* Opponent Info */}
-          <div className="flex flex-col sm:flex-row items-center gap-5 flex-grow text-center sm:text-left">
+          <div className="flex flex-col sm:flex-row items-center gap-5 grow text-center sm:text-left">
             {game.awayLogo && (
               <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center shrink-0">
                 {game.awayLink ? (
@@ -194,7 +194,7 @@ export default function GameRow({
                     </tr>
                     <tr>
                       <td className="px-1 font-semibold text-gray-800">
-                        {game.opponent ? game.opponent.slice(0, 4).toUpperCase() : "OPP"}
+                        {game.opponent ? game.opponent.slice(0, 3).toUpperCase() : "OPP"}
                       </td>
                       {quarters.map(([q, val]) => (
                         <td key={q} className="px-1.5 py-0.5 text-center text-gray-600">

@@ -10,6 +10,8 @@ export default [
   { path: "/payments" },
   { path: "/store" },
   { path: "/donate" },
+  { path: "/fundraiser" },
+  { path: "/fundraiser/success" },
   { path: "/gallery" },
   { path: "/sponsorships" },
   { path: "/recruitment" },

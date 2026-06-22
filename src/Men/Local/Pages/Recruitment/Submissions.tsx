@@ -1,5 +1,7 @@
 // src/Men/Local/Pages/Recruitment/Submissions.jsx
 import { useEffect, useReducer } from "react";
+import toast from "react-hot-toast";
+import { useConfirm } from "../../../../Global/Common/components/ConfirmModal";
 
 import { apiRequest } from "../../../../Services/API";
 
@@ -25,6 +27,7 @@ function reducer(state, action){
 }
 
 export default function RecruitmentSubmissions({ userRole }) {
+  const confirm = useConfirm();
   const [state, dispatch] = useReducer(reducer, initialState);
   const canDelete = ["admin", "player"].includes(userRole);
 
@@ -44,7 +47,7 @@ export default function RecruitmentSubmissions({ userRole }) {
   }, []);
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this submission?"))
+    if (!await confirm("Are you sure you want to delete this submission?"))
       return;
 
     try{
@@ -52,7 +55,7 @@ export default function RecruitmentSubmissions({ userRole }) {
       dispatch({ type: "DELETE_SUBMISSION", payload: id });
     } catch (err){
       console.error("Error deleting submission:", err);
-      alert("Failed to delete submission.");
+      toast.error("Failed to delete submission.");
     }
   };
 

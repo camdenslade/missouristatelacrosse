@@ -199,16 +199,26 @@ export default function AuthModal({ onClose }: AuthModalProps) {
             />
 
             {!isSignUp && (
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) =>
-                  dispatch({ type: "SET_FIELD", field: "password", value: e.target.value })
-                }
-                className="border px-3 py-2 rounded"
-                required
-              />
+              <>
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) =>
+                    dispatch({ type: "SET_FIELD", field: "password", value: e.target.value })
+                  }
+                  className="border px-3 py-2 rounded"
+                  required
+                />
+                <div className="text-right -mt-1">
+                  <a
+                    href="/reset-password"
+                    className="text-xs text-[#5E0009] hover:underline"
+                  >
+                    Forgot password?
+                  </a>
+                </div>
+              </>
             )}
 
             {error && <div className="text-red-500 text-sm text-center">{error}</div>}

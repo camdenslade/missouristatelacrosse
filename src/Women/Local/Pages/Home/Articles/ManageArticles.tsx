@@ -1,6 +1,8 @@
 // src/Women/Local/Pages/Home/Articles/ManageArticles.jsx
 import { useEffect, useReducer } from "react";
 import type { ApiArticle, ApiUser } from "../../../../../types/api";
+import toast from "react-hot-toast";
+import { useConfirm } from "../../../../../Global/Common/components/ConfirmModal";
 
 import { useAuth } from "../../../../../Global/Context/AuthContext";
 import { apiRequest } from "../../../../../Services/API";
@@ -55,6 +57,7 @@ function reducer(state: ManageArticlesState, action: ManageArticlesAction): Mana
 }
 
 export default function WManageArticlesModal({ isOpen, onClose }: ManageArticlesProps) {
+  const confirm = useConfirm();
   const { user } = useAuth();
   const [state, dispatch] = useReducer(reducer, initialState);
   const { articles, editingArticle, hasPermission, loadingRole } = state;
@@ -96,7 +99,7 @@ export default function WManageArticlesModal({ isOpen, onClose }: ManageArticles
   }, [isOpen]);
 
   const handleSave = async (formData: ArticleFormData, imageURL: string) => {
-    if (!hasPermission) return alert("You do not have permission to modify these articles.");
+    if (!hasPermission) { toast.error("You do not have permission to modify these articles."); return; }
 
     if (editingArticle){
       await apiRequest(`/api/articles/${editingArticle.id}`, {
@@ -121,8 +124,9 @@ export default function WManageArticlesModal({ isOpen, onClose }: ManageArticles
   };
 
   const handleDelete = async (id: string) => {
-    if (!hasPermission) return alert("You do not have permission to delete articles.");
-    if (window.confirm("Are you sure you want to delete this article?")) {
+    if (!hasPermission) { toast.error("You do not have permission to delete articles."); return; }
+    const ok = await confirm("Are you sure you want to delete this article?");
+    if (ok) {
       await apiRequest(`/api/articles/${id}`, { method: "DELETE" });
       fetchArticles();
     }

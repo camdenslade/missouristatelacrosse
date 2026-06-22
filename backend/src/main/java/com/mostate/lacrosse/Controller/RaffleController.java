@@ -3,9 +3,12 @@ package com.mostate.lacrosse.Controller;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +24,7 @@ import com.mostate.lacrosse.Repository.PaymentReceiptRepository;
 import com.mostate.lacrosse.Repository.RaffleEntryRepository;
 import com.mostate.lacrosse.Repository.RaffleRepository;
 import com.mostate.lacrosse.Service.S3Service;
+import com.mostate.lacrosse.Utils.JsonUtils;
 import com.mostate.lacrosse.Utils.TextSanitizer;
 
 @RestController
@@ -32,7 +36,7 @@ public class RaffleController {
     private final PaymentReceiptRepository receiptRepo;
     private final S3Service s3Service;
 
-    private static final java.time.Duration IMAGE_TTL = java.time.Duration.ofMinutes(15);
+    private static final java.time.Duration IMAGE_TTL = S3Service.IMAGE_TTL;
 
     public RaffleController(
         RaffleRepository raffleRepo,
@@ -177,6 +181,54 @@ public class RaffleController {
         return ResponseEntity.ok(toResponse(raffleRepo.save(raffle), true));
     }
 
+    // ── Admin: set up stream for raffle drawing ────────────────────────────────
+
+    @PostMapping("/{id}/stream/setup")
+    public ResponseEntity<?> streamSetup(@PathVariable UUID id) {
+        Raffle raffle = raffleRepo.findById(id).orElse(null);
+        if (raffle == null) return ResponseEntity.notFound().build();
+
+        Map<String, Object> sd = new HashMap<>(JsonUtils.readMap(raffle.getStreamData()));
+        if (sd.get("streamKey") == null) {
+            String key = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+            sd.put("streamKey", key);
+            sd.put("rtmpsUrl",  "rtmp://api.missouristatelacrosse.com/live");
+            sd.put("hlsUrl",    "https://api.missouristatelacrosse.com/hls/live/" + key + "/index.m3u8");
+            sd.put("isLive", false);
+            raffle.setStreamData(JsonUtils.toJson(sd));
+            raffleRepo.save(raffle);
+        }
+        return ResponseEntity.ok(toResponse(raffle, true));
+    }
+
+    // ── Admin: toggle go-live ──────────────────────────────────────────────────
+
+    @PostMapping("/{id}/stream/go-live")
+    public ResponseEntity<?> streamGoLive(@PathVariable UUID id) {
+        Raffle raffle = raffleRepo.findById(id).orElse(null);
+        if (raffle == null) return ResponseEntity.notFound().build();
+
+        Map<String, Object> sd = new HashMap<>(JsonUtils.readMap(raffle.getStreamData()));
+        if (sd.get("streamKey") == null) return ResponseEntity.badRequest().body("Stream not set up.");
+        boolean nowLive = !Boolean.TRUE.equals(sd.get("isLive"));
+        sd.put("isLive", nowLive);
+        raffle.setStreamData(JsonUtils.toJson(sd));
+        raffleRepo.save(raffle);
+        return ResponseEntity.ok(toResponse(raffle, true));
+    }
+
+    // ── Public: get stream info (hls url + live status) ───────────────────────
+
+    @GetMapping("/{id}/stream/info")
+    public ResponseEntity<?> streamInfo(@PathVariable UUID id) {
+        Raffle raffle = raffleRepo.findById(id).orElse(null);
+        if (raffle == null) return ResponseEntity.notFound().build();
+        Map<String, Object> sd = JsonUtils.readMap(raffle.getStreamData());
+        boolean isLive = Boolean.TRUE.equals(sd.get("isLive"));
+        String hlsUrl  = isLive ? (String) sd.get("hlsUrl") : null;
+        return ResponseEntity.ok(Map.of("isLive", isLive, "hlsUrl", hlsUrl != null ? hlsUrl : ""));
+    }
+
     // ── Admin: manual add entry (no payment required) ─────────────────────────
 
     @PostMapping("/{id}/admin-entry")
@@ -272,6 +324,10 @@ public class RaffleController {
         }
         if (p.description() != null) raffle.setDescription(TextSanitizer.clean(p.description()));
         if (p.image() != null) raffle.setImage(p.image().isBlank() ? null : p.image());
+        if (p.images() != null) {
+            raffle.setImages(p.images().isEmpty() ? null : JsonUtils.toJson(p.images()));
+            if (!p.images().isEmpty()) raffle.setImage(p.images().get(0));
+        }
         if (p.ticketPrice() != null) raffle.setTicketPrice(p.ticketPrice());
         if (p.maxTicketsPerPerson() != null) raffle.setMaxTicketsPerPerson(p.maxTicketsPerPerson());
         if (p.allowBids() != null) raffle.setAllowBids(p.allowBids());
@@ -283,15 +339,25 @@ public class RaffleController {
         if (p.winnerEmail() != null) raffle.setWinnerEmail(p.winnerEmail().isBlank() ? null : p.winnerEmail());
     }
 
-    private RaffleResponse toResponse(Raffle r, boolean includeEntryCount) {
-        long entryCount = includeEntryCount ? entryRepo.countByRaffleIdAndPaidTrue(r.getId()) : 0;
+    private RaffleResponse toResponse(Raffle r, boolean includeAdmin) {
+        long entryCount = includeAdmin ? entryRepo.countByRaffleIdAndPaidTrue(r.getId()) : 0;
+        Map<String, Object> sd = JsonUtils.readMap(r.getStreamData());
+        boolean isLive      = Boolean.TRUE.equals(sd.get("isLive"));
+        String  hlsUrl      = (String) sd.get("hlsUrl");
+        String  streamKey   = includeAdmin ? (String) sd.get("streamKey") : null;
+        String  rtmpsUrl    = includeAdmin ? (String) sd.get("rtmpsUrl")  : null;
+        List<String> rawImages = JsonUtils.readList(r.getImages(), new TypeReference<List<String>>() {});
+        List<String> images = rawImages.stream()
+            .map(url -> s3Service.toPresignedUrl(url, IMAGE_TTL))
+            .toList();
         return new RaffleResponse(
             r.getId(), r.getName(), r.getSlug(), r.getDescription(),
             s3Service.toPresignedUrl(r.getImage(), IMAGE_TTL),
             r.getTicketPrice(), r.getMaxTicketsPerPerson(), r.isAllowBids(),
             r.isPublished(), r.getStatus(), r.getEndTime(),
             r.getWinnerName(), r.getWinnerEmail(),
-            entryCount, r.getCreatedAt(), r.getUpdatedAt()
+            entryCount, r.getCreatedAt(), r.getUpdatedAt(),
+            streamKey, rtmpsUrl, isLive ? hlsUrl : null, isLive, images
         );
     }
 
@@ -309,6 +375,7 @@ public class RaffleController {
         String name,
         String description,
         String image,
+        List<String> images,
         BigDecimal ticketPrice,
         Integer maxTicketsPerPerson,
         Boolean allowBids,
@@ -336,7 +403,12 @@ public class RaffleController {
         String winnerEmail,
         long entryCount,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        String streamKey,
+        String rtmpsUrl,
+        String hlsUrl,
+        boolean isLive,
+        List<String> images
     ) {}
 
     public record EntryPayload(

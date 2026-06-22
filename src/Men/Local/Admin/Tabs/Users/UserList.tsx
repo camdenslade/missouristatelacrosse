@@ -1,4 +1,6 @@
 // src/Men/Local/Admin/Tabs/Users/UserList.jsx
+import { useConfirm } from "../../../../../Global/Common/components/ConfirmModal";
+
 type UserEntry = {
   id: string;
   displayName?: string | null;
@@ -13,6 +15,7 @@ type UserListProps = {
 };
 
 export default function UserList({ users, handleRoleChange, handleDelete }: UserListProps) {
+  const confirm = useConfirm();
   return (
     <div className="flex flex-col gap-2">
       {users.map(user => (
@@ -26,13 +29,17 @@ export default function UserList({ users, handleRoleChange, handleDelete }: User
             >
               <option value="user">User</option>
               <option value="player">Player</option>
+              <option value="parent">Parent</option>
+              <option value="coach">Coach</option>
+              <option value="alumni">Alumni</option>
               <option value="admin">Admin</option>
             </select>
             {handleDelete && (
               <button
                 type="button"
-                onClick={() => {
-                  if (window.confirm(`Delete ${user.displayName || user.email || "this user"}?`)) {
+                onClick={async () => {
+                  const ok = await confirm(`Delete ${user.displayName || user.email || "this user"}?`);
+                  if (ok) {
                     handleDelete(user.id);
                   }
                 }}

@@ -1,12 +1,15 @@
 package com.mostate.lacrosse.Controller.Admin;
 
 import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.google.firebase.auth.FirebaseToken;
+import com.mostate.lacrosse.Config.FirebaseAdminFilter;
 import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Model.PrintifyOrderLog;
 import com.mostate.lacrosse.Model.PaymentReceipt;
@@ -39,6 +42,7 @@ public class PrintifyOrderLogController {
      */
     @GetMapping("/orders")
     public ResponseEntity<?> getOrderLogs(
+            HttpServletRequest request,
             @RequestHeader(value = "X-User-Id", required = false) String userId,
             @RequestParam(value = "userId", required = false) String userIdParam,
             @RequestParam(value = "program", defaultValue = "men") String program,
@@ -46,13 +50,14 @@ public class PrintifyOrderLogController {
         
         // Get userId from header or param
         String effectiveUserId = userId != null ? userId : userIdParam;
-        
+
         if (effectiveUserId == null || effectiveUserId.isEmpty()) {
             return ResponseEntity.status(401).body(new ErrorResponse("User ID is required"));
         }
 
+        FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
         // Enforce admin-only access
-        if (!orderLogService.isAdmin(effectiveUserId, program)) {
+        if (!orderLogService.isAdmin(effectiveUserId, program, token)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
 
@@ -75,6 +80,7 @@ public class PrintifyOrderLogController {
      */
     @GetMapping("/orders/lookup")
     public ResponseEntity<?> lookupOrder(
+        HttpServletRequest request,
         @RequestHeader(value = "X-User-Id", required = false) String userId,
         @RequestParam(value = "userId", required = false) String userIdParam,
         @RequestParam(value = "program", defaultValue = "men") String program,
@@ -84,7 +90,8 @@ public class PrintifyOrderLogController {
         if (effectiveUserId == null || effectiveUserId.isEmpty()) {
             return ResponseEntity.status(401).body(new ErrorResponse("User ID is required"));
         }
-        if (!orderLogService.isAdmin(effectiveUserId, program)) {
+        FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
+        if (!orderLogService.isAdmin(effectiveUserId, program, token)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
 
@@ -114,4 +121,3 @@ public class PrintifyOrderLogController {
         PaymentReceipt paymentReceipt
     ) {}
 }
-

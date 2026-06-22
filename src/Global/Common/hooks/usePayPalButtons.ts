@@ -1,5 +1,6 @@
 // src/Global/Common/hooks/usePayPalButtons.ts
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { apiRequest } from "../../../Services/API";
 
 type PayPalSuccessHandler = (
@@ -27,7 +28,9 @@ type PayPalCaptureResponse = {
 export default function usePayPalButtons(
   customAmount: number | string | null,
   containerId = "paypal-buttons",
-  onSuccess?: PayPalSuccessHandler
+  onSuccess?: PayPalSuccessHandler,
+  label: "donate" | "pay" | "buynow" | "checkout" | "subscribe" = "donate",
+  source?: string
 ) {
   const [paypalLoaded, setPaypalLoaded] = useState(false);
 
@@ -83,7 +86,7 @@ export default function usePayPalButtons(
         layout: "vertical",
         color: "gold",
         shape: "rect",
-        label: "donate",
+        label,
       },
 
       createOrder: async () => {
@@ -99,8 +102,11 @@ export default function usePayPalButtons(
       },
 
       onApprove: async (data) => {
+        const captureUrl = source
+          ? `/api/paypal/capture?orderID=${data.orderID}&source=${encodeURIComponent(source)}`
+          : `/api/paypal/capture?orderID=${data.orderID}`;
         const captureData = await apiRequest<PayPalCaptureResponse>(
-          `/api/paypal/capture?orderID=${data.orderID}`,
+          captureUrl,
           { method: "POST" }
         );
 
@@ -124,14 +130,14 @@ export default function usePayPalButtons(
 
       onError: (err) => {
         console.error("PayPal error:", err);
-        alert("Payment failed. Try again.");
+        toast.error("Payment failed. Try again.");
       },
     });
 
     if (!buttons) return;
 
     buttons.render(`#${containerId}`);
-  }, [paypalLoaded, customAmount, containerId, onSuccess]);
+  }, [paypalLoaded, customAmount, containerId, onSuccess, label, source]);
 
   return { paypalLoaded };
 }

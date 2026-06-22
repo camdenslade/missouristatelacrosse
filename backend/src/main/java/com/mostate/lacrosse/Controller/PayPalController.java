@@ -56,7 +56,10 @@ public class PayPalController {
     }
 
     @PostMapping("/capture")
-    public ResponseEntity<?> captureOrder(@RequestParam String orderID){
+    public ResponseEntity<?> captureOrder(
+        @RequestParam String orderID,
+        @RequestParam(required = false) String source
+    ){
         try{
             var cached = receiptService.findStoredPayload(orderID);
             if (cached.isPresent()) {
@@ -64,9 +67,19 @@ public class PayPalController {
             }
 
             var payload = payPalSDKService.captureOrder(orderID);
-            receiptService.recordPayPalReceipt(payload);
+            receiptService.recordPayPalReceipt(payload, source);
             return ResponseEntity.ok(payload);
         } catch (Exception e){
+            return ResponseEntity.internalServerError().body(new ErrorResponse(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/total")
+    public ResponseEntity<?> getTotal(@RequestParam String source){
+        try {
+            var total = receiptService.sumBySource(source);
+            return ResponseEntity.ok(java.util.Map.of("total", total));
+        } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new ErrorResponse(e.getMessage()));
         }
     }

@@ -7,7 +7,7 @@ import UnavailableOverlay from "../../../../Global/Common/UnavailableOverlay";
 import { useAuth } from "../../../../Global/Context/AuthContext";
 import { apiRequest } from "../../../../Services/API";
 import { getProgramInfo } from "../../../../Services/programHelper";
-import type { PrintifyProduct } from "../../../../types/api";
+import type { ApiCustomProduct, PrintifyProduct } from "../../../../types/api";
 import Cart from "./components/Cart";
 import OrderLogsModal from "./components/OrderLogsModal";
 import ProductCard from "./components/ProductCard";
@@ -48,17 +48,42 @@ export default function Store() {
   const isAdmin = roles?.men === "admin";
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
+      const fetchProducts = async () => {
         dispatch({ type: "SET_LOADING", payload: true });
-        const data = await apiRequest<PrintifyProduct[]>("/api/printify/products");
-        if (Array.isArray(data)) {
-          dispatch({ type: "SET_PRODUCTS", payload: data });
-        }
-      } catch {
-        dispatch({ type: "SET_LOADING", payload: false });
-      }
-    };
+        const [printifyProducts, customProducts] = await Promise.all([
+          apiRequest<PrintifyProduct[]>("/api/printify/products"),
+          apiRequest<ApiCustomProduct[]>("/api/printify/custom-products")
+        ]);
+        const normalizedPrintify = Array.isArray(printifyProducts) ? printifyProducts : [];
+        const normalizedCustom = Array.isArray(customProducts) ? customProducts.map(p => {
+          const hasVariants = Array.isArray(p.variants) && p.variants.length > 0;
+          return {
+            id: `custom-${p.id}`,
+            title: p.title,
+            description: p.description,
+            images: [{ src: p.pictureUrl }],
+            // If variants exist, expose them as a Printify-style "size" option + matching variants
+            options: hasVariants
+              ? [{ type: "size", name: "Option", values: p.variants.map(v => ({ id: v.id, title: v.label })) }]
+              : [],
+            variants: hasVariants
+              ? p.variants.map(v => ({
+                  id: `custom-${p.id}-v${v.id}`,
+                  options: [v.id],
+                  our_price: Math.round(Number(v.price) * 100),
+                  sku: undefined,
+                  // carry through for order submission
+                  _customVariantId: v.id,
+                  _customVariantLabel: v.label,
+                  _stock: v.stock,
+                }))
+              : [{ id: `custom-${p.id}`, options: [], our_price: Math.round(Number(p.price) * 100) }],
+            isCustom: true,
+          };
+        }) : [];
+        const allProducts = [...normalizedCustom, ...normalizedPrintify];
+        dispatch({ type: "SET_PRODUCTS", payload: allProducts });
+      };
     if (isEnabled) fetchProducts();
   }, [isEnabled]);
 
@@ -126,6 +151,7 @@ export default function Store() {
                   key={`${p.id}-${idx}`}
                   product={p}
                   onAddToCart={handleAddToCart}
+                  isAdmin={isAdmin}
                 />
               ))}
             </div>
@@ -164,7 +190,7 @@ export default function Store() {
           onClose={() => setShowOrderLogs(false)}
         />
       )}
+
     </div>
   );
 }
-

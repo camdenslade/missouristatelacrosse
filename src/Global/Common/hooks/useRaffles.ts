@@ -5,6 +5,7 @@ type RafflePayload = {
   name?: string;
   description?: string;
   image?: string;
+  images?: string[];
   ticketPrice?: number | null;
   maxTicketsPerPerson?: number | null;
   allowBids?: boolean;
@@ -70,6 +71,14 @@ export async function addAdminEntry(
     method: "POST",
     json: payload,
   });
+}
+
+export async function setupRaffleStream(id: string): Promise<ApiRaffle> {
+  return apiRequest<ApiRaffle>(`/api/raffles/${id}/stream/setup`, { method: "POST" });
+}
+
+export async function toggleRaffleStream(id: string): Promise<ApiRaffle> {
+  return apiRequest<ApiRaffle>(`/api/raffles/${id}/stream/go-live`, { method: "POST" });
 }
 
 export async function enterRaffle(

@@ -18,6 +18,9 @@ public class PrintifyOrderRequest {
     @Valid
     private ShippingInfo shipping;
 
+    @Valid
+    private List<CustomOrderItem> customItems;
+
     private double donation;
 
     public String getOrderId() { return orderId; }
@@ -28,6 +31,9 @@ public class PrintifyOrderRequest {
 
     public ShippingInfo getShipping() { return shipping; }
     public void setShipping(ShippingInfo shipping) { this.shipping = shipping; }
+
+    public List<CustomOrderItem> getCustomItems() { return customItems; }
+    public void setCustomItems(List<CustomOrderItem> customItems) { this.customItems = customItems; }
 
     public double getDonation() { return donation; }
     public void setDonation(double donation) { this.donation = donation; }
@@ -60,5 +66,28 @@ public class PrintifyOrderRequest {
 
         public double getPrice() { return price; }
         public void setPrice(double price) { this.price = price; }
+    }
+
+    public static class CustomOrderItem {
+        @NotNull(message = "Custom product ID is required")
+        private Long productId;
+
+        private Long variantId;
+
+        private String variantLabel;
+
+        private int quantity;
+
+        public Long getProductId() { return productId; }
+        public void setProductId(Long productId) { this.productId = productId; }
+
+        public Long getVariantId() { return variantId; }
+        public void setVariantId(Long variantId) { this.variantId = variantId; }
+
+        public String getVariantLabel() { return variantLabel; }
+        public void setVariantLabel(String variantLabel) { this.variantLabel = variantLabel; }
+
+        public int getQuantity() { return quantity; }
+        public void setQuantity(int quantity) { this.quantity = quantity; }
     }
 }

@@ -3,10 +3,12 @@ import { useMemo, useReducer } from "react";
 
 import AccountRequests from "./Tabs/AccountRequests";
 import EmailCenter from "./Tabs/EmailCenter";
+import ManageCustomListings from "./Tabs/ManageCustomListings";
 import ManageEvents from "./Tabs/ManageEvents";
 import ManagePlayers from "./Tabs/ManagePlayers";
 import ManageRaffles from "./Tabs/ManageRaffles";
 import ManageSponsors from "./Tabs/ManageSponsors";
+import StreamSetup from "./Tabs/StreamSetup";
 
 const initialState = { activeTab: "players" };
 
@@ -31,6 +33,8 @@ export default function AdminDashboard(){
       { id: "sponsors", label: "Sponsors" },
       { id: "events", label: "Events" },
       { id: "raffles", label: "Raffles" },
+      { id: "custom-listings", label: "Custom Listings" },
+      { id: "stream", label: "Stream Setup" },
     ],
     []
   );
@@ -49,6 +53,10 @@ export default function AdminDashboard(){
         return <ManageEvents />;
       case "raffles":
         return <ManageRaffles />;
+      case "custom-listings":
+        return <ManageCustomListings />;
+      case "stream":
+        return <StreamSetup />;
       default:
         return null;
     }

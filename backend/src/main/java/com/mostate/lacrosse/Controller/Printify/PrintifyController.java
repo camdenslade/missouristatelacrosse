@@ -1,11 +1,13 @@
 package com.mostate.lacrosse.Controller.Printify;
 
+import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,13 +15,15 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.beans.factory.annotation.Value;
 import com.mostate.lacrosse.Dto.ErrorResponse;
+import com.mostate.lacrosse.Model.CustomProduct;
 import com.mostate.lacrosse.Model.PrintifyOrderLog;
+import com.mostate.lacrosse.Repository.CustomProductRepository;
 import com.mostate.lacrosse.Service.EmailService;
 import com.mostate.lacrosse.Service.PaymentReceiptService;
 import com.mostate.lacrosse.Service.PrintifyOrderLogService;
 import com.mostate.lacrosse.Service.PrintifyService;
+import com.mostate.lacrosse.Service.S3Service;
 import com.mostate.lacrosse.Utils.JsonUtils;
 import jakarta.validation.Valid;
 
@@ -31,6 +35,8 @@ public class PrintifyController {
     private final EmailService emailService;
     private final PrintifyOrderLogService orderLogService;
     private final PaymentReceiptService paymentReceiptService;
+    private final CustomProductRepository customProductRepository;
+    private final S3Service s3Service;
     private final String frontendBaseUrl;
 
     public PrintifyController(
@@ -38,12 +44,16 @@ public class PrintifyController {
         EmailService emailService,
         PrintifyOrderLogService orderLogService,
         PaymentReceiptService paymentReceiptService,
+        CustomProductRepository customProductRepository,
+        S3Service s3Service,
         @Value("${app.frontend.base-url}") String frontendBaseUrl
     ) {
         this.printifyService = printifyService;
         this.emailService = emailService;
         this.orderLogService = orderLogService;
         this.paymentReceiptService = paymentReceiptService;
+        this.customProductRepository = customProductRepository;
+        this.s3Service = s3Service;
         this.frontendBaseUrl = frontendBaseUrl;
     }
 
@@ -51,6 +61,32 @@ public class PrintifyController {
     public ResponseEntity<?> getProducts() {
         try {
             return ResponseEntity.ok(printifyService.getProducts());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new ErrorResponse(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/custom-products")
+    public ResponseEntity<?> getCustomProducts() {
+        try {
+            List<CustomProduct> products = customProductRepository.findByActiveTrue();
+            List<CustomProductResponse> responses = products.stream()
+                .map(p -> {
+                    List<CustomVariantResponse> variantResponses = p.getVariants().stream()
+                        .map(v -> new CustomVariantResponse(v.getId(), v.getLabel(), v.getPrice(), v.getStock()))
+                        .toList();
+                    return new CustomProductResponse(
+                        p.getId(),
+                        p.getTitle(),
+                        p.getPrice(),
+                        s3Service.toPresignedUrl(p.getPictureUrl(), S3Service.IMAGE_TTL),
+                        p.getDescription(),
+                        p.isActive(),
+                        variantResponses
+                    );
+                })
+                .toList();
+            return ResponseEntity.ok(responses);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new ErrorResponse(e.getMessage()));
         }
@@ -135,6 +171,18 @@ public class PrintifyController {
                     .append(" ($").append(String.format("%.2f", item.getPrice())).append(")\n");
             }
 
+            if (req.getCustomItems() != null && !req.getCustomItems().isEmpty()) {
+                for (var item : req.getCustomItems()) {
+                    CustomProduct product = customProductRepository.findById(item.getProductId()).orElse(null);
+                    if (product != null) {
+                        body.append("- ")
+                            .append(product.getTitle())
+                            .append(" × ").append(item.getQuantity())
+                            .append(" ($").append(String.format("%.2f", product.getPrice().doubleValue())).append(")\n");
+                    }
+                }
+            }
+
             if (req.getDonation() > 0) {
                 body.append("\nDonation: $").append(String.format("%.2f", req.getDonation())).append("\n");
             }
@@ -157,6 +205,28 @@ public class PrintifyController {
                 "Thank You for Your Order, " + fullName + "!",
                 body.toString()
             );
+
+            // Send to bcole if custom items
+            if (req.getCustomItems() != null && !req.getCustomItems().isEmpty()) {
+                var bcoleBody = new StringBuilder()
+                    .append("New order with custom items.\n\n")
+                    .append("Order ID: ").append(req.getOrderId()).append("\n\n")
+                    .append("Customer: ").append(fullName).append(" (").append(s.getEmail()).append(")\n\n")
+                    .append("Shipping Info:\n")
+                    .append(s.getFirstName()).append(" ").append(s.getLastName()).append("\n")
+                    .append(s.getAddress1()).append("\n")
+                    .append(s.getCity()).append(", ").append(s.getRegion()).append(" ").append(s.getZip()).append("\n")
+                    .append(s.getCountry()).append("\n")
+                    .append("Phone: ").append(s.getPhone()).append("\n\n")
+                    .append("Custom Items:\n");
+                for (var item : req.getCustomItems()) {
+                    CustomProduct product = customProductRepository.findById(item.getProductId()).orElse(null);
+                    if (product != null) {
+                        bcoleBody.append("- ").append(product.getTitle()).append(" × ").append(item.getQuantity()).append("\n");
+                    }
+                }
+                emailService.sendEmail("bcole@example.com", "New Custom Order", bcoleBody.toString());
+            }
 
             return ResponseEntity.ok(result);
         } catch (Exception e) {
@@ -251,4 +321,7 @@ public class PrintifyController {
     ) {}
 
     public record PublicOrderResponse(String orderId, List<OrderItem> items, ShippingDetails shipping) {}
+
+    public record CustomVariantResponse(Long id, String label, BigDecimal price, int stock) {}
+    public record CustomProductResponse(Long id, String title, BigDecimal price, String pictureUrl, String description, boolean active, List<CustomVariantResponse> variants) {}
 }

@@ -1,6 +1,7 @@
 // src/Men/Local/Pages/Store/Cart.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const SHIPPING_FEE = 5;
 
@@ -34,9 +35,9 @@ export default function Cart({
     const val = parseFloat(donation);
     if (!isNaN(val) && val > 0) {
       setConfirmedDonation(val);
-      alert(`Donation confirmed: $${val.toFixed(2)}`);
+      toast.success(`Donation confirmed: $${val.toFixed(2)}`);
     } else {
-      alert("Please enter a valid donation amount.");
+      toast.error("Please enter a valid donation amount.");
     }
   };
 

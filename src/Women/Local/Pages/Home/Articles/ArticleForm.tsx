@@ -2,6 +2,7 @@
 import { useEffect, useReducer } from "react";
 import type { FormEvent } from "react";
 import type { ApiArticle } from "../../../../../types/api";
+import toast from "react-hot-toast";
 
 import { uploadCompressedImage } from "../../../../../Global/Common/hooks/uploadHelper";
 import { validateText } from "../../../../../Global/Common/utils/validation";
@@ -86,9 +87,9 @@ export default function ArticleForm({ article, onSave, onCancel }: ArticleFormPr
     const validationError =
       validateText(title, "Title", { required: true, max: 120 }) ||
       validateText(content, "Content", { required: true, max: 2000 });
-    if (validationError) return alert(validationError);
+    if (validationError) { toast.error(validationError); return; }
     const finalURL = await handleImageUpload();
-    if (!finalURL) return alert("Image is required.");
+    if (!finalURL) { toast.error("Image is required."); return; }
     await onSave({ title, content, published }, finalURL);
   };
 

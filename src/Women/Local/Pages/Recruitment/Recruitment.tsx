@@ -1,6 +1,7 @@
 // src/Women/Local/Pages/Recruitment/Recruitment.jsx
 import { useReducer } from "react";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 
 import { apiRequest } from "../../../../Services/API";
 import {
@@ -106,11 +107,11 @@ export default function WRecruitmentForm({ userRole }) {
         json: state.formData,
       });
 
-      alert("Submission successful! Saved to recruitment");
+      toast.success("Submission successful! Saved to recruitment");
       dispatch({ type: "RESET_FORM" });
     } catch (err){
       console.error(err);
-      alert("Failed to submit. Please try again.");
+      toast.error("Failed to submit. Please try again.");
       dispatch({ type: "SET_SUBMITTING", payload: false });
     }
   };

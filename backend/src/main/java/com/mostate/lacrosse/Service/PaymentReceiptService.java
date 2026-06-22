@@ -30,6 +30,10 @@ public class PaymentReceiptService {
             .map(JsonUtils::readMap);
     }
 
+    public BigDecimal sumBySource(String source) {
+        return receiptRepository.sumAmountBySource(source);
+    }
+
     public Optional<PaymentReceipt> findReceipt(String orderId) {
         if (orderId == null || orderId.isBlank()) {
             return Optional.empty();
@@ -38,6 +42,10 @@ public class PaymentReceiptService {
     }
 
     public PaymentReceipt recordPayPalReceipt(Map<String, Object> payload) {
+        return recordPayPalReceipt(payload, null);
+    }
+
+    public PaymentReceipt recordPayPalReceipt(Map<String, Object> payload, String source) {
         String orderId = readString(payload.get("id"));
         if (orderId == null || orderId.isBlank()) {
             throw new IllegalArgumentException("PayPal payload missing order id");
@@ -49,6 +57,9 @@ public class PaymentReceiptService {
         receipt.setOrderId(orderId);
         receipt.setStatus(readString(payload.get("status")));
         receipt.setPayload(JsonUtils.toJson(payload));
+        if (source != null && !source.isBlank()) {
+            receipt.setSource(source);
+        }
 
         Map<String, Object> payer = asMap(payload.get("payer"));
         String email = trimToNull(readString(payer.get("email_address")));

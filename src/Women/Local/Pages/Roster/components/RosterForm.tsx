@@ -1,5 +1,6 @@
 // src/Women/Local/Pages/Roster/components/RosterForm.jsx
 import { useReducer, useRef, useState } from "react";
+import toast from "react-hot-toast";
 
 import Modal from "../../../../../Global/Common/Modal";
 import { uploadCompressedImage } from "../../../../../Global/Common/hooks/uploadHelper";
@@ -215,7 +216,7 @@ export default function RosterFormModal({
       onClose();
     } catch (err) {
       console.error("Error saving roster entry:", err);
-      alert("Failed to save. Please try again.");
+      toast.error("Failed to save. Please try again.");
     }
   };
 
