@@ -1,4 +1,3 @@
-// src/Men/Local/Pages/Store/Checkout/CheckoutSummary.jsx
 export default function CheckoutSummary({ cart }) {
   if (!cart || cart.length === 0) {
     return (

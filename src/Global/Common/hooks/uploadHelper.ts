@@ -1,6 +1,6 @@
-// src/Global/Common/hooks/uploadHelper.js
 import imageCompression from "browser-image-compression";
 import type { Options as CompressionOptions } from "browser-image-compression";
+
 import { apiRequest } from "../../../Services/API";
 
 /**

@@ -28,17 +28,23 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.google.firebase.auth.FirebaseToken;
+import com.mostate.lacrosse.Config.FirebaseAdminFilter;
+import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Model.Event;
 import com.mostate.lacrosse.Model.EventRegistration;
 import com.mostate.lacrosse.Model.EventTeam;
+import com.mostate.lacrosse.Model.PaymentReceipt;
 import com.mostate.lacrosse.Repository.EventRegistrationRepository;
 import com.mostate.lacrosse.Repository.EventRepository;
 import com.mostate.lacrosse.Repository.EventTeamRepository;
 import com.mostate.lacrosse.Repository.PaymentReceiptRepository;
+import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Service.EmailService;
 import com.mostate.lacrosse.Service.S3Service;
 import com.mostate.lacrosse.Utils.JsonUtils;
 import com.mostate.lacrosse.Utils.TextSanitizer;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/events")
@@ -50,6 +56,7 @@ public class EventsController {
     private final PaymentReceiptRepository receiptRepo;
     private final EmailService emailService;
     private final S3Service s3Service;
+    private final AuthorizationService authorizationService;
 
     @Value("${app.frontend.base-url}")
     private String frontendBaseUrl;
@@ -60,7 +67,8 @@ public class EventsController {
         EventTeamRepository teamRepo,
         PaymentReceiptRepository receiptRepo,
         EmailService emailService,
-        S3Service s3Service
+        S3Service s3Service,
+        AuthorizationService authorizationService
     ) {
         this.eventRepo = eventRepo;
         this.registrationRepo = registrationRepo;
@@ -68,10 +76,16 @@ public class EventsController {
         this.receiptRepo = receiptRepo;
         this.emailService = emailService;
         this.s3Service = s3Service;
+        this.authorizationService = authorizationService;
     }
 
-    // ── Public: list published events ─────────────────────────────────────────
+    private boolean isAdmin(HttpServletRequest request, String program) {
+        String uid = (String) request.getAttribute("firebaseUid");
+        FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
+        return authorizationService.isAdmin(uid, program, token);
+    }
 
+    // Public: list published events
     @GetMapping
     public ResponseEntity<List<EventResponse>> listPublished() {
         return ResponseEntity.ok(
@@ -81,8 +95,7 @@ public class EventsController {
         );
     }
 
-    // ── Public: get published event by slug ───────────────────────────────────
-
+    // Public: get published event by slug
     @GetMapping("/slug/{slug}")
     public ResponseEntity<EventResponse> getBySlug(@PathVariable String slug) {
         return eventRepo.findBySlugAndPublishedTrue(slug)
@@ -90,10 +103,12 @@ public class EventsController {
             .orElse(ResponseEntity.notFound().build());
     }
 
-    // ── Admin: list all events (including unpublished) ────────────────────────
-
+    // Admin: list all events (including unpublished)
     @GetMapping("/admin")
-    public ResponseEntity<List<EventResponse>> listAll() {
+    public ResponseEntity<?> listAll(HttpServletRequest request, @RequestParam(defaultValue = "men") String program) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         return ResponseEntity.ok(
             eventRepo.findAllByOrderByStartTimeAsc().stream()
                 .map(this::toResponse)
@@ -101,46 +116,67 @@ public class EventsController {
         );
     }
 
-    // ── Admin: create event ───────────────────────────────────────────────────
-
+    // Admin: create event
     @PostMapping
-    public ResponseEntity<EventResponse> create(@RequestBody EventPayload payload) {
+    public ResponseEntity<?> create(
+        HttpServletRequest request,
+        @RequestParam(defaultValue = "men") String program,
+        @RequestBody EventPayload payload
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Event event = new Event();
         applyPayload(event, payload);
         return ResponseEntity.ok(toResponse(eventRepo.save(event)));
     }
 
-    // ── Admin: update event ───────────────────────────────────────────────────
-
+    // Admin: update event
     @PutMapping("/{id}")
-    public ResponseEntity<EventResponse> update(
+    public ResponseEntity<?> update(
+        HttpServletRequest request,
         @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program,
         @RequestBody EventPayload payload
     ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Event existing = eventRepo.findById(id).orElse(null);
         if (existing == null) return ResponseEntity.notFound().build();
         applyPayload(existing, payload);
         return ResponseEntity.ok(toResponse(eventRepo.save(existing)));
     }
 
-    // ── Admin: delete event ───────────────────────────────────────────────────
-
+    // Admin: delete event
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+    public ResponseEntity<?> delete(
+        HttpServletRequest request,
+        @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         eventRepo.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 
-    // ── Admin: get all registrations for an event ─────────────────────────────
-
+    // Admin: get all registrations for an event
     @GetMapping("/{id}/registrations")
-    public ResponseEntity<List<RegistrationResponse>> registrations(@PathVariable UUID id) {
+    public ResponseEntity<?> registrations(
+        HttpServletRequest request,
+        @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         List<EventRegistration> regs = registrationRepo.findAllByEventId(id);
         return ResponseEntity.ok(regs.stream().map(this::toRegResponse).toList());
     }
 
-    // ── Public: check if a teammate slot exists for an email ──────────────────
-
+    // Public: check if a teammate slot exists for an email
     @GetMapping("/{id}/team-check")
     public ResponseEntity<TeamCheckResponse> teamCheck(
         @PathVariable UUID id,
@@ -165,8 +201,7 @@ public class EventsController {
         return ResponseEntity.ok(new TeamCheckResponse(false, null, null, null));
     }
 
-    // ── Public: submit registration after PayPal capture ─────────────────────
-
+    // Public: submit registration after PayPal capture
     @PostMapping("/{id}/register")
     public ResponseEntity<?> register(
         @PathVariable UUID id,
@@ -179,15 +214,25 @@ public class EventsController {
         String teamNameFieldId = findTeamNameFieldId(event);
         String normalizedTeamName = getNormalizedTeamName(payload.formData(), teamNameFieldId);
 
-        // Validate that the PayPal order was actually captured (free events pass null)
+        // Validate that the PayPal order was actually captured, for the right amount,
+        // and hasn't already been used for another registration (free events pass null).
         boolean isFree = event.getPrice() == null || event.getPrice().compareTo(BigDecimal.ZERO) == 0;
         if (!isFree) {
             if (payload.paypalOrderId() == null || payload.paypalOrderId().isBlank()) {
                 return ResponseEntity.badRequest().body("paypalOrderId required for paid events");
             }
-            boolean receiptFound = receiptRepo.findByOrderId(payload.paypalOrderId()).isPresent();
-            if (!receiptFound) {
+            if (registrationRepo.existsByPaypalOrderId(payload.paypalOrderId())) {
+                return ResponseEntity.status(409).body("This payment has already been used for a registration.");
+            }
+            PaymentReceipt receipt = receiptRepo.findByOrderId(payload.paypalOrderId()).orElse(null);
+            if (receipt == null) {
                 return ResponseEntity.badRequest().body("Payment not found");
+            }
+            if (!"COMPLETED".equalsIgnoreCase(receipt.getStatus())) {
+                return ResponseEntity.badRequest().body("Payment was not completed");
+            }
+            if (receipt.getAmount() == null || receipt.getAmount().compareTo(event.getPrice()) != 0) {
+                return ResponseEntity.badRequest().body("Payment amount does not match this event's price");
             }
         }
 
@@ -244,7 +289,14 @@ public class EventsController {
     }
 
     @PostMapping("/admin/teams/backfill")
-    public ResponseEntity<?> backfillTeams(@RequestBody BackfillTeamsRequest request) {
+    public ResponseEntity<?> backfillTeams(
+        HttpServletRequest httpRequest,
+        @RequestParam(defaultValue = "men") String program,
+        @RequestBody BackfillTeamsRequest request
+    ) {
+        if (!isAdmin(httpRequest, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         List<UUID> eventIds = request.eventIds() != null ? new ArrayList<>(request.eventIds()) : new ArrayList<>();
         if (eventIds.isEmpty()) {
             eventIds = eventRepo.findAllByOrderByStartTimeAsc().stream().map(Event::getId).toList();
@@ -276,9 +328,14 @@ public class EventsController {
 
     @PostMapping("/{eventId}/teams/pair")
     public ResponseEntity<?> pairTeam(
+        HttpServletRequest httpRequest,
         @PathVariable UUID eventId,
+        @RequestParam(defaultValue = "men") String program,
         @RequestBody PairTeamRequest request
     ) {
+        if (!isAdmin(httpRequest, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Event event = eventRepo.findById(eventId).orElse(null);
         if (event == null) return ResponseEntity.notFound().build();
         if (event.getTeamSize() <= 1) {
@@ -329,10 +386,15 @@ public class EventsController {
 
     @PostMapping("/{eventId}/teams/{teamId}/remind")
     public ResponseEntity<?> remindTeam(
+        HttpServletRequest httpRequest,
         @PathVariable UUID eventId,
         @PathVariable UUID teamId,
+        @RequestParam(defaultValue = "men") String program,
         @RequestBody TeamReminderRequest request
     ) {
+        if (!isAdmin(httpRequest, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Event event = eventRepo.findById(eventId).orElse(null);
         if (event == null) return ResponseEntity.notFound().build();
         EventTeam team = teamRepo.findById(teamId).orElse(null);
@@ -364,7 +426,7 @@ public class EventsController {
             return ResponseEntity.ok(Map.of("sentEmails", 0));
         }
 
-        String program = request.program() != null ? request.program() : "men";
+        String emailProgram = request.program() != null ? request.program() : "men";
         Map<String, Object> prefill = buildPrefillData(members.get(0));
         String prefillJson = prefill.isEmpty() ? null : JsonUtils.toJson(prefill);
         String subject = "%s: Reminder to finish your team registration".formatted(event.getName());
@@ -375,8 +437,8 @@ public class EventsController {
 
         int sent = 0;
         for (String to : pendingEmails) {
-            String link = buildTeamInviteLink(event, program, teamId, to, prefillJson);
-            String body = buildTeamReminderBody(event, program, teamName, captainName, captainEmail, link);
+            String link = buildTeamInviteLink(event, emailProgram, teamId, to, prefillJson);
+            String body = buildTeamReminderBody(event, emailProgram, teamName, captainName, captainEmail, link);
             emailService.sendEmail(to, subject, body);
             sent++;
         }
@@ -384,8 +446,7 @@ public class EventsController {
         return ResponseEntity.ok(Map.of("sentEmails", sent));
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
+    // Helpers
     private void applyPayload(Event event, EventPayload payload) {
         if (payload.name() != null) {
             event.setName(TextSanitizer.clean(payload.name()));
@@ -765,8 +826,7 @@ public class EventsController {
         return "women".equalsIgnoreCase(program) ? "Women's" : "Men's";
     }
 
-    // ── Records ───────────────────────────────────────────────────────────────
-
+    // Records
     public record EventPayload(
         String name,
         String address,

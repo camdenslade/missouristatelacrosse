@@ -1,0 +1,57 @@
+name: Deploy frontend (Firebase Hosting)
+
+# Manual only. Builds the SPA and deploys it to Firebase Hosting
+# (project missouristatelacrosse-cc913, from .firebaserc).
+#
+# Required repository secret:
+#   FIREBASE_SERVICE_ACCOUNT   JSON key for a service account with the
+#                              "Firebase Hosting Admin" role
+#
+# Required repository variables (Settings > Secrets and variables > Actions > Variables)
+# - these mirror the local .env, which is intentionally NOT in git:
+#   VITE_API_BASE                 https://api.missouristatelacrosse.com
+#   VITE_PAYMENT_PROVIDER         paypal | stripe
+#   VITE_PAYMENT_PROVIDER_WOMEN   paypal | stripe
+#   VITE_PAYPAL_CLIENT_ID         (public client id)
+#   VITE_STRIPE_PUBLISHABLE_KEY   pk_live_... (public, only needed if provider=stripe)
+#   VITE_TEAMSTORE_ENABLED / _WOMEN, VITE_DONATE_ENABLED / _WOMEN   true | false
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        env:
+          VITE_API_BASE: ${{ vars.VITE_API_BASE }}
+          VITE_PAYMENT_PROVIDER: ${{ vars.VITE_PAYMENT_PROVIDER }}
+          VITE_PAYMENT_PROVIDER_WOMEN: ${{ vars.VITE_PAYMENT_PROVIDER_WOMEN }}
+          VITE_PAYPAL_CLIENT_ID: ${{ vars.VITE_PAYPAL_CLIENT_ID }}
+          VITE_STRIPE_PUBLISHABLE_KEY: ${{ vars.VITE_STRIPE_PUBLISHABLE_KEY }}
+          VITE_TEAMSTORE_ENABLED: ${{ vars.VITE_TEAMSTORE_ENABLED }}
+          VITE_TEAMSTORE_ENABLED_WOMEN: ${{ vars.VITE_TEAMSTORE_ENABLED_WOMEN }}
+          VITE_DONATE_ENABLED: ${{ vars.VITE_DONATE_ENABLED }}
+          VITE_DONATE_ENABLED_WOMEN: ${{ vars.VITE_DONATE_ENABLED_WOMEN }}
+        run: npm run build
+
+      - name: Deploy to Firebase Hosting
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          npx --yes firebase-tools@13 deploy --only hosting --non-interactive --project missouristatelacrosse-cc913
+          rm -f "$RUNNER_TEMP/sa.json"

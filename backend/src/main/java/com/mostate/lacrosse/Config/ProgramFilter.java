@@ -46,6 +46,14 @@ public class ProgramFilter extends OncePerRequestFilter {
             return;
         }
 
+        // Stripe server-to-server webhook — no X-Program header. The controller reads
+        // the owning program from the Checkout Session metadata and sets the tenant
+        // itself before touching the database.
+        if ("/api/stripe/webhook".equals(path)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         boolean isApiRequest = path != null && path.startsWith("/api");
         boolean isPreflight = "OPTIONS".equalsIgnoreCase(request.getMethod());
         String headerProgram = normalizeProgram(request.getHeader(headerName));

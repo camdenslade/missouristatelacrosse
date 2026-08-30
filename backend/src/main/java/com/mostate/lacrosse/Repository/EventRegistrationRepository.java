@@ -28,4 +28,5 @@ public interface EventRegistrationRepository extends JpaRepository<EventRegistra
     );
     Optional<EventRegistration> findByPayerEmailAndEventIdAndPaidTrue(String payerEmail, UUID eventId);
     long countByTeamIdAndPaidTrue(UUID teamId);
+    boolean existsByPaypalOrderId(String paypalOrderId);
 }

@@ -52,7 +52,7 @@ public class StreamController {
         this.chatRepo     = chatRepo;
     }
 
-    // ── Admin: set up RTMP stream for a game ──────────────────────────────────
+    // Admin: set up RTMP stream for a game
 
     @PostMapping("/setup")
     public ResponseEntity<?> setup(@RequestBody SetupRequest req) {
@@ -94,7 +94,7 @@ public class StreamController {
         }
     }
 
-    // ── Admin: force-reset stream for a game (clears stream key) ─────────────
+    // Admin: force-reset stream for a game (clears stream key)
 
     @PostMapping("/admin/reset/{gameId}")
     public ResponseEntity<?> resetStream(@PathVariable String gameId) {
@@ -123,7 +123,7 @@ public class StreamController {
         }
     }
 
-    // ── Admin: update paywall config on the fly ───────────────────────────────
+    // Admin: update paywall config on the fly
 
     @PutMapping("/config/{gameId}")
     public ResponseEntity<?> updateConfig(
@@ -146,7 +146,7 @@ public class StreamController {
         }
     }
 
-    // ── Admin: toggle isLive ──────────────────────────────────────────────────
+    // Admin: toggle isLive
 
     @PostMapping("/go-live/{gameId}")
     public ResponseEntity<?> toggleLive(
@@ -184,7 +184,7 @@ public class StreamController {
         }
     }
 
-    // ── Admin: get stream config + keys ───────────────────────────────────────
+    // Admin: get stream config + keys
 
     @GetMapping("/admin/{gameId}")
     public ResponseEntity<?> getAdminInfo(@PathVariable String gameId) {
@@ -220,7 +220,7 @@ public class StreamController {
         }
     }
 
-    // ── Admin: generate a free key ─────────────────────────────────────────────
+    // Admin: generate a free key
 
     @PostMapping("/keys")
     public ResponseEntity<?> generateKey(@RequestBody GenerateKeyRequest req) {
@@ -244,7 +244,7 @@ public class StreamController {
         }
     }
 
-    // ── Admin: revoke key ─────────────────────────────────────────────────────
+    // Admin: revoke key
 
     @DeleteMapping("/keys/{id}")
     public ResponseEntity<?> revokeKey(@PathVariable UUID id) {
@@ -252,7 +252,7 @@ public class StreamController {
         return ResponseEntity.noContent().build();
     }
 
-    // ── Admin: clear sessions for a key ──────────────────────────────────────
+    // Admin: clear sessions for a key
 
     @DeleteMapping("/keys/{id}/sessions")
     public ResponseEntity<?> clearSessions(@PathVariable UUID id) {
@@ -260,7 +260,7 @@ public class StreamController {
         return ResponseEntity.ok(Map.of("success", true));
     }
 
-    // ── MediaMTX auth callback — called when OBS starts publishing ───────────
+    // MediaMTX auth callback — called when OBS starts publishing
     // MediaMTX sends JSON: { "path": "{streamKey}", "action": "publish", ... }
     // Return 2xx to allow the stream, 4xx to deny it.
 
@@ -270,7 +270,7 @@ public class StreamController {
             return ResponseEntity.ok().build(); // allow read/playback
         }
         String rawPath = req.path() != null ? req.path().replaceFirst("^/+", "") : "";
-        // Extract last segment: "live/abc123" → "abc123"
+        // Extract last segment: "live/abc123" -> "abc123"
         String streamKey = rawPath.contains("/")
                 ? rawPath.substring(rawPath.lastIndexOf('/') + 1)
                 : rawPath;
@@ -281,7 +281,7 @@ public class StreamController {
                 : ResponseEntity.status(403).body(new ErrorResponse("Unknown stream key"));
     }
 
-    // ── Public: post-PayPal purchase → issue key + send email ────────────────
+    // Public: post-PayPal purchase -> issue key + send email
 
     @PostMapping("/purchase")
     public ResponseEntity<?> purchase(@RequestBody PurchaseRequest req) {
@@ -289,8 +289,14 @@ public class StreamController {
             String name  = TextSanitizer.clean(req.displayName());
             String email = TextSanitizer.clean(req.email());
 
+            // paymentOrderId is the processor-neutral field (PayPal order id or Stripe
+            // Checkout Session id); paypalOrderId is kept for older clients.
+            String orderId = req.paymentOrderId() != null && !req.paymentOrderId().isBlank()
+                ? req.paymentOrderId()
+                : req.paypalOrderId();
+
             StreamKey key = keyService.createKey(
-                req.gameId(), req.tier(), name, email, req.paypalOrderId()
+                req.gameId(), req.tier(), name, email, orderId
             );
 
             sendKeyEmail(email, name, key.getKeyCode(), req.tier(), req.gameLabel());
@@ -301,7 +307,7 @@ public class StreamController {
         }
     }
 
-    // ── Public: validate key → session token + HLS URL ───────────────────────
+    // Public: validate key -> session token + HLS URL
 
     @PostMapping("/validate")
     public ResponseEntity<?> validate(@RequestBody ValidateRequest req) {
@@ -331,7 +337,7 @@ public class StreamController {
         }
     }
 
-    // ── Public: free game access → HLS URL without key ───────────────────────
+    // Public: free game access -> HLS URL without key
 
     @PostMapping("/access/{gameId}")
     public ResponseEntity<?> freeAccess(@PathVariable String gameId) {
@@ -355,7 +361,7 @@ public class StreamController {
         }
     }
 
-    // ── Public: heartbeat ─────────────────────────────────────────────────────
+    // Public: heartbeat
 
     @PostMapping("/heartbeat")
     public ResponseEntity<?> heartbeat(@RequestBody HeartbeatRequest req) {
@@ -378,7 +384,7 @@ public class StreamController {
         }
     }
 
-    // ── Public: disconnect ────────────────────────────────────────────────────
+    // Public: disconnect
     // sendBeacon only sends POST, so expose the same endpoint as POST too
 
     @DeleteMapping("/session")
@@ -393,7 +399,7 @@ public class StreamController {
         return ResponseEntity.noContent().build();
     }
 
-    // ── Public: get recent chat history ──────────────────────────────────────
+    // Public: get recent chat history
 
     @GetMapping("/chat/{gameId}")
     public ResponseEntity<?> chatHistory(@PathVariable String gameId) {
@@ -409,7 +415,7 @@ public class StreamController {
         return ResponseEntity.ok(result);
     }
 
-    // ── Admin: delete chat message ────────────────────────────────────────────
+    // Admin: delete chat message
 
     @DeleteMapping("/chat/{messageId}")
     public ResponseEntity<?> deleteMessage(@PathVariable UUID messageId) {
@@ -420,7 +426,7 @@ public class StreamController {
         return ResponseEntity.noContent().build();
     }
 
-    // ── Email helper ──────────────────────────────────────────────────────────
+    // Email helper
 
     private void sendKeyEmail(String to, String name, String keyCode, String tier, String gameLabel) {
         String tierLabel = "TWO_SCREEN".equals(tier) ? "2-Screen" : "1-Screen";
@@ -445,13 +451,13 @@ public class StreamController {
         }
     }
 
-    // ── Request records ───────────────────────────────────────────────────────
+    // Request records
 
     public record SetupRequest(String gameId, boolean isPaywalled, boolean saveAsVideo, Double priceOneScreen, Double priceTwoScreen) {}
     public record PaywallConfigRequest(boolean isPaywalled, Double priceOneScreen, Double priceTwoScreen) {}
     public record ToggleLiveRequest(boolean isLive) {}
     public record GenerateKeyRequest(String gameId, String tier, String displayName, String email) {}
-    public record PurchaseRequest(String gameId, String tier, String displayName, String email, String paypalOrderId, String gameLabel) {}
+    public record PurchaseRequest(String gameId, String tier, String displayName, String email, String paypalOrderId, String paymentOrderId, String gameLabel) {}
     public record ValidateRequest(String keyCode, String gameId, Boolean force) {}
     public record HeartbeatRequest(String sessionToken, String gameId) {}
     public record DisconnectRequest(String sessionToken) {}

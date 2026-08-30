@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
+import { useEffect, useRef, useState } from "react";
+
 import API_BASE from "../../../Services/API";
 
 interface StreamPlayerProps {
@@ -127,7 +128,7 @@ export default function StreamPlayer({
       if (streamError) {
         triggerRetry();
       } else if (hlsRef.current) {
-        // Tab was backgrounded — prod the loader in case it stalled
+        // Tab was backgrounded - prod the loader in case it stalled
         hlsRef.current.startLoad();
       }
     };
@@ -177,7 +178,7 @@ export default function StreamPlayer({
     return () => clearInterval(id);
   }, [sessionToken, gameId, program, onSessionExpired]);
 
-  // Session cleanup — sendBeacon only supports POST, so use /session/disconnect
+  // Session cleanup - sendBeacon only supports POST, so use /session/disconnect
   useEffect(() => {
     if (!sessionToken) return;
     const onUnload = () => {

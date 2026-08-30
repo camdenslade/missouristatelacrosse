@@ -1,6 +1,5 @@
-// src/Men/Local/Gallery/hooks/galleryService.js
-import { apiRequest } from "../../../../../Services/API";
 import { uploadCompressedImage } from "../../../../../Global/Common/hooks/uploadHelper";
+import { apiRequest } from "../../../../../Services/API";
 
 type GalleryFolder = {
   urls: string[];
@@ -42,7 +41,7 @@ export async function uploadGallery(folderName: string, files: File[]): Promise<
 
         return uploadedUrls;
     } catch (err){
-        console.log("Error uploading: ", err);
+        console.error("Error uploading:", err);
         throw err;
     }
 }
@@ -61,10 +60,8 @@ export async function deleteGallery(folderName: string, s3Key?: string): Promise
         await apiRequest(`/api/gallery/${folderName}/photo?key=${encodeURIComponent(s3Key)}`, {
           method: "DELETE",
         });
-        console.log(`Deleted photo "${s3Key}" from ${folderName}`);
       } else{
         await apiRequest(`/api/gallery/${folderName}`, { method: "DELETE" });
-        console.log(`Deleted entire folder "${folderName}"`);
       }
   } catch (error){
     console.error("Error deleting gallery:", error);

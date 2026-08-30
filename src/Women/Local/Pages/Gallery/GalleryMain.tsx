@@ -1,12 +1,11 @@
-// src/Women/Local/Pages/Gallery/GalleryMain.jsx
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 
-import { useAuth } from "../../../../Global/Context/AuthContext";
 import { getGallery } from "./hooks/galleryService";
 import GalleryEditModal from "./Modals/GalleryEdit";
 import GalleryUploadModal from "./Modals/GalleryUpload";
+import { useAuth } from "../../../../Global/Context/AuthContext";
 
 export default function WGallery() {
   type LightboxState = {
@@ -73,7 +72,7 @@ export default function WGallery() {
 
   const formatFolderName = useCallback((name: string) => {
     const match = name.match(/(.*?)-(\d{4})$/);
-    return match ? `${match[1].trim()} — ${match[2]}` : name.replace(/-/g, " ");
+    return match ? `${match[1].trim()} - ${match[2]}` : name.replace(/-/g, " ");
   }, []);
 
   const openLightbox = useCallback((images: string[], index = 0) => {

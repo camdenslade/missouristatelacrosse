@@ -1,12 +1,12 @@
-// src/Global/Common/hooks/usePayPalButtons.ts
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+
 import { apiRequest } from "../../../Services/API";
 
 type PayPalSuccessHandler = (
   captureData: PayPalCaptureResponse,
   amount: number
-) => void;
+) => void | Promise<void>;
 
 type PayPalClientIdResponse = {
   clientId: string;
@@ -94,7 +94,7 @@ export default function usePayPalButtons(
           "/api/paypal/create",
           {
             method: "POST",
-            json: { amount: amount.toFixed(2) },
+            json: { amount: amount.toFixed(2), source },
           }
         );
 
@@ -102,23 +102,17 @@ export default function usePayPalButtons(
       },
 
       onApprove: async (data) => {
-        const captureUrl = source
-          ? `/api/paypal/capture?orderID=${data.orderID}&source=${encodeURIComponent(source)}`
-          : `/api/paypal/capture?orderID=${data.orderID}`;
+        // source is intentionally NOT sent here - it's bound server-side at order-creation
+        // time (see createOrder above) so a capture can't be relabeled after the fact.
         const captureData = await apiRequest<PayPalCaptureResponse>(
-          captureUrl,
+          `/api/paypal/capture?orderID=${data.orderID}`,
           { method: "POST" }
         );
 
-        // Fire-and-forget — don't block onSuccess on email delivery
-        apiRequest("/api/email/confirm-donation", {
-          method: "POST",
-          json: {
-            orderId: captureData.id,
-            payerEmail: captureData.payer?.email_address,
-            amount,
-          },
-        }).catch((err) => console.error("Donation confirmation email failed:", err));
+        // Confirmation emails are each flow's own responsibility (DuesPaymentController's
+        // receipt email, Donate/FundraiserSuccess's /api/email/send call, etc.) - this hook
+        // used to also fire a generic /api/email/confirm-donation here, but that endpoint
+        // never existed server-side, so it silently failed on every single payment.
 
         // Wrap so any post-capture error never surfaces as "Payment failed"
         try {

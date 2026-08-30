@@ -1,4 +1,3 @@
-// src/Women/Local/Pages/Payments/components/PlayerTable.jsx
 import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
@@ -25,15 +24,16 @@ export default function PlayerTable({
     setSaving(p.id);
     setMessage("");
     try {
+      const email = (p.email ?? "").trim();
       await apiRequest(`/api/players/${p.id}`, {
         method: "PUT",
-        json: { balance: Number(p.balance || 0) },
+        json: { balance: Number(p.balance || 0), email: email || undefined },
       });
 
       const cached = JSON.parse(localStorage.getItem("playerswCache") || "{}");
       if (cached.list) {
         const updatedList = cached.list.map((pl: ApiPlayer) =>
-          pl.id === p.id ? { ...pl, balance: Number(p.balance || 0) } : pl
+          pl.id === p.id ? { ...pl, balance: Number(p.balance || 0), email } : pl
         );
         localStorage.setItem(
           "playerswCache",
@@ -41,13 +41,17 @@ export default function PlayerTable({
         );
       }
 
-      setMessage(`Balance updated for ${p.name || "player"}.`);
+      setMessage(`Updated ${p.name || "player"}.`);
     } catch {
-      setMessage("Failed to update balance.");
+      setMessage("Failed to save changes.");
     } finally {
       setSaving(null);
       setTimeout(() => setMessage(""), 4000);
     }
+  };
+
+  const updateField = (id: string, field: "email" | "balance", value: string | number) => {
+    setPlayers((prev) => prev.map((pl) => (pl.id === id ? { ...pl, [field]: value } : pl)));
   };
 
   return (
@@ -78,8 +82,14 @@ export default function PlayerTable({
                 onClick={() => onSelectedPlayer?.(p)}
               >
                 <td className="border px-2 py-2">{p.name || "N/A"}</td>
-                <td className="border px-2 py-2 text-sm text-gray-700">
-                  {userEmails[p.id] || p.email || "N/A"}
+                <td className="border px-2 py-2" onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="email"
+                    placeholder="No email on file"
+                    value={p.email ?? userEmails[p.id] ?? ""}
+                    onChange={(e) => updateField(p.id, "email", e.target.value)}
+                    className="border px-2 py-1 w-full rounded text-sm focus:ring-2 focus:ring-[#5E0009] focus:outline-none"
+                  />
                 </td>
                 <td className="border px-2 py-2">
                   <input

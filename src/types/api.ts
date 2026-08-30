@@ -133,6 +133,7 @@ export interface DuesPayment {
   type: "PAYMENT" | "CHARGE" | "CREDIT" | "ADJUSTMENT";
   note?: string | null;
   paidByUid?: string | null;
+  payPalOrderId?: string | null;
   createdAt?: string;
 }
 
@@ -326,7 +327,6 @@ export interface ApiStreamKey {
 }
 
 export interface ApiStreamConfig {
-  cloudflareInputUid?: string | null;
   rtmpsUrl?: string | null;
   rtmpsKey?: string | null;
   hlsUrl?: string | null;

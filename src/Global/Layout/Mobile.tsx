@@ -1,8 +1,9 @@
 import type { User as FirebaseUser } from "firebase/auth";
 import { Link } from "react-router-dom";
-import type { Program, Role } from "../../types/api";
 
 import { getProgramInfo } from "../../Services/programHelper";
+import type { Program, Role } from "../../types/api";
+
 
 type MobileMenuProps = {
   open: boolean;

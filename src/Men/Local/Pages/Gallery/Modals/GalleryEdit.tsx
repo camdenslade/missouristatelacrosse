@@ -1,14 +1,13 @@
-// src/Men/Local/Pages/Gallery/Modals/GalleryEdit.jsx
-import { Check, Edit3, Folder, GripVertical, Trash2, Upload, X } from "lucide-react";
-import { useEffect, useReducer } from "react";
-import type { ChangeEvent } from "react";
-import toast from "react-hot-toast";
-import { useConfirm } from "../../../../../Global/Common/components/ConfirmModal";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import type { DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, useSortable, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Check, Edit3, Folder, GripVertical, Trash2, Upload, X } from "lucide-react";
+import { useEffect, useReducer } from "react";
+import type { ChangeEvent } from "react";
+import toast from "react-hot-toast";
 
+import { useConfirm } from "../../../../../Global/Common/components/ConfirmModal";
 import { deleteGallery, getGallery, reorderGallery, uploadGallery } from "../hooks/galleryService";
 
 type GalleryEditState = {
@@ -239,7 +238,7 @@ export default function GalleryEditModal({ galleries = {}, onClose, onRefresh }:
             }
             className="border border-gray-300 rounded-lg px-3 py-2 w-full sm:w-1/2"
           >
-            <option value="">— Select a folder —</option>
+            <option value=""> - Select a folder - </option>
             {Object.keys(galleries).map((folderName) => (
               <option key={folderName} value={folderName}>
                 {folderName}

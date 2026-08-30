@@ -1,9 +1,9 @@
-// src/Women/Local/Pages/Sponsor/SponsorMain.jsx
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import toast from "react-hot-toast";
-import SponsorLogos from "../../../../Global/Common/SponsorLogos";
+
 import { useSponsors } from "../../../../Global/Common/hooks/useSponsors";
+import SponsorLogos from "../../../../Global/Common/SponsorLogos";
 import { validateText } from "../../../../Global/Common/utils/validation";
 
 export default function WSponsorMain() {

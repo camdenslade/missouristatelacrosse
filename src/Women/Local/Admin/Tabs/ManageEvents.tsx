@@ -1,3 +1,4 @@
+import { ChevronUp, ChevronDown, X } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -8,6 +9,7 @@ import {
   type Dispatch,
 } from "react";
 import toast from "react-hot-toast";
+
 import { useConfirm } from "../../../../Global/Common/components/ConfirmModal";
 import { uploadCompressedImage } from "../../../../Global/Common/hooks/uploadHelper";
 import {
@@ -366,7 +368,7 @@ export default function ManageEvents() {
                           day: "numeric",
                           year: "numeric",
                         })
-                      : "—"}
+                      : " - "}
                   </td>
                   <td className="py-2 pr-4 text-gray-600">
                     {event.price ? `$${Number(event.price).toFixed(2)}` : "Free"}
@@ -482,7 +484,7 @@ function EventForm({
               rel="noopener noreferrer"
               className="text-xs text-blue-600 underline mt-1 inline-block"
             >
-              Preview on Google Maps →
+              Preview on Google Maps -&gt;
             </a>
           )}
         </div>
@@ -676,7 +678,7 @@ function FieldEditor({
             className="text-gray-400 hover:text-gray-700 disabled:opacity-20 text-xs leading-none"
             title="Move up"
           >
-            ▲
+            <ChevronUp size={12} />
           </button>
           <button
             disabled={index === total - 1}
@@ -684,7 +686,7 @@ function FieldEditor({
             className="text-gray-400 hover:text-gray-700 disabled:opacity-20 text-xs leading-none"
             title="Move down"
           >
-            ▼
+            <ChevronDown size={12} />
           </button>
         </div>
 
@@ -728,7 +730,7 @@ function FieldEditor({
           onClick={() => dispatch({ type: "REMOVE_FIELD", index })}
           className="text-red-400 hover:text-red-600 text-xs font-medium"
         >
-          ✕
+          <X size={16} />
         </button>
       </div>
 
@@ -908,7 +910,7 @@ function SubmissionsView({
         </button>
         <div>
           <h2 className="text-xl font-bold">{event.name}</h2>
-          <p className="text-sm text-gray-400">Submission audit — {registrations.length} registrations</p>
+          <p className="text-sm text-gray-400">Submission audit - {registrations.length} registrations</p>
         </div>
       </div>
 
@@ -958,7 +960,7 @@ function SubmissionsView({
               <div key={teamId} className="border border-gray-200 rounded-lg overflow-hidden">
               <div className={`flex items-center gap-3 px-4 py-2 text-sm font-medium ${complete ? "bg-green-50 text-green-700" : "bg-yellow-50 text-yellow-700"}`}>
                 <div className="flex flex-col gap-0.5">
-                  <span>{complete ? "✓ Team Complete" : "⏳ Incomplete"}</span>
+                  <span>{complete ? "Team Complete" : "Incomplete"}</span>
                   {teamLabel && (
                     <span className="text-xs font-normal text-gray-500">Team: {teamLabel}</span>
                   )}
@@ -1047,8 +1049,8 @@ function RegistrationRow({
     <div className="px-4 py-3">
       <div className="flex flex-wrap justify-between items-start gap-2">
         <div>
-          <p className="font-medium text-sm">{reg.payerName || "—"}</p>
-          <p className="text-xs text-gray-500">{reg.payerEmail || "—"}</p>
+          <p className="font-medium text-sm">{reg.payerName || " - "}</p>
+          <p className="text-xs text-gray-500">{reg.payerEmail || " - "}</p>
           {reg.teammateEmails && reg.teammateEmails.length > 0 && (
             <p className="text-xs text-gray-400">
               Teammate{reg.teammateEmails.length > 1 ? "s" : ""}: {reg.teammateEmails.join(", ")}

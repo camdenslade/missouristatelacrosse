@@ -42,6 +42,9 @@ public class PaymentReceipt {
 
     private String source;
 
+    @Column(nullable = false)
+    private String provider = "paypal";
+
     @Column(name = "receipt_sent_at")
     private Instant receiptSentAt;
 
@@ -92,6 +95,9 @@ public class PaymentReceipt {
 
     public String getSource() { return source; }
     public void setSource(String source) { this.source = source; }
+
+    public String getProvider() { return provider; }
+    public void setProvider(String provider) { this.provider = provider; }
 
     public Instant getReceiptSentAt() { return receiptSentAt; }
     public void setReceiptSentAt(Instant receiptSentAt) { this.receiptSentAt = receiptSentAt; }

@@ -10,12 +10,18 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.google.firebase.auth.FirebaseToken;
+import com.mostate.lacrosse.Config.FirebaseAdminFilter;
+import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Model.SiteContent;
 import com.mostate.lacrosse.Repository.SiteContentRepository;
+import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Utils.JsonUtils;
 import com.mostate.lacrosse.Utils.TextSanitizer;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 @RestController
@@ -23,9 +29,17 @@ import jakarta.validation.Valid;
 @Validated
 public class SiteContentController {
     private final SiteContentRepository repository;
+    private final AuthorizationService authorizationService;
 
-    public SiteContentController(SiteContentRepository repository) {
+    public SiteContentController(SiteContentRepository repository, AuthorizationService authorizationService) {
         this.repository = repository;
+        this.authorizationService = authorizationService;
+    }
+
+    private boolean isAdmin(HttpServletRequest request, String program) {
+        String uid = (String) request.getAttribute("firebaseUid");
+        FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
+        return authorizationService.isAdmin(uid, program, token);
     }
 
     @GetMapping("/{key}")
@@ -54,10 +68,15 @@ public class SiteContentController {
     }
 
     @PutMapping("/{key}")
-    public ResponseEntity<SiteContentResponse> upsert(
+    public ResponseEntity<?> upsert(
+        HttpServletRequest request,
         @PathVariable String key,
+        @RequestParam(defaultValue = "men") String program,
         @Valid @RequestBody SiteContentPayload payload
     ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         String sanitizedKey = TextSanitizer.clean(key);
         SiteContent existing = repository.findById(sanitizedKey).orElseGet(SiteContent::new);
         existing.setContentKey(sanitizedKey);

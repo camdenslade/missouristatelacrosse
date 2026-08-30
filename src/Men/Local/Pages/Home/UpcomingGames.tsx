@@ -1,33 +1,33 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+
+import { fetchActiveSeasonCode } from "../../../../Global/Common/utils/seasonUtils";
 import { apiRequest } from "../../../../Services/API";
 import type { ScheduleGame } from "../../../../types/schedule";
 
-function getActiveSeason() {
+async function getActiveSeason() {
   const stored = localStorage.getItem("selectedSeason");
   if (stored) return stored;
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth() + 1;
-  const start = m >= 8 ? y : y - 1;
-  return `${String(start).slice(-2)}-${String(start + 1).slice(-2)}`;
+  return fetchActiveSeasonCode();
 }
 
 export default function UpcomingGames() {
   const [games, setGames] = useState<ScheduleGame[]>([]);
 
   useEffect(() => {
-    const season = getActiveSeason();
-    apiRequest<ScheduleGame[]>("/api/games")
-      .then((data) => {
-        const now = new Date();
-        const upcoming = (data || [])
-          .filter((g) => g.season === season && g.date && new Date(g.date) > now && !g.result)
-          .sort((a, b) => new Date(a.date!).getTime() - new Date(b.date!).getTime())
-          .slice(0, 3);
-        setGames(upcoming);
-      })
-      .catch(() => {});
+    (async () => {
+      const season = await getActiveSeason();
+      apiRequest<ScheduleGame[]>("/api/games")
+        .then((data) => {
+          const now = new Date();
+          const upcoming = (data || [])
+            .filter((g) => g.season === season && g.date && new Date(g.date) > now && !g.result)
+            .sort((a, b) => new Date(a.date!).getTime() - new Date(b.date!).getTime())
+            .slice(0, 3);
+          setGames(upcoming);
+        })
+        .catch(() => {});
+    })();
   }, []);
 
   if (games.length === 0) return null;

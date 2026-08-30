@@ -1,4 +1,3 @@
-// src/Men/Local/Pages/Home/Articles/ArticleList.jsx
 import ArticleRow from "./ArticleRow";
 
 export default function ArticleList({ articles, onEdit, onDelete }) {

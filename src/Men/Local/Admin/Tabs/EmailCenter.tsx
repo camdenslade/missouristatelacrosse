@@ -1,6 +1,3 @@
-import { useEffect, useReducer, useRef, useCallback } from "react";
-import { apiRequest } from "../../../../Services/API";
-import toast from "react-hot-toast";
 import {
   Bold, Italic, Underline, List, ListOrdered,
   AlignLeft, AlignCenter, AlignRight,
@@ -8,6 +5,10 @@ import {
   Plus, Send, ChevronRight, ChevronDown,
   Search, X, Mail, Users, UserMinus,
 } from "lucide-react";
+import { useEffect, useReducer, useRef, useCallback } from "react";
+import toast from "react-hot-toast";
+
+import { apiRequest } from "../../../../Services/API";
 
 type Group = { id: string; name: string; members: string[] };
 type ApiUser = { email?: string | null; roles?: Record<string, string> };
@@ -152,7 +153,7 @@ export default function EmailCenter() {
 
   // Data
   useEffect(() => {
-    apiRequest("/api/groups")
+    apiRequest<Group[]>("/api/groups")
       .then((list) => dispatch({ type: "SET_GROUPS", groups: list }))
       .catch(() => toast.error("Failed to load groups"));
   }, []);
@@ -161,7 +162,7 @@ export default function EmailCenter() {
   const handleAddGroup = async () => {
     if (!newGroupName.trim()) return;
     try {
-      const group = await apiRequest("/api/groups", {
+      const group = await apiRequest<Group>("/api/groups", {
         method: "POST",
         json: { name: newGroupName, members: [] },
       });
@@ -519,7 +520,7 @@ export default function EmailCenter() {
         <div className="px-6 py-3 bg-white border-b border-gray-200 flex items-center gap-3">
           <Mail size={18} className="text-[#5E0009] shrink-0" />
           <h2 className="text-base font-semibold text-gray-800">
-            Email Center — Men's Program
+            Email Center - Men's Program
           </h2>
         </div>
 
@@ -548,7 +549,7 @@ export default function EmailCenter() {
               </div>
             ) : (
               <span className="text-sm text-gray-400 italic">
-                ← Select a group from the left panel
+                Select a group from the left panel
               </span>
             )}
           </div>

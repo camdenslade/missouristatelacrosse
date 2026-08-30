@@ -1,5 +1,5 @@
-// src/Men/Local/Pages/Schedule/components/GameRow.jsx
 import { useState } from "react";
+
 import type { BoxScoreEntry, ScheduleGame } from "../../../../../types/schedule";
 
 const QUARTER_ORDER = ["Q1", "Q2", "Q3", "Q4", "OT"];
@@ -85,7 +85,7 @@ export default function GameRow({
     <div
       className={`flex items-start w-full ${bgColor} p-5 border-b border-gray-300 transition`}
     >
-      {/* Left content — everything except admin buttons */}
+      {/* Left content - everything except admin buttons */}
       <div className="flex-1 min-w-0">
         {/* Main row */}
         <div className="flex flex-col sm:flex-row items-center sm:items-center gap-3">
@@ -308,7 +308,7 @@ export default function GameRow({
         )}
       </div>
 
-      {/* Admin Controls — pinned right */}
+      {/* Admin Controls - pinned right */}
       {isAdmin && (
         <div className="flex flex-col px-0 sm:px-4 mt-2 sm:mt-0 gap-1 shrink-0">
           <button

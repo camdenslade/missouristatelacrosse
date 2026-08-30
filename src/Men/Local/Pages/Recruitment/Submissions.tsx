@@ -1,8 +1,7 @@
-// src/Men/Local/Pages/Recruitment/Submissions.jsx
 import { useEffect, useReducer } from "react";
 import toast from "react-hot-toast";
-import { useConfirm } from "../../../../Global/Common/components/ConfirmModal";
 
+import { useConfirm } from "../../../../Global/Common/components/ConfirmModal";
 import { apiRequest } from "../../../../Services/API";
 
 const initialState = {

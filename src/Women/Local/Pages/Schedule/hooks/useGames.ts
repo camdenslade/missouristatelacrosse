@@ -1,7 +1,7 @@
-// src/Women/Local/Pages/Schedule/hooks/useGames.js
 import { useEffect, useReducer } from "react";
 
 import { uploadCompressedImage } from "../../../../../Global/Common/hooks/uploadHelper";
+import { getSeasonValue } from "../../../../../Global/Common/utils/seasonUtils";
 import { apiRequest } from "../../../../../Services/API";
 import type { JsonValue } from "../../../../../types/api";
 import type { ScheduleGame } from "../../../../../types/schedule";
@@ -44,23 +44,12 @@ function reducer(state: GamesState, action: GamesAction): GamesState {
   }
 }
 
-const getCurrentSeasonLabel = () => {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth() + 1;
-  const start = m >= 8 ? y : y - 1;
-  return `${String(start).slice(-2)}-${String(start + 1).slice(-2)}`;
-};
-
 const normalizeSeason = (season?: string | null, dateObj: Date | null = null) => {
   if (!season) {
     if (dateObj) {
-      const y = dateObj.getFullYear();
-      const m = dateObj.getMonth() + 1;
-      const start = m >= 8 ? y : y - 1;
-      return `${String(start).slice(-2)}-${String(start + 1).slice(-2)}`;
+      return getSeasonValue(dateObj);
     }
-    return getCurrentSeasonLabel();
+    return getSeasonValue();
   }
   if (/^\d{2}-\d{2}$/.test(season)) return season;
   if (/^\d{4}-\d{2}$/.test(season)) {
@@ -148,7 +137,7 @@ export default function useGames() {
             .toLowerCase()
             .match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
           if (match) {
-            let [_, hour, minute = "0", ampm] = match;
+            const [_, hour, minute = "0", ampm] = match;
             let hourNum = parseInt(hour, 10);
             const minuteNum = parseInt(minute, 10);
             if (ampm === "pm" && hourNum < 12) hourNum += 12;
@@ -222,7 +211,7 @@ export default function useGames() {
         const t = formData.time.trim().toLowerCase();
         const match = t.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
         if (match) {
-          let [_, hour, minute = "0", ampm] = match;
+          const [_, hour, minute = "0", ampm] = match;
           let hourNum = parseInt(hour, 10);
           const minuteNum = parseInt(minute, 10);
           if (ampm === "pm" && hourNum < 12) hourNum += 12;

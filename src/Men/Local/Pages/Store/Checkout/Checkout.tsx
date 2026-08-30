@@ -1,9 +1,9 @@
-// src/Men/Local/Pages/Store/Checkout/Checkout.jsx
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import useStore from "../hooks/useStore";
+
 import CheckoutSummary from "./CheckoutSummary";
 import { useMenCart } from "../context/MenCartContext";
+import useStore from "../hooks/useStore";
 
 const SHIPPING_FEE = 5;
 
@@ -48,7 +48,7 @@ export default function Checkout() {
 
   // PayPal only activates when shipping is valid
   useStore(
-    isShippingValid ? totalBeforeShipping : 0,
+    isShippingValid ? total : 0,
     "paypal-buttons-container",
     setCart,
     navigate,

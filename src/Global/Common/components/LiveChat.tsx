@@ -1,8 +1,9 @@
-import { useEffect, useReducer, useRef } from "react";
 import { Client } from "@stomp/stompjs";
+import { useEffect, useReducer, useRef } from "react";
 import SockJS from "sockjs-client";
-import type { ChatMsg } from "../../../types/api";
+
 import API_BASE from "../../../Services/API";
+import type { ChatMsg } from "../../../types/api";
 
 interface LiveChatProps {
   gameId: string;
@@ -98,7 +99,7 @@ export default function LiveChat({
 
   const clientRef = useRef<Client | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  // Maps `${displayName}:${message}` → localId for optimistic dedup
+  // Maps `${displayName}:${message}` -> localId for optimistic dedup
   const pendingMapRef = useRef<Map<string, string>>(new Map());
 
   const myName = sessionToken ? displayName : guestName;

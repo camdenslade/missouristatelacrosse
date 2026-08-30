@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useReducer, useState } from "react";
 import toast from "react-hot-toast";
+
 import { useConfirm } from "../../../../Global/Common/components/ConfirmModal";
+import StreamPlayer from "../../../../Global/Common/components/StreamPlayer";
 import { uploadCompressedImage } from "../../../../Global/Common/hooks/uploadHelper";
 import {
   addAdminEntry,
@@ -15,9 +17,8 @@ import {
   toggleRaffleStream,
   updateRaffle,
 } from "../../../../Global/Common/hooks/useRaffles";
-import type { ApiRaffle, ApiRaffleEntry } from "../../../../types/api";
-import StreamPlayer from "../../../../Global/Common/components/StreamPlayer";
 import { getProgramInfo } from "../../../../Services/programHelper";
+import type { ApiRaffle, ApiRaffleEntry } from "../../../../types/api";
 
 // Helpers
 
@@ -33,7 +34,7 @@ function toISO(local: string): string | undefined {
 }
 
 function fmtDate(iso: string | null | undefined) {
-  if (!iso) return "—";
+  if (!iso) return " - ";
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
@@ -455,7 +456,7 @@ export default function ManageRaffles() {
                   <td className="py-2 pr-4 text-gray-600 text-xs">
                     {raffle.winnerName ? (
                       <span title={raffle.winnerEmail ?? ""}>{raffle.winnerName}</span>
-                    ) : "—"}
+                    ) : " - "}
                   </td>
                   <td className="py-2">
                     <div className="flex gap-1 flex-wrap">
@@ -611,7 +612,7 @@ function RaffleForm({
               className="w-4 h-4 accent-[#5E0009]"
             />
             <span className="text-sm text-gray-700">
-              Bid mode — highest bidder wins (instead of random ticket draw)
+              Bid mode - highest bidder wins (instead of random ticket draw)
             </span>
           </label>
 
@@ -655,7 +656,7 @@ function RaffleForm({
             value={f.endTime}
             onChange={(e) => dispatch({ type: "SET_FORM", key: "endTime", value: e.target.value })}
           />
-          <p className="text-xs text-gray-400 mt-0.5">Optional — for display only. Use Close/Draw buttons to control status.</p>
+          <p className="text-xs text-gray-400 mt-0.5">Optional - for display only. Use Close/Draw buttons to control status.</p>
         </div>
 
         {/* Published */}
@@ -955,8 +956,8 @@ function EntriesView({
             <tbody>
               {entries.map((e) => (
                 <tr key={e.id} className="border-b last:border-0 hover:bg-gray-50">
-                  <td className="px-4 py-2">{e.payerName || "—"}</td>
-                  <td className="px-4 py-2 text-gray-500">{e.payerEmail || "—"}</td>
+                  <td className="px-4 py-2">{e.payerName || " - "}</td>
+                  <td className="px-4 py-2 text-gray-500">{e.payerEmail || " - "}</td>
                   {isBid ? (
                     <td className="px-4 py-2 font-semibold">
                       ${Number(e.bidAmount ?? 0).toFixed(2)}
@@ -970,7 +971,7 @@ function EntriesView({
                     </span>
                   </td>
                   <td className="px-4 py-2 text-gray-500 text-xs">
-                    {e.createdAt ? new Date(e.createdAt).toLocaleDateString() : "—"}
+                    {e.createdAt ? new Date(e.createdAt).toLocaleDateString() : " - "}
                   </td>
                   <td className="px-4 py-2">
                     <button

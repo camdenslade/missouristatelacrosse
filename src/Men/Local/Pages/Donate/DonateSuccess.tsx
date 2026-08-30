@@ -1,6 +1,6 @@
-// src/Men/Pages/Donate/DonateSuccess.jsx
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+
 import API_BASE from "../../../../Services/API";
 
 export default function DonateSuccess() {

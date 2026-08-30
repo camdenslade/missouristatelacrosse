@@ -15,13 +15,18 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.google.firebase.auth.FirebaseToken;
+import com.mostate.lacrosse.Config.FirebaseAdminFilter;
+import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Model.UserAccount;
 import com.mostate.lacrosse.Model.Player;
 import com.mostate.lacrosse.Repository.PlayerRepository;
 import com.mostate.lacrosse.Repository.UserAccountRepository;
+import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Service.PlayerProfileService;
 import com.mostate.lacrosse.Utils.JsonUtils;
 import com.mostate.lacrosse.Utils.TextSanitizer;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 
@@ -32,19 +37,28 @@ public class UsersController {
     private final UserAccountRepository repository;
     private final PlayerRepository playerRepository;
     private final PlayerProfileService profileService;
+    private final AuthorizationService authorizationService;
 
     public UsersController(
         UserAccountRepository repository,
         PlayerRepository playerRepository,
-        PlayerProfileService profileService
+        PlayerProfileService profileService,
+        AuthorizationService authorizationService
     ) {
         this.repository = repository;
         this.playerRepository = playerRepository;
         this.profileService = profileService;
+        this.authorizationService = authorizationService;
     }
 
     @GetMapping
-    public ResponseEntity<List<UserResponse>> list(@RequestParam(required = false) String program) {
+    public ResponseEntity<?> list(
+        HttpServletRequest request,
+        @RequestParam(required = false) String program
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         List<UserAccount> users = repository.findAllByOrderByDisplayNameAsc();
         String sanitizedProgram = TextSanitizer.clean(program);
         if (sanitizedProgram != null && !sanitizedProgram.isBlank()) {
@@ -60,7 +74,14 @@ public class UsersController {
     }
 
     @GetMapping("/{uid}")
-    public ResponseEntity<UserResponse> getByUid(@PathVariable String uid) {
+    public ResponseEntity<?> getByUid(
+        HttpServletRequest request,
+        @PathVariable String uid,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isSelfOrAdmin(request, uid, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Not authorized"));
+        }
         UserAccount user = repository.findByFirebaseUid(uid).orElse(null);
         if (user == null) {
             return ResponseEntity.notFound().build();
@@ -68,8 +89,57 @@ public class UsersController {
         return ResponseEntity.ok(toResponse(user));
     }
 
+    /**
+     * Fuzzy last-name search for the "suggested matches" UI on the parent-linking forms
+     * (Payments page — both the invite-new and link-existing flows). Deliberately NOT
+     * admin-only: players use this too, when adding their own parent. Excludes admin-role
+     * accounts from results so this can't be used to enumerate admin identities/emails via
+     * fuzzy search from a non-admin caller; every other role is fair game since the whole
+     * point is surfacing an existing account (parent, user, alumni, etc.) that might already
+     * belong to this player's parent.
+     */
+    @GetMapping("/search-candidates")
+    public ResponseEntity<?> searchCandidates(
+        HttpServletRequest request,
+        @RequestParam String lastName,
+        @RequestParam(defaultValue = "men") String program,
+        @RequestParam(required = false) String excludeUid
+    ) {
+        String uid = (String) request.getAttribute("firebaseUid");
+        if (uid == null || uid.isBlank()) {
+            return ResponseEntity.status(401).body(new ErrorResponse("Authentication required"));
+        }
+        String query = TextSanitizer.clean(lastName);
+        if (query == null || query.trim().length() < 2) {
+            return ResponseEntity.ok(List.of());
+        }
+        String normalizedQuery = query.trim().toLowerCase();
+        String normalizedProgram = program.trim().toLowerCase();
+        String normalizedExcludeUid = TextSanitizer.clean(excludeUid);
+
+        List<CandidateResponse> payload = repository.findAllByOrderByDisplayNameAsc().stream()
+            .filter(u -> u.getDisplayName() != null && u.getDisplayName().toLowerCase().contains(normalizedQuery))
+            // Never suggest the player's own account as a candidate "parent" for themself.
+            .filter(u -> normalizedExcludeUid == null || normalizedExcludeUid.isBlank()
+                || !normalizedExcludeUid.equals(u.getFirebaseUid()))
+            .filter(u -> !"admin".equalsIgnoreCase(
+                String.valueOf(JsonUtils.readMap(u.getRoles()).getOrDefault(normalizedProgram, ""))
+            ))
+            .limit(8)
+            .map(u -> new CandidateResponse(u.getFirebaseUid(), u.getDisplayName(), u.getEmail()))
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(payload);
+    }
+
     @GetMapping("/by-email")
-    public ResponseEntity<UserResponse> getByEmail(@RequestParam String email) {
+    public ResponseEntity<?> getByEmail(
+        HttpServletRequest request,
+        @RequestParam String email,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         UserAccount user = repository.findFirstByEmailIgnoreCase(email).orElse(null);
         if (user == null) {
             return ResponseEntity.notFound().build();
@@ -78,10 +148,17 @@ public class UsersController {
     }
 
     @GetMapping("/by-player/{playerId}")
-    public ResponseEntity<UserResponse> getByPlayer(@PathVariable UUID playerId) {
+    public ResponseEntity<?> getByPlayer(
+        HttpServletRequest request,
+        @PathVariable UUID playerId,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         UserAccount user = repository.findFirstByPlayerId(playerId).orElse(null);
         if (user == null) {
-            // playerId stores the profile UUID; fall back to player.userUid → firebaseUid lookup
+            // playerId stores the profile UUID; fall back to player.userUid -> firebaseUid lookup
             Player player = playerRepository.findById(playerId).orElse(null);
             if (player != null && player.getUserUid() != null && !player.getUserUid().isBlank()) {
                 user = repository.findByFirebaseUid(player.getUserUid()).orElse(null);
@@ -94,10 +171,24 @@ public class UsersController {
     }
 
     @PutMapping("/{uid}")
-    public ResponseEntity<UserResponse> upsert(
+    public ResponseEntity<?> upsert(
+        HttpServletRequest request,
         @PathVariable String uid,
+        @RequestParam(defaultValue = "men") String program,
         @Valid @RequestBody UserPayload payload
     ) {
+        boolean callerIsAdmin = isAdmin(request, program);
+        if (!callerIsAdmin && !isSelf(request, uid)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Not authorized"));
+        }
+        // Self-service accounts (first login, profile edits, auto-link) are allowed to touch
+        // roles/programs — but never to grant themselves admin. Only an existing admin may
+        // promote anyone to admin.
+        if (!callerIsAdmin && payload.roles() != null
+                && payload.roles().values().stream().anyMatch(v -> "admin".equalsIgnoreCase(String.valueOf(v)))) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Cannot self-assign admin role"));
+        }
+
         String sanitizedUid = TextSanitizer.clean(uid);
         UserAccount user = repository.findByFirebaseUid(sanitizedUid).orElseGet(UserAccount::new);
         user.setFirebaseUid(sanitizedUid);
@@ -124,7 +215,14 @@ public class UsersController {
     }
 
     @DeleteMapping("/{uid}")
-    public ResponseEntity<Void> delete(@PathVariable String uid) {
+    public ResponseEntity<?> delete(
+        HttpServletRequest request,
+        @PathVariable String uid,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         String sanitizedUid = TextSanitizer.clean(uid);
         if (sanitizedUid == null || sanitizedUid.isBlank()) {
             return ResponseEntity.badRequest().build();
@@ -146,6 +244,21 @@ public class UsersController {
 
         repository.delete(user);
         return ResponseEntity.noContent().build();
+    }
+
+    private boolean isAdmin(HttpServletRequest request, String program) {
+        String uid = (String) request.getAttribute("firebaseUid");
+        FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
+        return authorizationService.isAdmin(uid, program, token);
+    }
+
+    private boolean isSelf(HttpServletRequest request, String pathUid) {
+        String uid = (String) request.getAttribute("firebaseUid");
+        return uid != null && uid.equals(pathUid);
+    }
+
+    private boolean isSelfOrAdmin(HttpServletRequest request, String pathUid, String program) {
+        return isSelf(request, pathUid) || isAdmin(request, program);
     }
 
     private UserResponse toResponse(UserAccount user) {
@@ -200,6 +313,8 @@ public class UsersController {
         List<String> programs,
         UUID playerId
     ) {}
+
+    public record CandidateResponse(String uid, String displayName, String email) {}
 
     public record UserResponse(
         UUID id,

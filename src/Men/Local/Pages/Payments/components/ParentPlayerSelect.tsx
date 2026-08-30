@@ -1,4 +1,3 @@
-// src/Men/Local/Pages/Payments/components/ParentPlayerSelect.jsx
 import type { ApiPlayer } from "../../../../../types/api";
 
 type ParentPlayerSelectProps = {

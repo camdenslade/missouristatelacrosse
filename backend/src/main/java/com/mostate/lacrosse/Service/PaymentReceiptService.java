@@ -20,13 +20,55 @@ public class PaymentReceiptService {
         this.receiptRepository = receiptRepository;
     }
 
+    /**
+     * Records the intended source of a PayPal order at CREATE time, before capture —
+     * so capture-time can't be spoofed with a client-supplied source. If a receipt for
+     * this orderId already exists (shouldn't normally happen pre-capture), its source is
+     * left untouched rather than overwritten.
+     */
+    public PaymentReceipt reserveSource(String orderId, String source) {
+        return reserveSource(orderId, source, "paypal");
+    }
+
+    /**
+     * Same as {@link #reserveSource(String, String)} but also stamps which processor
+     * this order belongs to, so the placeholder row is attributable before capture.
+     */
+    public PaymentReceipt reserveSource(String orderId, String source, String provider) {
+        if (orderId == null || orderId.isBlank() || source == null || source.isBlank()) {
+            return null;
+        }
+        PaymentReceipt receipt = receiptRepository.findByOrderId(orderId).orElseGet(PaymentReceipt::new);
+        if (receipt.getOrderId() == null) {
+            receipt.setOrderId(orderId);
+            receipt.setSource(source);
+            receipt.setStatus("CREATED");
+            if (provider != null && !provider.isBlank()) {
+                receipt.setProvider(provider);
+            }
+        }
+        return receiptRepository.save(receipt);
+    }
+
+    /**
+     * Only ever returns a payload for a genuinely CAPTURED order. reserveSource() inserts a
+     * placeholder receipt at order-CREATE time (status "CREATED", payload defaulting to the
+     * column's "{}" default) purely to lock in the source before payment — that row is not
+     * blank as a string, so a naive "is the payload non-blank" check treats it as an
+     * already-cached capture and short-circuits captureOrder() into returning "{}" without
+     * ever calling PayPal, silently no-op'ing the very first capture attempt on every order.
+     * Excluding "CREATED" (and any literal empty-object payload as a second guard) is what
+     * this method's own doc/callers already assume — it's meant to read back a completed
+     * capture, not a pre-payment reservation.
+     */
     public Optional<Map<String, Object>> findStoredPayload(String orderId) {
         if (orderId == null || orderId.isBlank()) {
             return Optional.empty();
         }
         return receiptRepository.findByOrderId(orderId)
+            .filter(r -> r.getStatus() != null && !"CREATED".equalsIgnoreCase(r.getStatus()))
             .map(PaymentReceipt::getPayload)
-            .filter(payload -> payload != null && !payload.isBlank())
+            .filter(payload -> payload != null && !payload.isBlank() && !"{}".equals(payload.trim()))
             .map(JsonUtils::readMap);
     }
 
@@ -43,6 +85,21 @@ public class PaymentReceiptService {
 
     public PaymentReceipt recordPayPalReceipt(Map<String, Object> payload) {
         return recordPayPalReceipt(payload, null);
+    }
+
+    /**
+     * Provider-neutral entry point. {@code payload} must be shaped like a PayPal
+     * capture response (id, status, payer.email_address, purchase_units[0].amount);
+     * the Stripe path adapts its Checkout Session into that shape so every downstream
+     * verifier (dues, raffle, event, store) stays processor-agnostic.
+     */
+    public PaymentReceipt recordReceipt(Map<String, Object> payload, String source, String provider) {
+        PaymentReceipt receipt = recordPayPalReceipt(payload, source);
+        if (provider != null && !provider.isBlank() && !provider.equals(receipt.getProvider())) {
+            receipt.setProvider(provider);
+            return receiptRepository.save(receipt);
+        }
+        return receipt;
     }
 
     public PaymentReceipt recordPayPalReceipt(Map<String, Object> payload, String source) {

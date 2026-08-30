@@ -1,4 +1,3 @@
-// src/Men/Local/Pages/Schedule/hooks/useCountdown.js
 import { useEffect, useReducer, useRef } from "react";
 
 const initialState = {

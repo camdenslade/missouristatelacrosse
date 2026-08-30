@@ -54,7 +54,7 @@ public class CustomProductController {
         }
     }
 
-    // ── Products ──────────────────────────────────────────────────────────────
+    // Products
 
     @GetMapping
     public ResponseEntity<?> getAll(HttpServletRequest request,
@@ -141,7 +141,7 @@ public class CustomProductController {
         return ResponseEntity.ok().build();
     }
 
-    // ── Variants ──────────────────────────────────────────────────────────────
+    // Variants
 
     @GetMapping("/{productId}/variants")
     public ResponseEntity<?> getVariants(@PathVariable Long productId,
@@ -228,7 +228,7 @@ public class CustomProductController {
         return ResponseEntity.ok().build();
     }
 
-    // ── Request DTOs ──────────────────────────────────────────────────────────
+    // Request DTOs
 
     public static class UpdateProductRequest {
         private Long id;

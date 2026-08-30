@@ -14,15 +14,21 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.google.firebase.auth.FirebaseToken;
+import com.mostate.lacrosse.Config.FirebaseAdminFilter;
 import com.mostate.lacrosse.Config.TenantContext;
+import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Model.Game;
 import com.mostate.lacrosse.Repository.GameRepository;
 import com.mostate.lacrosse.Repository.TeamRepository;
 import com.mostate.lacrosse.Model.Team;
+import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Service.S3Service;
 import com.mostate.lacrosse.Utils.JsonUtils;
 import com.mostate.lacrosse.Utils.TextSanitizer;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/games")
@@ -31,17 +37,26 @@ public class GamesController {
     private final TeamRepository teamRepository;
     private final S3Service s3Service;
     private final SimpMessagingTemplate broker;
+    private final AuthorizationService authorizationService;
 
     public GamesController(
         GameRepository gameRepository,
         TeamRepository teamRepository,
         S3Service s3Service,
-        SimpMessagingTemplate broker
+        SimpMessagingTemplate broker,
+        AuthorizationService authorizationService
     ) {
         this.gameRepository = gameRepository;
         this.teamRepository = teamRepository;
         this.s3Service = s3Service;
         this.broker = broker;
+        this.authorizationService = authorizationService;
+    }
+
+    private boolean isAdmin(HttpServletRequest request, String program) {
+        String uid = (String) request.getAttribute("firebaseUid");
+        FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
+        return authorizationService.isAdmin(uid, program, token);
     }
 
     @GetMapping
@@ -60,7 +75,10 @@ public class GamesController {
     }
 
     @PostMapping
-    public ResponseEntity<GameResponse> create(@RequestBody GamePayload payload) {
+    public ResponseEntity<?> create(HttpServletRequest request, @RequestBody GamePayload payload) {
+        if (!isAdmin(request, TenantContext.getTenant())) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Game game = new Game();
         applyPayload(game, payload);
         Game saved = gameRepository.save(game);
@@ -69,7 +87,11 @@ public class GamesController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<GameResponse> update(@PathVariable UUID id, @RequestBody GamePayload payload) {
+    public ResponseEntity<?> update(HttpServletRequest request, @PathVariable UUID id, @RequestBody GamePayload payload) {
+        String program = TenantContext.getTenant();
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Game existing = gameRepository.findById(id).orElse(null);
         if (existing == null) {
             return ResponseEntity.notFound().build();
@@ -79,7 +101,6 @@ public class GamesController {
         syncTeamFromGame(saved);
         GameResponse response = toResponse(saved, S3Service.IMAGE_TTL);
         // Broadcast live update so viewers don't have to poll
-        String program = TenantContext.getTenant();
         if (program != null) {
             broker.convertAndSend("/topic/game/" + program + "/" + id, response);
         }
@@ -87,7 +108,10 @@ public class GamesController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+    public ResponseEntity<?> delete(HttpServletRequest request, @PathVariable UUID id) {
+        if (!isAdmin(request, TenantContext.getTenant())) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         gameRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }

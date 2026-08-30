@@ -1,8 +1,8 @@
 import { FaInstagram, FaFacebook } from "react-icons/fa";
 
-import SponsorLogos from "../Common/SponsorLogos";
-import { useSponsors } from "../Common/hooks/useSponsors";
 import { getProgramInfo } from "../../Services/programHelper";
+import { useSponsors } from "../Common/hooks/useSponsors";
+import SponsorLogos from "../Common/SponsorLogos";
 
 export default function Footer() {
   const { program } = getProgramInfo();

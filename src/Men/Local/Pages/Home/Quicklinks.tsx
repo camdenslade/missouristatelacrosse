@@ -1,4 +1,3 @@
-// src/Men/Local/Pages/Home/Quicklinks.jsx
 export default function Quicklinks() {
   return (
     <section className="bg-gray-100 py-12">

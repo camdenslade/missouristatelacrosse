@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import toast from "react-hot-toast";
+
 import { useAuth } from "../../../../Global/Context/AuthContext";
 import { apiRequest } from "../../../../Services/API";
 
@@ -266,7 +267,7 @@ export default function AlumniBudget({ adminMode = false }: { adminMode?: boolea
                   {rows.map((row) => (
                     <tr key={row.id} className="border-t border-gray-100 hover:bg-gray-50">
                       <td className="px-4 py-2 font-medium text-gray-800">{row.category}</td>
-                      <td className="px-4 py-2 text-gray-500">{row.description || "—"}</td>
+                      <td className="px-4 py-2 text-gray-500">{row.description || " - "}</td>
                       <td className="px-4 py-2 text-right font-mono">${Number(row.amount).toFixed(2)}</td>
                       <td className="px-4 py-2 text-center">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${

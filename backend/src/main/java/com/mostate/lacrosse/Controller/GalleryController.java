@@ -13,11 +13,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.google.firebase.auth.FirebaseToken;
+import com.mostate.lacrosse.Config.FirebaseAdminFilter;
+import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Model.GalleryFolder;
 import com.mostate.lacrosse.Repository.GalleryFolderRepository;
+import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Service.S3Service;
 import com.mostate.lacrosse.Utils.JsonUtils;
 import com.mostate.lacrosse.Utils.TextSanitizer;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
@@ -27,10 +32,18 @@ import jakarta.validation.constraints.NotNull;
 public class GalleryController {
     private final GalleryFolderRepository repository;
     private final S3Service s3Service;
+    private final AuthorizationService authorizationService;
 
-    public GalleryController(GalleryFolderRepository repository, S3Service s3Service) {
+    public GalleryController(GalleryFolderRepository repository, S3Service s3Service, AuthorizationService authorizationService) {
         this.repository = repository;
         this.s3Service = s3Service;
+        this.authorizationService = authorizationService;
+    }
+
+    private boolean isAdmin(HttpServletRequest request, String program) {
+        String uid = (String) request.getAttribute("firebaseUid");
+        FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
+        return authorizationService.isAdmin(uid, program, token);
     }
 
     @GetMapping
@@ -54,10 +67,15 @@ public class GalleryController {
     }
 
     @PutMapping("/{folder}")
-    public ResponseEntity<GalleryFolderResponse> upsert(
+    public ResponseEntity<?> upsert(
+        HttpServletRequest request,
         @PathVariable String folder,
+        @RequestParam(defaultValue = "men") String program,
         @Valid @RequestBody GalleryPayload payload
     ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         String sanitizedFolder = TextSanitizer.clean(folder);
         GalleryFolder existing = repository.findById(sanitizedFolder).orElseGet(GalleryFolder::new);
         existing.setId(sanitizedFolder);
@@ -69,10 +87,15 @@ public class GalleryController {
     }
 
     @DeleteMapping("/{folder}/photo")
-    public ResponseEntity<GalleryFolderResponse> deletePhoto(
+    public ResponseEntity<?> deletePhoto(
+        HttpServletRequest request,
         @PathVariable String folder,
-        @RequestParam String key
+        @RequestParam String key,
+        @RequestParam(defaultValue = "men") String program
     ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         String sanitizedFolder = TextSanitizer.clean(folder);
         String sanitizedKey = s3Service.extractKey(key);
         if (sanitizedKey == null || !s3Service.isAllowedKey(sanitizedKey)) {
@@ -100,7 +123,14 @@ public class GalleryController {
     }
 
     @DeleteMapping("/{folder}")
-    public ResponseEntity<Void> delete(@PathVariable String folder) {
+    public ResponseEntity<?> delete(
+        HttpServletRequest request,
+        @PathVariable String folder,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         String sanitized = TextSanitizer.clean(folder);
         repository.findById(sanitized).ifPresent(existing -> {
             JsonUtils.readList(existing.getUrls()).stream()

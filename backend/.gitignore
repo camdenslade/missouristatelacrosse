@@ -39,10 +39,15 @@ bin/
 # ==============================
 # Sensitive Configs
 # ==============================
-application.properties
-application.yml
-application-*.properties
-application-*.yml
+# The base config (application.properties), the test config
+# (application-test.properties), and the Docker/local-dev profile
+# (application-local.properties) hold no secrets - every value is ${ENV_VAR:default} or
+# an obvious fake - so they ARE tracked. Only ignore prod/secret override profiles that
+# would carry real values.
+application-prod.properties
+application-prod.yml
+application-secret*.properties
+application-secret*.yml
 .env
 .env.*
 

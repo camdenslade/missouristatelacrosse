@@ -22,11 +22,14 @@ The platform provides a unified digital presence for both the Menâ€™s and Womenâ
 - Dynamic content rendering based on authenticated user role
 - Secure Firestore-backed user data model
 
-## PayPal Integration
-- Server-side PayPal REST API integration via a Spring Boot backend
-- Secure order creation and capture flow
-- Support for team store purchases, donations, and fundraising tools
-- Sandbox and production environments managed via environment variables
+## Payments (PayPal + Stripe)
+- Server-side PayPal REST integration and a parallel Stripe Embedded Checkout rail
+- Both rails write the same `payment_receipts` shape, so dues / raffle / event / store
+  logic is processor-agnostic
+- Active rail chosen per program at build time via `VITE_PAYMENT_PROVIDER` /
+  `VITE_PAYMENT_PROVIDER_WOMEN` (`paypal` default, `stripe` optional)
+- Stripe is webhook-driven with an idempotent confirm fast-path
+- Full details: [`docs/payments.md`](docs/payments.md)
 
 ## Printify Integration
 - Full REST API integration for product listings and order creation
@@ -50,24 +53,24 @@ The platform provides a unified digital presence for both the Menâ€™s and Womenâ
 
 # Tech Stack
 ## Frontend
-- React
-- JavaScript
-- Firebase Firestore
-- Firebase Auth
-- Firebase Storage
+- React 19 + TypeScript + Vite
+- Firebase Auth (email/password + account-request approval)
+- Tailwind CSS
 
 ## Backend
-- Java 17 / Spring Boot
-- PayPal Java SDK
+- Java 17 / Spring Boot 3.5
+- PostgreSQL + Flyway (schema-per-program: `men` / `women`)
+- PayPal REST (hand-rolled `RestTemplate`) + Stripe Java SDK
 - Printify REST integration
-- AWS SES
-- AWS Secrets Manager
-- Hosted on AWS EC2
+- AWS: SES (email), S3 (image storage), Secrets Manager (prod config)
+- Self-hosted RTMP/HLS streaming via MediaMTX on EC2
+- Hosted on AWS EC2 (`api.missouristatelacrosse.com`)
+- See [`backend/README.md`](backend/README.md)
 
 ## Infrastructure & Tools
-- Firestore Security Rules
-- Firebase Hosting (Frontend)
-- Amazon SES Verified Domain
+- Firebase Hosting (frontend)
+- Amazon SES verified domain (DKIM / SPF / DMARC)
+- AWS EC2 + S3
 
 ## Project Goals
 - Provide a fast, reliable, and modern website for Missouri State Lacrosse

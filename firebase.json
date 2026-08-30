@@ -16,7 +16,7 @@
     "rewrites": [
       {
         "source": "/api{,/**}",
-        "destination": "https://laxsite-backend-env.eba-nnbxwspk.us-east-1.elasticbeanstalk.com/api"
+        "destination": "https://api.missouristatelacrosse.com/api"
       },
       {
         "source": "**",

@@ -1,5 +1,5 @@
-// src/Women/Local/Pages/Schedule/Modals/Score.tsx
 import { useEffect, useReducer } from "react";
+
 import { validateNumber, validateText } from "../../../../../Global/Common/utils/validation";
 import type { BoxScore, PlayerStat, ScheduleGame } from "../../../../../types/schedule";
 
@@ -210,7 +210,7 @@ export default function ScoreModal({
       }
     }
 
-    // Clean player stats — only include players with at least one stat
+    // Clean player stats - only include players with at least one stat
     const cleanStats: PlayerStat[] = playerStats
       .filter((s) => s.name?.trim())
       .map((s) => {

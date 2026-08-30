@@ -1,11 +1,10 @@
-// src/Women/Local/Pages/Home/Articles/ArticleForm.jsx
 import { useEffect, useReducer } from "react";
 import type { FormEvent } from "react";
-import type { ApiArticle } from "../../../../../types/api";
 import toast from "react-hot-toast";
 
 import { uploadCompressedImage } from "../../../../../Global/Common/hooks/uploadHelper";
 import { validateText } from "../../../../../Global/Common/utils/validation";
+import type { ApiArticle } from "../../../../../types/api";
 
 type ArticleFormState = {
   title: string;

@@ -1,4 +1,3 @@
-// src/Services/programHelper.js
 export function getActiveProgram() {
   if (typeof window === "undefined") return "men";
   return window.location.pathname.toLowerCase().includes("/women")

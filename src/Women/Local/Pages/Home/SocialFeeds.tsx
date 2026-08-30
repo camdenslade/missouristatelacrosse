@@ -1,4 +1,3 @@
-// src/Women/Local/Pages/Home/SocialFeeds.jsx
 import { useCallback, useEffect, useReducer } from "react";
 import toast from "react-hot-toast";
 import { A11y, Pagination } from "swiper/modules";

@@ -2,6 +2,7 @@ package com.mostate.lacrosse.Controller;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -46,7 +47,17 @@ public class PayPalController {
             }
 
             String formatted = amount.setScale(2, RoundingMode.HALF_UP).toPlainString();
-            return ResponseEntity.ok(payPalSDKService.createOrder(formatted));
+            Map<String, Object> order = payPalSDKService.createOrder(formatted);
+            // Bind the intended source to this order id now, at creation time — capture
+            // can no longer be spoofed into claiming an unrelated payment (e.g. a donation)
+            // was actually for dues, since the source is fixed before the buyer ever pays.
+            if (body.source() != null && !body.source().isBlank() && order != null) {
+                Object orderId = order.get("id");
+                if (orderId != null) {
+                    receiptService.reserveSource(String.valueOf(orderId), body.source());
+                }
+            }
+            return ResponseEntity.ok(order);
         } catch (NumberFormatException e) {
             return ResponseEntity.badRequest().body(new ErrorResponse("Invalid amount"));
         } catch (Exception e){
@@ -56,10 +67,7 @@ public class PayPalController {
     }
 
     @PostMapping("/capture")
-    public ResponseEntity<?> captureOrder(
-        @RequestParam String orderID,
-        @RequestParam(required = false) String source
-    ){
+    public ResponseEntity<?> captureOrder(@RequestParam String orderID){
         try{
             var cached = receiptService.findStoredPayload(orderID);
             if (cached.isPresent()) {
@@ -67,11 +75,23 @@ public class PayPalController {
             }
 
             var payload = payPalSDKService.captureOrder(orderID);
-            receiptService.recordPayPalReceipt(payload, source);
+            // Source is never taken from the request here — it was fixed at /create time
+            // via reserveSource(), so recordPayPalReceipt() leaves it untouched.
+            receiptService.recordPayPalReceipt(payload, null);
             return ResponseEntity.ok(payload);
         } catch (Exception e){
             return ResponseEntity.internalServerError().body(new ErrorResponse(e.getMessage()));
         }
+    }
+
+    // Read-only lookup of an already-captured order's stored payload — for re-displaying
+    // a completed checkout (page refresh, back button, shared link) without re-invoking
+    // capture at all, even though /capture is itself idempotent via the same cache.
+    @GetMapping("/receipt")
+    public ResponseEntity<?> getReceipt(@RequestParam String orderID){
+        return receiptService.findStoredPayload(orderID)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/total")
@@ -89,5 +109,5 @@ public class PayPalController {
         return ResponseEntity.ok(new ClientIdResponse(clientId));
     }
 
-    public record CreateOrderRequest(@NotBlank String amount, Boolean includeShippingFee) {}
+    public record CreateOrderRequest(@NotBlank String amount, Boolean includeShippingFee, String source) {}
 }

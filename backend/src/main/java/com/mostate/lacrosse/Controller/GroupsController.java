@@ -12,11 +12,17 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.google.firebase.auth.FirebaseToken;
+import com.mostate.lacrosse.Config.FirebaseAdminFilter;
+import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Model.Group;
 import com.mostate.lacrosse.Repository.GroupRepository;
+import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Utils.JsonUtils;
 import com.mostate.lacrosse.Utils.TextSanitizer;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 @RestController
@@ -24,13 +30,21 @@ import jakarta.validation.Valid;
 @Validated
 public class GroupsController {
     private final GroupRepository repository;
+    private final AuthorizationService authorizationService;
 
-    public GroupsController(GroupRepository repository) {
+    public GroupsController(GroupRepository repository, AuthorizationService authorizationService) {
         this.repository = repository;
+        this.authorizationService = authorizationService;
     }
 
     @GetMapping
-    public ResponseEntity<List<GroupResponse>> list() {
+    public ResponseEntity<?> list(
+        HttpServletRequest request,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         List<GroupResponse> groups = repository.findAll()
             .stream()
             .map(this::toResponse)
@@ -39,7 +53,14 @@ public class GroupsController {
     }
 
     @PostMapping
-    public ResponseEntity<GroupResponse> create(@Valid @RequestBody GroupPayload payload) {
+    public ResponseEntity<?> create(
+        HttpServletRequest request,
+        @RequestParam(defaultValue = "men") String program,
+        @Valid @RequestBody GroupPayload payload
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Group group = new Group();
         group.setName(TextSanitizer.clean(payload.name()));
         group.setMembers(JsonUtils.toJson(TextSanitizer.cleanStringList(payload.members())));
@@ -48,10 +69,15 @@ public class GroupsController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<GroupResponse> update(
+    public ResponseEntity<?> update(
+        HttpServletRequest request,
+        @RequestParam(defaultValue = "men") String program,
         @PathVariable UUID id,
         @Valid @RequestBody GroupPayload payload
     ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Group existing = repository.findById(id).orElse(null);
         if (existing == null) {
             return ResponseEntity.notFound().build();
@@ -66,9 +92,22 @@ public class GroupsController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+    public ResponseEntity<?> delete(
+        HttpServletRequest request,
+        @RequestParam(defaultValue = "men") String program,
+        @PathVariable UUID id
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         repository.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private boolean isAdmin(HttpServletRequest request, String program) {
+        String uid = (String) request.getAttribute("firebaseUid");
+        FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
+        return authorizationService.isAdmin(uid, program, token);
     }
 
     private GroupResponse toResponse(Group group) {

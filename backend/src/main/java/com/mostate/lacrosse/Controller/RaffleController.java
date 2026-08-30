@@ -17,15 +17,22 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.google.firebase.auth.FirebaseToken;
+import com.mostate.lacrosse.Config.FirebaseAdminFilter;
+import com.mostate.lacrosse.Dto.ErrorResponse;
+import com.mostate.lacrosse.Model.PaymentReceipt;
 import com.mostate.lacrosse.Model.Raffle;
 import com.mostate.lacrosse.Model.RaffleEntry;
 import com.mostate.lacrosse.Repository.PaymentReceiptRepository;
 import com.mostate.lacrosse.Repository.RaffleEntryRepository;
 import com.mostate.lacrosse.Repository.RaffleRepository;
+import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Service.S3Service;
 import com.mostate.lacrosse.Utils.JsonUtils;
 import com.mostate.lacrosse.Utils.TextSanitizer;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/raffles")
@@ -35,6 +42,7 @@ public class RaffleController {
     private final RaffleEntryRepository entryRepo;
     private final PaymentReceiptRepository receiptRepo;
     private final S3Service s3Service;
+    private final AuthorizationService authorizationService;
 
     private static final java.time.Duration IMAGE_TTL = S3Service.IMAGE_TTL;
 
@@ -42,16 +50,23 @@ public class RaffleController {
         RaffleRepository raffleRepo,
         RaffleEntryRepository entryRepo,
         PaymentReceiptRepository receiptRepo,
-        S3Service s3Service
+        S3Service s3Service,
+        AuthorizationService authorizationService
     ) {
         this.raffleRepo = raffleRepo;
         this.entryRepo = entryRepo;
         this.receiptRepo = receiptRepo;
         this.s3Service = s3Service;
+        this.authorizationService = authorizationService;
     }
 
-    // ── Public: list published raffles ─────────────────────────────────────────
+    private boolean isAdmin(HttpServletRequest request, String program) {
+        String uid = (String) request.getAttribute("firebaseUid");
+        FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
+        return authorizationService.isAdmin(uid, program, token);
+    }
 
+    // Public: list published raffles
     @GetMapping
     public ResponseEntity<List<RaffleResponse>> listPublished() {
         return ResponseEntity.ok(
@@ -61,8 +76,7 @@ public class RaffleController {
         );
     }
 
-    // ── Public: get by slug ────────────────────────────────────────────────────
-
+    // Public: get by slug
     @GetMapping("/slug/{slug}")
     public ResponseEntity<RaffleResponse> getBySlug(@PathVariable String slug) {
         return raffleRepo.findBySlugAndPublishedTrue(slug)
@@ -70,10 +84,12 @@ public class RaffleController {
             .orElse(ResponseEntity.notFound().build());
     }
 
-    // ── Admin: list all ────────────────────────────────────────────────────────
-
+    // Admin: list all
     @GetMapping("/admin")
-    public ResponseEntity<List<RaffleResponse>> listAll() {
+    public ResponseEntity<?> listAll(HttpServletRequest request, @RequestParam(defaultValue = "men") String program) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         return ResponseEntity.ok(
             raffleRepo.findAllByOrderByCreatedAtDesc().stream()
                 .map(r -> toResponse(r, true))
@@ -81,49 +97,78 @@ public class RaffleController {
         );
     }
 
-    // ── Admin: create ──────────────────────────────────────────────────────────
-
+    // Admin: create
     @PostMapping
-    public ResponseEntity<RaffleResponse> create(@RequestBody RafflePayload payload) {
+    public ResponseEntity<?> create(
+        HttpServletRequest request,
+        @RequestParam(defaultValue = "men") String program,
+        @RequestBody RafflePayload payload
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Raffle raffle = new Raffle();
         applyPayload(raffle, payload, true);
         return ResponseEntity.ok(toResponse(raffleRepo.save(raffle), true));
     }
 
-    // ── Admin: update ──────────────────────────────────────────────────────────
-
+    // Admin: update
     @PutMapping("/{id}")
-    public ResponseEntity<RaffleResponse> update(
+    public ResponseEntity<?> update(
+        HttpServletRequest request,
         @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program,
         @RequestBody RafflePayload payload
     ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Raffle existing = raffleRepo.findById(id).orElse(null);
         if (existing == null) return ResponseEntity.notFound().build();
         applyPayload(existing, payload, false);
         return ResponseEntity.ok(toResponse(raffleRepo.save(existing), true));
     }
 
-    // ── Admin: delete ──────────────────────────────────────────────────────────
-
+    // Admin: delete
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+    public ResponseEntity<?> delete(
+        HttpServletRequest request,
+        @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         entryRepo.deleteAll(entryRepo.findAllByRaffleIdOrderByCreatedAtDesc(id));
         raffleRepo.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 
-    // ── Admin: get entries ─────────────────────────────────────────────────────
-
+    // Admin: get entries
     @GetMapping("/{id}/entries")
-    public ResponseEntity<List<EntryResponse>> entries(@PathVariable UUID id) {
+    public ResponseEntity<?> entries(
+        HttpServletRequest request,
+        @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         List<RaffleEntry> entries = entryRepo.findAllByRaffleIdOrderByCreatedAtDesc(id);
         return ResponseEntity.ok(entries.stream().map(this::toEntryResponse).toList());
     }
 
-    // ── Admin: draw winner (ticket-based = random weighted, bid-based = highest)
+    // Admin: draw winner (ticket-based = random weighted, bid-based = highest)
 
     @PostMapping("/{id}/draw")
-    public ResponseEntity<RaffleResponse> draw(@PathVariable UUID id) {
+    public ResponseEntity<?> draw(
+        HttpServletRequest request,
+        @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Raffle raffle = raffleRepo.findById(id).orElse(null);
         if (raffle == null) return ResponseEntity.notFound().build();
 
@@ -159,20 +204,32 @@ public class RaffleController {
         return ResponseEntity.ok(toResponse(raffleRepo.save(raffle), true));
     }
 
-    // ── Admin: close raffle ────────────────────────────────────────────────────
-
+    // Admin: close raffle
     @PostMapping("/{id}/close")
-    public ResponseEntity<RaffleResponse> close(@PathVariable UUID id) {
+    public ResponseEntity<?> close(
+        HttpServletRequest request,
+        @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Raffle raffle = raffleRepo.findById(id).orElse(null);
         if (raffle == null) return ResponseEntity.notFound().build();
         raffle.setStatus("closed");
         return ResponseEntity.ok(toResponse(raffleRepo.save(raffle), true));
     }
 
-    // ── Admin: reopen raffle ───────────────────────────────────────────────────
-
+    // Admin: reopen raffle
     @PostMapping("/{id}/reopen")
-    public ResponseEntity<RaffleResponse> reopen(@PathVariable UUID id) {
+    public ResponseEntity<?> reopen(
+        HttpServletRequest request,
+        @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Raffle raffle = raffleRepo.findById(id).orElse(null);
         if (raffle == null) return ResponseEntity.notFound().build();
         raffle.setStatus("active");
@@ -181,10 +238,16 @@ public class RaffleController {
         return ResponseEntity.ok(toResponse(raffleRepo.save(raffle), true));
     }
 
-    // ── Admin: set up stream for raffle drawing ────────────────────────────────
-
+    // Admin: set up stream for raffle drawing
     @PostMapping("/{id}/stream/setup")
-    public ResponseEntity<?> streamSetup(@PathVariable UUID id) {
+    public ResponseEntity<?> streamSetup(
+        HttpServletRequest request,
+        @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Raffle raffle = raffleRepo.findById(id).orElse(null);
         if (raffle == null) return ResponseEntity.notFound().build();
 
@@ -201,10 +264,16 @@ public class RaffleController {
         return ResponseEntity.ok(toResponse(raffle, true));
     }
 
-    // ── Admin: toggle go-live ──────────────────────────────────────────────────
-
+    // Admin: toggle go-live
     @PostMapping("/{id}/stream/go-live")
-    public ResponseEntity<?> streamGoLive(@PathVariable UUID id) {
+    public ResponseEntity<?> streamGoLive(
+        HttpServletRequest request,
+        @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Raffle raffle = raffleRepo.findById(id).orElse(null);
         if (raffle == null) return ResponseEntity.notFound().build();
 
@@ -217,8 +286,7 @@ public class RaffleController {
         return ResponseEntity.ok(toResponse(raffle, true));
     }
 
-    // ── Public: get stream info (hls url + live status) ───────────────────────
-
+    // Public: get stream info (hls url + live status)
     @GetMapping("/{id}/stream/info")
     public ResponseEntity<?> streamInfo(@PathVariable UUID id) {
         Raffle raffle = raffleRepo.findById(id).orElse(null);
@@ -229,13 +297,17 @@ public class RaffleController {
         return ResponseEntity.ok(Map.of("isLive", isLive, "hlsUrl", hlsUrl != null ? hlsUrl : ""));
     }
 
-    // ── Admin: manual add entry (no payment required) ─────────────────────────
-
+    // Admin: manual add entry (no payment required)
     @PostMapping("/{id}/admin-entry")
-    public ResponseEntity<EntryResponse> adminAddEntry(
+    public ResponseEntity<?> adminAddEntry(
+        HttpServletRequest request,
         @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program,
         @RequestBody EntryPayload payload
     ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Raffle raffle = raffleRepo.findById(id).orElse(null);
         if (raffle == null) return ResponseEntity.notFound().build();
 
@@ -262,8 +334,7 @@ public class RaffleController {
         return ResponseEntity.ok(toEntryResponse(entry));
     }
 
-    // ── Public: enter raffle ───────────────────────────────────────────────────
-
+    // Public: enter raffle
     @PostMapping("/{id}/enter")
     public ResponseEntity<?> enter(
         @PathVariable UUID id,
@@ -278,13 +349,36 @@ public class RaffleController {
         boolean isFree = raffle.getTicketPrice() == null
             || raffle.getTicketPrice().compareTo(BigDecimal.ZERO) == 0;
 
+        // Compute what this entry should cost before trusting anything from the client.
+        int ticketCount = 1;
+        BigDecimal expectedAmount = BigDecimal.ZERO;
+        if (raffle.isAllowBids() && payload.bidAmount() != null) {
+            expectedAmount = payload.bidAmount();
+        } else {
+            ticketCount = payload.ticketCount() != null ? Math.max(payload.ticketCount(), 1) : 1;
+            if (raffle.getMaxTicketsPerPerson() != null) {
+                ticketCount = Math.min(ticketCount, raffle.getMaxTicketsPerPerson());
+            }
+            BigDecimal price = raffle.getTicketPrice() != null ? raffle.getTicketPrice() : BigDecimal.ZERO;
+            expectedAmount = price.multiply(BigDecimal.valueOf(ticketCount));
+        }
+
         if (!isFree) {
             if (payload.paypalOrderId() == null || payload.paypalOrderId().isBlank()) {
                 return ResponseEntity.badRequest().body("paypalOrderId required.");
             }
-            boolean receiptFound = receiptRepo.findByOrderId(payload.paypalOrderId()).isPresent();
-            if (!receiptFound) {
+            if (entryRepo.existsByPaypalOrderId(payload.paypalOrderId())) {
+                return ResponseEntity.status(409).body("This payment has already been used for an entry.");
+            }
+            PaymentReceipt receipt = receiptRepo.findByOrderId(payload.paypalOrderId()).orElse(null);
+            if (receipt == null) {
                 return ResponseEntity.badRequest().body("Payment not found.");
+            }
+            if (!"COMPLETED".equalsIgnoreCase(receipt.getStatus())) {
+                return ResponseEntity.badRequest().body("Payment was not completed.");
+            }
+            if (receipt.getAmount() == null || receipt.getAmount().compareTo(expectedAmount) != 0) {
+                return ResponseEntity.badRequest().body("Payment amount does not match this entry.");
             }
         }
 
@@ -296,27 +390,17 @@ public class RaffleController {
         entry.setPaypalOrderId(payload.paypalOrderId());
         entry.setPaid(true);
         entry.setPaidAt(Instant.now());
-
+        entry.setTicketCount(ticketCount);
+        entry.setAmountPaid(expectedAmount);
         if (raffle.isAllowBids() && payload.bidAmount() != null) {
             entry.setBidAmount(payload.bidAmount());
-            entry.setAmountPaid(payload.bidAmount());
-            entry.setTicketCount(1);
-        } else {
-            int count = payload.ticketCount() != null ? Math.max(payload.ticketCount(), 1) : 1;
-            if (raffle.getMaxTicketsPerPerson() != null) {
-                count = Math.min(count, raffle.getMaxTicketsPerPerson());
-            }
-            entry.setTicketCount(count);
-            BigDecimal price = raffle.getTicketPrice() != null ? raffle.getTicketPrice() : BigDecimal.ZERO;
-            entry.setAmountPaid(price.multiply(BigDecimal.valueOf(count)));
         }
 
         entryRepo.save(entry);
         return ResponseEntity.ok(toEntryResponse(entry));
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
+    // Helpers
     private void applyPayload(Raffle raffle, RafflePayload p, boolean isCreate) {
         if (p.name() != null) raffle.setName(TextSanitizer.clean(p.name()));
         if (isCreate) {
@@ -369,8 +453,7 @@ public class RaffleController {
         );
     }
 
-    // ── Records ───────────────────────────────────────────────────────────────
-
+    // Records
     public record RafflePayload(
         String name,
         String description,

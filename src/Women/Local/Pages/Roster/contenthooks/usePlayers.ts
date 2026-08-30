@@ -1,10 +1,9 @@
-// src/Women/Local/Pages/Roster/contenthooks/usePlayers.js
 import { useCallback, useReducer } from "react";
 
 import { uploadCompressedImage } from "../../../../../Global/Common/hooks/uploadHelper";
 import { apiRequest } from "../../../../../Services/API";
-import { formatSeason } from "../hooks/seasonUtils";
 import type { JsonValue } from "../../../../../types/api";
+import { formatSeason } from "../hooks/seasonUtils";
 
 type PlayerApi = {
   id: string;
@@ -16,6 +15,7 @@ type PlayerApi = {
   classYear?: string | null;
   photo?: string | null;
   balance?: number | null;
+  profileId?: string | null;
   data?: Record<string, JsonValue> | string | null;
   height?: string | null;
   weight?: string | null;
@@ -37,6 +37,7 @@ type PlayerForm = {
   classYear?: string | null;
   photo?: File | string | null;
   balance?: number | null;
+  profileId?: string | null;
   height?: string | null;
   weight?: string | null;
   hometown?: string | null;
@@ -170,6 +171,7 @@ export default function usePlayers(){
           classYear: formData.classYear,
           photo: photoURL || (typeof formData.photo === "string" ? formData.photo : ""),
           balance: formData.balance ?? 0,
+          profileId: formData.profileId || undefined,
           data,
         };
 
@@ -209,22 +211,6 @@ export default function usePlayers(){
     }
   }, [state.players]);
 
-  const findPlayerByName = useCallback(async (name: string) => {
-    if (!name?.trim() || name.length < 2) return null;
-    try{
-      const player = await apiRequest<PlayerApi>(
-        `/api/players/search?name=${encodeURIComponent(name.trim())}`
-      );
-      if (!player?.id) return null;
-      const extra = parsePlayerData(player);
-      return { ...player, ...extra, data: extra };
-    } catch (err){
-      console.error("Error finding player:", err);
-      const message = err instanceof Error ? err.message : "Failed to find player.";
-      dispatch({ type: "ERROR", payload: message });
-      return null;
-    }
-  }, []);
 
   return {
     ...state,
@@ -232,7 +218,6 @@ export default function usePlayers(){
     savePlayer,
     removePlayer,
     uploadPhoto,
-    findPlayerByName,
   };
 }
 

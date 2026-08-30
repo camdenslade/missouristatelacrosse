@@ -1,0 +1,53 @@
+# Local development stack: Postgres + the Spring Boot backend on the "local" profile.
+#
+#   docker compose up --build          # start db + backend (backend on :8080)
+#   docker compose up -d db            # just the database (host port 5433), then run the
+#                                      # backend from your IDE with
+#                                      #   DB_URL=jdbc:postgresql://localhost:5433/lacrosse \
+#                                      #   ./gradlew bootRun -Dspring.profiles.active=local
+#   docker compose down                # stop  (add -v to also wipe the db volume)
+#
+# The frontend runs on the host: `npm run dev` (Vite :5173, proxies /api to :8080).
+# See .env.example for the frontend config.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: lacrosse
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    # Host port is 5433 to avoid clashing with a local Postgres; the backend container
+    # still reaches it at db:5432 on the internal network.
+    ports:
+      - "5433:5432"
+    volumes:
+      - laxdb:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d lacrosse"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      DB_URL: jdbc:postgresql://db:5432/lacrosse
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      PORT: "8080"
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+volumes:
+  laxdb:

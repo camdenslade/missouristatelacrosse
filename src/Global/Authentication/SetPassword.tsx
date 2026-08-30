@@ -1,12 +1,35 @@
-import { useState } from "react";
 import { confirmPasswordReset, verifyPasswordResetCode } from "firebase/auth";
+import { useState } from "react";
 import { useEffect } from "react";
+
+import API_BASE from "../../Services/API";
 import { auth } from "../../Services/firebaseConfig";
+
+// The invite-link flow (player/parent/alumni onboarding + admin resends) doesn't go through
+// Firebase's own oobCode at all — it's verified/consumed against our backend instead, so we
+// can't use apiRequest()'s path-based program detection here (this page has no /women/ prefix
+// to derive it from). `program` is embedded directly in the link by the backend, and we send
+// it as both the query param and the X-Program header ourselves so ProgramFilter doesn't see
+// a mismatch.
+async function inviteFetch(path: string, program: string, options: RequestInit = {}) {
+  const base = (API_BASE || "").replace(/\/+$/, "");
+  const url = `${base}${path}${path.includes("?") ? "&" : "?"}program=${encodeURIComponent(program)}`;
+  const res = await fetch(url, {
+    ...options,
+    headers: { "Content-Type": "application/json", "X-Program": program, ...(options.headers || {}) },
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body?.error || `Request failed (${res.status})`);
+  return body;
+}
 
 export default function SetPassword() {
   const params = new URLSearchParams(window.location.search);
   const oobCode = params.get("oobCode") ?? "";
   const mode = params.get("mode") ?? "";
+  const inviteToken = params.get("inviteToken") ?? "";
+  const inviteProgram = params.get("program") || "men";
+  const isInviteFlow = Boolean(inviteToken);
 
   const [email, setEmail] = useState<string | null>(null);
   const [password, setPassword] = useState("");
@@ -15,6 +38,15 @@ export default function SetPassword() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
+    if (isInviteFlow) {
+      inviteFetch(`/api/onboard/invite/${encodeURIComponent(inviteToken)}`, inviteProgram)
+        .then((data) => setEmail(data.email))
+        .catch(() => {
+          setMessage("This link is invalid or has already been used. Please ask for a new one.");
+          setStatus("error");
+        });
+      return;
+    }
     if (!oobCode || mode !== "resetPassword") {
       setMessage("Invalid or expired link. Please request a new one.");
       setStatus("error");
@@ -26,7 +58,7 @@ export default function SetPassword() {
         setMessage("This link has expired or already been used. Please request a new one.");
         setStatus("error");
       });
-  }, [oobCode, mode]);
+  }, [isInviteFlow, inviteToken, inviteProgram, oobCode, mode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +66,14 @@ export default function SetPassword() {
     if (password !== confirm) { setMessage("Passwords do not match."); return; }
     setStatus("loading");
     try {
-      await confirmPasswordReset(auth, oobCode, password);
+      if (isInviteFlow) {
+        await inviteFetch(`/api/onboard/consume-invite`, inviteProgram, {
+          method: "POST",
+          body: JSON.stringify({ token: inviteToken, password }),
+        });
+      } else {
+        await confirmPasswordReset(auth, oobCode, password);
+      }
       setStatus("success");
       setMessage("");
     } catch {

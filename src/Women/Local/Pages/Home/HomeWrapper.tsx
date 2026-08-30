@@ -1,4 +1,3 @@
-// src/Women/Local/Pages/Home/HomeWrapper.jsx
 import MainContent from "./MainContent";
 import Quicklinks from "./Quicklinks";
 import SocialFeeds from "./SocialFeeds";

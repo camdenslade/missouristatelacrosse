@@ -1,0 +1,15 @@
+{
+  "Comment": "Attach to the EC2 instance role 'ec2-role' (IAM > Roles > ec2-role > Add permissions > Create inline policy > JSON). Lets the nightly DB backup (/usr/local/bin/laxsite-db-backup.sh) push dumps off-box to S3. Scoped to one prefix only.",
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "LaxsiteDbBackupWrite",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:GetObject", "s3:ListBucket"],
+      "Resource": [
+        "arn:aws:s3:::mostatelacrosse-general-images",
+        "arn:aws:s3:::mostatelacrosse-general-images/db-backups/*"
+      ]
+    }
+  ]
+}

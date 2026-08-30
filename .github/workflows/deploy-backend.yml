@@ -1,0 +1,69 @@
+name: Deploy backend (EC2)
+
+# Manual only. Builds the boot jar, copies it to the EC2 host, restarts the
+# laxsite-backend systemd service. This is the CI version of backend/deploy-backend.sh.
+#
+# Required repository secrets (Settings > Secrets and variables > Actions):
+#   EC2_HOST     e.g. api.missouristatelacrosse.com
+#   EC2_USER     e.g. ec2-user
+#   EC2_SSH_KEY  contents of the laxsite-key.pem private key
+#
+# App secrets (PayPal / Stripe / DB / S3) are NOT needed here - the instance reads them
+# from AWS Secrets Manager at runtime via its IAM role.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Build boot jar
+        run: ./gradlew --no-daemon clean build
+
+      - name: Resolve jar path
+        id: jar
+        run: |
+          JAR=$(ls build/libs/*.jar | grep -v -- '-plain\.jar$' | head -n1)
+          test -f "$JAR" || { echo "no boot jar"; exit 1; }
+          echo "path=backend/$JAR" >> "$GITHUB_OUTPUT"
+
+      - name: Add SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Upload + restart
+        working-directory: .
+        run: |
+          scp -i ~/.ssh/deploy_key "${{ steps.jar.outputs.path }}" \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/backend/build/libs/"
+          ssh -i ~/.ssh/deploy_key "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
+            "sudo systemctl restart laxsite-backend && sleep 2 && sudo systemctl --no-pager --lines=10 status laxsite-backend"
+
+      - name: Health check
+        run: |
+          for i in $(seq 1 10); do
+            if curl -fsS --max-time 5 "https://${{ secrets.EC2_HOST }}/actuator/health" | grep -q '"status":"UP"'; then
+              echo "healthy"; exit 0
+            fi
+            echo "waiting for health ($i)"; sleep 5
+          done
+          echo "backend did not report healthy"; exit 1

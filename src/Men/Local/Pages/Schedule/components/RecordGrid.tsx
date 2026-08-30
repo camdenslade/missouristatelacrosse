@@ -1,4 +1,3 @@
-// src/Men/Local/Pages/Schedule/components/RecordGrid.jsx
 import { useEffect, useReducer } from "react";
 
 const initialState = {

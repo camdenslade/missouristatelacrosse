@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import { useAuth } from "../../../../Global/Context/AuthContext";
 import { apiRequest } from "../../../../Services/API";
 import type { ApiPlayer, ApiUser } from "../../../../types/api";
@@ -51,7 +52,7 @@ export default function Dues() {
 
           <p className="text-gray-700 text-sm mb-1">Dues Balance</p>
           <p className={`text-4xl font-bold mb-2 ${balance !== null && balance > 0 ? "text-red-600" : "text-green-600"}`}>
-            {balance !== null ? `$${balance.toFixed(2)}` : "—"}
+            {balance !== null ? `$${balance.toFixed(2)}` : " - "}
           </p>
           {balance !== null && balance > 0 && (
             <p className="text-sm text-red-500 mt-1">You have an outstanding balance. Please pay via the Payments page.</p>

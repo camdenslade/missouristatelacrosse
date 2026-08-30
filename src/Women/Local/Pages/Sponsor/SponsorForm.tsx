@@ -1,9 +1,9 @@
-// src/Women/Local/Pages/Sponsor/SponsorForm.jsx
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import toast from "react-hot-toast";
-import API_BASE from "../../../../Services/API";
+
 import { validateEmail, validatePhone, validateText } from "../../../../Global/Common/utils/validation";
+import API_BASE from "../../../../Services/API";
 
 export default function SponsorForm() {
   const [open, setOpen] = useState(false);

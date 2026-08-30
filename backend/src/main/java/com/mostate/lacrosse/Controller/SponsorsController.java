@@ -12,21 +12,35 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.google.firebase.auth.FirebaseToken;
+import com.mostate.lacrosse.Config.FirebaseAdminFilter;
+import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Model.Sponsor;
 import com.mostate.lacrosse.Repository.SponsorRepository;
+import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Service.S3Service;
 import com.mostate.lacrosse.Utils.TextSanitizer;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/sponsors")
 public class SponsorsController {
     private final SponsorRepository repository;
     private final S3Service s3Service;
+    private final AuthorizationService authorizationService;
 
-    public SponsorsController(SponsorRepository repository, S3Service s3Service) {
+    public SponsorsController(SponsorRepository repository, S3Service s3Service, AuthorizationService authorizationService) {
         this.repository = repository;
         this.s3Service = s3Service;
+        this.authorizationService = authorizationService;
+    }
+
+    private boolean isAdmin(HttpServletRequest request, String program) {
+        String uid = (String) request.getAttribute("firebaseUid");
+        FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
+        return authorizationService.isAdmin(uid, program, token);
     }
 
     @GetMapping
@@ -47,7 +61,14 @@ public class SponsorsController {
     }
 
     @PostMapping
-    public ResponseEntity<SponsorResponse> create(@RequestBody SponsorPayload payload) {
+    public ResponseEntity<?> create(
+        HttpServletRequest request,
+        @RequestParam(defaultValue = "men") String program,
+        @RequestBody SponsorPayload payload
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Sponsor sponsor = new Sponsor();
         applyPayload(sponsor, payload);
         Sponsor saved = repository.save(sponsor);
@@ -55,10 +76,15 @@ public class SponsorsController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<SponsorResponse> update(
+    public ResponseEntity<?> update(
+        HttpServletRequest request,
         @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program,
         @RequestBody SponsorPayload payload
     ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Sponsor existing = repository.findById(id).orElse(null);
         if (existing == null) {
             return ResponseEntity.notFound().build();
@@ -69,7 +95,14 @@ public class SponsorsController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+    public ResponseEntity<?> delete(
+        HttpServletRequest request,
+        @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         repository.deleteById(id);
         return ResponseEntity.noContent().build();
     }

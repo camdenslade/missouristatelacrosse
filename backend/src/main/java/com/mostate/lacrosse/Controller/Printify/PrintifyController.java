@@ -38,6 +38,7 @@ public class PrintifyController {
     private final CustomProductRepository customProductRepository;
     private final S3Service s3Service;
     private final String frontendBaseUrl;
+    private final String customOrderNotifyEmail;
 
     public PrintifyController(
         PrintifyService printifyService,
@@ -46,7 +47,8 @@ public class PrintifyController {
         PaymentReceiptService paymentReceiptService,
         CustomProductRepository customProductRepository,
         S3Service s3Service,
-        @Value("${app.frontend.base-url}") String frontendBaseUrl
+        @Value("${app.frontend.base-url}") String frontendBaseUrl,
+        @Value("${printify.custom-order-notify:17bacole@gmail.com}") String customOrderNotifyEmail
     ) {
         this.printifyService = printifyService;
         this.emailService = emailService;
@@ -55,6 +57,7 @@ public class PrintifyController {
         this.customProductRepository = customProductRepository;
         this.s3Service = s3Service;
         this.frontendBaseUrl = frontendBaseUrl;
+        this.customOrderNotifyEmail = customOrderNotifyEmail;
     }
 
     @GetMapping("/products")
@@ -206,8 +209,9 @@ public class PrintifyController {
                 body.toString()
             );
 
-            // Send to bcole if custom items
-            if (req.getCustomItems() != null && !req.getCustomItems().isEmpty()) {
+            // Notify the custom-order fulfiller (printify.custom-order-notify)
+            if (req.getCustomItems() != null && !req.getCustomItems().isEmpty()
+                && customOrderNotifyEmail != null && !customOrderNotifyEmail.isBlank()) {
                 var bcoleBody = new StringBuilder()
                     .append("New order with custom items.\n\n")
                     .append("Order ID: ").append(req.getOrderId()).append("\n\n")
@@ -225,7 +229,7 @@ public class PrintifyController {
                         bcoleBody.append("- ").append(product.getTitle()).append(" × ").append(item.getQuantity()).append("\n");
                     }
                 }
-                emailService.sendEmail("bcole@example.com", "New Custom Order", bcoleBody.toString());
+                emailService.sendEmail(customOrderNotifyEmail, "New Custom Order", bcoleBody.toString());
             }
 
             return ResponseEntity.ok(result);

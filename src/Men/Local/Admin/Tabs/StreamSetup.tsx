@@ -1,4 +1,5 @@
 import { useEffect, useReducer } from "react";
+
 import { apiRequest } from "../../../../Services/API";
 import type { ApiGame, ApiStreamConfig, ApiStreamKey } from "../../../../types/api";
 
@@ -18,7 +19,7 @@ interface State {
   saveAsVideo: boolean;
   priceOneScreen: string;
   priceTwoScreen: string;
-  // key generation form — list of entries
+  // key generation form - list of entries
   genEntries: GenEntry[];
   // status
   loading: boolean;
@@ -115,7 +116,7 @@ export default function StreamSetup() {
   const { games, selectedGameId, streamConfig, keys, isPaywalled, saveAsVideo, priceOneScreen, priceTwoScreen,
     genEntries, loading, saving, error, success, copyMsg, isLive } = state;
 
-  // Load games on mount — filter to today and future only (string compare avoids timezone drift)
+  // Load games on mount - filter to today and future only (string compare avoids timezone drift)
   useEffect(() => {
     apiRequest<ApiGame[]>("/api/games")
       .then((list) => {
@@ -219,10 +220,10 @@ export default function StreamSetup() {
           onChange={(e) => dispatch({ type: "SET_GAME", gameId: e.target.value })}
           className="border border-gray-300 rounded px-3 py-2 w-full max-w-sm text-sm"
         >
-          <option value="">— Choose a game —</option>
+          <option value=""> - Choose a game - </option>
           {games.map((g) => (
             <option key={g.id} value={g.id}>
-              vs {g.opponent} — {g.date ? new Date(g.date).toLocaleDateString() : "TBD"}
+              vs {g.opponent} - {g.date ? new Date(g.date).toLocaleDateString() : "TBD"}
             </option>
           ))}
         </select>
@@ -241,7 +242,7 @@ export default function StreamSetup() {
                 <CredRow label="Stream Key" value={streamConfig.rtmpsKey!} onCopy={copy} copied={copyMsg === streamConfig.rtmpsKey} secret />
               </>
             ) : (
-              <p className="text-sm text-gray-500">Not configured yet — click Setup below.</p>
+              <p className="text-sm text-gray-500">Not configured yet - click Setup below.</p>
             )}
           </div>
 
@@ -330,7 +331,7 @@ export default function StreamSetup() {
                   isLive ? "bg-red-700 hover:bg-red-800" : "bg-green-700 hover:bg-green-800"
                 }`}
               >
-                {isLive ? "⏹ End Stream" : "▶ Go Live"}
+                {isLive ? "End Stream" : "Go Live"}
               </button>
             )}
           </div>
@@ -351,7 +352,7 @@ export default function StreamSetup() {
                 rel="noopener noreferrer"
                 className="inline-block text-xs text-[#5E0009] hover:underline"
               >
-                Open Recording ↗
+                Open Recording
               </a>
             </div>
           )}
@@ -447,7 +448,7 @@ export default function StreamSetup() {
                               className="hover:text-[#5E0009] transition-colors"
                               title="Copy key"
                             >
-                              {copyMsg === k.keyCode ? "✓ Copied" : k.keyCode}
+                              {copyMsg === k.keyCode ? "Copied" : k.keyCode}
                             </button>
                           </td>
                           <td className="p-2">{k.displayName}</td>
@@ -461,7 +462,7 @@ export default function StreamSetup() {
                             </span>
                           </td>
                           <td className="p-2 text-center text-gray-500">
-                            {k.activatedAt ? new Date(k.activatedAt).toLocaleTimeString() : "—"}
+                            {k.activatedAt ? new Date(k.activatedAt).toLocaleTimeString() : " - "}
                           </td>
                           <td className="p-2 text-center">
                             <button
@@ -507,7 +508,7 @@ function CredRow({
         onClick={() => onCopy(value)}
         className="text-xs text-[#5E0009] hover:underline shrink-0"
       >
-        {copied ? "✓ Copied" : "Copy"}
+        {copied ? "Copied" : "Copy"}
       </button>
     </div>
   );

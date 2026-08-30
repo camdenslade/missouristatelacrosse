@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+
 import API_BASE from "../../../../Services/API";
 
 export default function FundraiserSuccess() {
@@ -28,7 +29,7 @@ export default function FundraiserSuccess() {
           body: JSON.stringify({
             to: email,
             subject: "Thank You for Supporting Missouri State Lacrosse – Dallas Trip Fundraiser",
-            body: `Hi ${name || "Supporter"},\n\nThank you for your generous donation of $${amount?.toFixed(2)} to help Missouri State Men's Lacrosse travel to the Lone Star Alliance Conference Championship in Dallas!\n\nYour support makes a real difference for our athletes. We are a non-scholarship organization entirely supported by player dues and fundraising, and contributions like yours allow us to compete at the highest level.\n\nAll donations are tax deductible — Missouri State Lacrosse is a registered 501(c)(3) organization.\n\nGo Bears!\nMissouri State Men's Lacrosse`,
+            body: `Hi ${name || "Supporter"},\n\nThank you for your generous donation of $${amount?.toFixed(2)} to help Missouri State Men's Lacrosse travel to the Lone Star Alliance Conference Championship in Dallas!\n\nYour support makes a real difference for our athletes. We are a non-scholarship organization entirely supported by player dues and fundraising, and contributions like yours allow us to compete at the highest level.\n\nAll donations are tax deductible - Missouri State Lacrosse is a registered 501(c)(3) organization.\n\nGo Bears!\nMissouri State Men's Lacrosse`,
           }),
         });
       } catch (err) {
@@ -62,7 +63,7 @@ export default function FundraiserSuccess() {
         </div>
         <p className="text-xs text-gray-400 mb-6">
           A confirmation email has been sent to {email || "your inbox"}.
-          Missouri State Lacrosse is a 501(c)(3) — your donation is tax deductible.
+          Missouri State Lacrosse is a 501(c)(3) - your donation is tax deductible.
         </p>
         <button
           onClick={() => navigate("/")}

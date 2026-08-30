@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import { fetchRaffles } from "../../../../Global/Common/hooks/useRaffles";
 import { getProgramInfo } from "../../../../Services/programHelper";
 import type { ApiRaffle } from "../../../../types/api";
@@ -89,7 +90,7 @@ export default function Raffles() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-10">
       <h1 className="text-3xl font-bold text-[#5E0009] mb-2">Raffles</h1>
-      <p className="text-gray-500 mb-8">Enter for a chance to win — good luck!</p>
+      <p className="text-gray-500 mb-8">Enter for a chance to win - good luck!</p>
 
       {raffles.length === 0 ? (
         <div className="text-center py-20 text-gray-400 text-lg">

@@ -1,23 +1,15 @@
-// src/Men/Local/Pages/Payments/Payments.jsx
 import { useEffect, useMemo, useReducer, useState } from "react";
 import toast from "react-hot-toast";
 
-import usePayPalButtons from "../../../../Global/Common/hooks/usePayPalButtons";
-import { useAuth } from "../../../../Global/Context/AuthContext";
-import { apiRequest } from "../../../../Services/API";
 import ParentPlayerSelect from "./components/ParentPlayerSelect";
 import PlayerPaymentDetails from "./components/PlayerPaymentDetails";
 import PlayerTable from "./components/PlayerTable";
 import usePlayers from "./hooks/findPlayers";
-import { generateSeasonValues } from "../Roster/hooks/seasonUtils";
+import usePaymentButtons from "../../../../Global/Common/hooks/usePaymentButtons";
+import { useAuth } from "../../../../Global/Context/AuthContext";
+import { apiRequest } from "../../../../Services/API";
 import type { ApiParentRecord, ApiPlayer, ApiUser, DuesPayment, ParentLink, Program, Role } from "../../../../types/api";
-
-const getSeasonValue = (date = new Date()) => {
-  const y = date.getFullYear();
-  const m = date.getMonth() + 1;
-  const start = m >= 8 ? y : y - 1;
-  return `${String(start).slice(-2)}-${String(start + 1).slice(-2)}`;
-};
+import { fetchSeasonCodes, fetchActiveSeasonCode, getSeasonValue, displaySeasonLabel } from "../Roster/hooks/seasonUtils";
 
 type PaymentsState = {
   selectedPlayerId: string;
@@ -25,6 +17,7 @@ type PaymentsState = {
   customAmount: string;
   confirmedAmount: number | null;
   addParentEmail: string;
+  addParentName: string;
   message: string;
   userEmails: Record<string, string>;
 };
@@ -39,6 +32,7 @@ const initialState: PaymentsState = {
   customAmount: "",
   confirmedAmount: null,
   addParentEmail: "",
+  addParentName: "",
   message: "",
   userEmails: {},
 };
@@ -65,7 +59,13 @@ export default function Payments() {
   const [linkedPlayer, setLinkedPlayer] = useState<ApiPlayer | null>(null);
   const [ledger, setLedger] = useState<DuesPayment[]>([]);
 
-  const currentSeason = getSeasonValue();
+  const [currentSeason, setCurrentSeason] = useState(getSeasonValue());
+  const [managedSeasons, setManagedSeasons] = useState<string[]>([]);
+  useEffect(() => {
+    fetchActiveSeasonCode().then(setCurrentSeason);
+    fetchSeasonCodes().then(setManagedSeasons);
+  }, []);
+
   const isWomenSite = window.location.pathname.toLowerCase().includes("/women");
   const program: Program = isWomenSite ? "women" : "men";
 
@@ -74,6 +74,9 @@ export default function Payments() {
 
   const { players, setPlayers, loading: loadingPlayers } = usePlayers();
   const [selectedSeason, setSelectedSeason] = useState(currentSeason);
+  useEffect(() => {
+    setSelectedSeason(currentSeason);
+  }, [currentSeason]);
 
   const seasonPlayers = useMemo(() => {
     if (!players?.length) return [];
@@ -99,7 +102,7 @@ export default function Payments() {
     setLedger(entries ?? []);
   };
 
-  const handlePaymentSuccess = async (_captureData: unknown, amount: number) => {
+  const handlePaymentSuccess = async (captureData: { id: string }, amount: number) => {
     const player = state.selectedPlayer;
     if (!player) return;
     await apiRequest("/api/dues-payments", {
@@ -110,6 +113,7 @@ export default function Payments() {
         type: "PAYMENT",
         note: "PayPal payment",
         paidByUid: user?.uid ?? null,
+        payPalOrderId: captureData.id,
       },
     });
     const refreshed = await apiRequest<ApiPlayer>(`/api/players/${player.id}`).catch(() => null);
@@ -133,7 +137,7 @@ export default function Payments() {
     toast.success("Balance updated.");
   };
 
-  usePayPalButtons(state.confirmedAmount, "paypal-payment-buttons", handlePaymentSuccess, "pay");
+  usePaymentButtons(state.confirmedAmount, "paypal-payment-buttons", handlePaymentSuccess, "pay", "dues");
 
   useEffect(() => {
     if (!user) return;
@@ -177,29 +181,35 @@ export default function Payments() {
     if (state.selectedPlayer?.id) fetchLedger(state.selectedPlayer.id);
   }, [state.selectedPlayer?.id]);
 
+  const seasonPlayerIds = useMemo(() => seasonPlayers.map((p) => p.id).join(","), [seasonPlayers]);
+
   useEffect(() => {
     if (programRole !== "admin" || !seasonPlayers.length) return;
+    // Only chase down players we haven't already resolved (or already learned have no
+    // linked account) — otherwise every incidental re-render while auth/roles settle
+    // re-fires the full by-player lookup for the whole roster again.
+    const pending = seasonPlayers.filter((p) => !(p.id in state.userEmails));
+    if (!pending.length) return;
     const fetchEmails = async () => {
-      const newEmails: Record<string, string> = {};
-      for (const p of seasonPlayers) {
-        try {
+      const resolved: Record<string, string> = {};
+      await Promise.all(
+        pending.map(async (p) => {
           const userRecord = await apiRequest<ApiUser>(`/api/users/by-player/${p.id}`).catch(() => null);
-          if (userRecord?.email) newEmails[p.id] = userRecord.email;
-        } catch (err){
-          console.log(err);
-        }
-      }
-      dispatch({ type: "SET_FIELD", field: "userEmails", value: newEmails });
+          resolved[p.id] = userRecord?.email || "";
+        })
+      );
+      dispatch({ type: "SET_FIELD", field: "userEmails", value: { ...state.userEmails, ...resolved } });
     };
     fetchEmails();
-  }, [seasonPlayers, programRole]);
+  }, [seasonPlayerIds, programRole]);
 
   const handleAddParent = async () => {
     dispatch({ type: "SET_FIELD", field: "message", value: "" });
     const email = (state.addParentEmail || "").toLowerCase().trim();
+    const parentName = (state.addParentName || "").trim();
     const player = state.selectedPlayer;
-    if (!email || !player) {
-      dispatch({ type: "SET_FIELD", field: "message", value: "Please enter a parent email." });
+    if (!email || !parentName || !player) {
+      dispatch({ type: "SET_FIELD", field: "message", value: "Please enter the parent's name and email." });
       return;
     }
 
@@ -215,6 +225,7 @@ export default function Payments() {
         method: "POST",
         json: {
           email,
+          parentName,
           program,
           playerId: player.id,
         },
@@ -225,9 +236,51 @@ export default function Payments() {
         dispatch({ type: "SET_SELECTED_PLAYER", player: refreshed });
       }
       dispatch({ type: "SET_FIELD", field: "addParentEmail", value: "" });
+      dispatch({ type: "SET_FIELD", field: "addParentName", value: "" });
       dispatch({ type: "SET_FIELD", field: "message", value: "Parent linked and invite sent!" });
     } catch {
       dispatch({ type: "SET_FIELD", field: "message", value: "Failed to link parent." });
+    }
+  };
+
+  const handleLinkExistingParent = async () => {
+    dispatch({ type: "SET_FIELD", field: "message", value: "" });
+    const email = (state.addParentEmail || "").toLowerCase().trim();
+    const player = state.selectedPlayer;
+    if (!email || !player) {
+      dispatch({ type: "SET_FIELD", field: "message", value: "Please enter a parent email." });
+      return;
+    }
+
+    const existingParents: ParentLink[] = Array.isArray(player.parents) ? player.parents : [];
+    if (existingParents.some((p) => (p.email || "").toLowerCase() === email)) {
+      dispatch({ type: "SET_FIELD", field: "message", value: "Parent already linked." });
+      return;
+    }
+
+    try {
+      await apiRequest(`/api/onboard/link-existing-parent`, {
+        method: "POST",
+        json: {
+          parentEmail: email,
+          program,
+          playerId: player.id,
+        },
+      });
+
+      const refreshed = await apiRequest<ApiPlayer>(`/api/players/${player.id}`).catch(() => null);
+      if (refreshed?.id) {
+        dispatch({ type: "SET_SELECTED_PLAYER", player: refreshed });
+      }
+      dispatch({ type: "SET_FIELD", field: "addParentEmail", value: "" });
+      dispatch({ type: "SET_FIELD", field: "message", value: "Parent linked." });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to link parent.";
+      dispatch({
+        type: "SET_FIELD",
+        field: "message",
+        value: msg.includes("No existing account found") ? msg : "Failed to link parent.",
+      });
     }
   };
 
@@ -251,7 +304,11 @@ export default function Payments() {
 
       if (parentToRemove.uid) {
         const parentRecord = await apiRequest<ApiParentRecord>(`/api/parents/${parentToRemove.uid}`).catch(() => null);
-        const updated = (parentRecord?.linkedPlayers || []).filter((id) => id !== player.id);
+        // Links may be stored by profileId (season-independent) or, for legacy links, the
+        // raw per-season player id - strip both so removal doesn't leave a stale pointer.
+        const updated = (parentRecord?.linkedPlayers || []).filter(
+          (id) => id !== player.id && id !== player.profileId
+        );
         await apiRequest(`/api/parents/${parentToRemove.uid}`, {
           method: "PUT",
           json: {
@@ -286,6 +343,12 @@ export default function Payments() {
     dispatch({ type: "SET_FIELD", field: "confirmedAmount", value: val });
   };
 
+  // Must run before any early return - hooks cannot be called conditionally.
+  const availableSeasons = useMemo(() => {
+    const fromPlayers = players.map((p) => p.season).filter(Boolean) as string[];
+    return Array.from(new Set([...managedSeasons, ...fromPlayers])).sort((a, b) => b.localeCompare(a));
+  }, [players, managedSeasons]);
+
   if (loading) return <p className="text-gray-600 animate-pulse">Checking permissions...</p>;
 
   if (!user || !canAccess)
@@ -296,17 +359,11 @@ export default function Payments() {
       </div>
     );
 
-  const availableSeasons = useMemo(() => {
-    const base = generateSeasonValues();
-    const fromPlayers = players.map((p) => p.season).filter(Boolean) as string[];
-    return Array.from(new Set([...base, ...fromPlayers])).sort((a, b) => b.localeCompare(a));
-  }, [players]);
-
   return (
     <div className="max-w-6xl mx-auto p-6 bg-white shadow rounded animate-fadeIn text-left">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h1 className="text-2xl font-bold">
-          Payments - <span className="text-[#5E0009]">{programRole === "admin" ? selectedSeason : currentSeason}</span> Season
+          Payments - <span className="text-[#5E0009]">{displaySeasonLabel(programRole === "admin" ? selectedSeason : currentSeason)}</span> Season
         </h1>
         {programRole === "admin" && (
           <select
@@ -315,7 +372,7 @@ export default function Payments() {
             className="border border-gray-400 px-3 py-1 rounded text-sm font-medium bg-white shadow-sm hover:border-gray-600 transition-colors"
           >
             {availableSeasons.map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>{displaySeasonLabel(s)}</option>
             ))}
           </select>
         )}
@@ -351,7 +408,10 @@ export default function Payments() {
                 selectedPlayer={state.selectedPlayer}
                 addParentEmail={state.addParentEmail}
                 setAddParentEmail={(val) => dispatch({ type: "SET_FIELD", field: "addParentEmail", value: val })}
+                addParentName={state.addParentName}
+                setAddParentName={(val) => dispatch({ type: "SET_FIELD", field: "addParentName", value: val })}
                 handleAddParent={handleAddParent}
+                handleLinkExistingParent={handleLinkExistingParent}
                 handleRemoveParent={handleRemoveParent}
                 message={state.message}
                 customAmount={state.customAmount}
@@ -378,7 +438,7 @@ export default function Payments() {
               <h3 className="text-xl font-semibold text-gray-800 mb-2">No Player Linked</h3>
               <p className="text-gray-600 mb-4">
                 We couldn't find any player data connected to your account for the{" "}
-                <span className="font-semibold">{currentSeason}</span> season.
+                <span className="font-semibold">{displaySeasonLabel(currentSeason)}</span> season.
               </p>
               {programRole === "parent" ? (
                 <p className="text-gray-700 mb-4">
