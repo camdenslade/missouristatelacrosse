@@ -47,7 +47,9 @@ in real Firebase UIDs, run it against the DB.
 
 ### Without Docker
 
-Prereqs: JDK 17 and a local Postgres with a `lacrosse` database (`postgres`/`postgres`).
+Prereqs: JDK 17 and a local Postgres with a `lacrosse` database, reachable as user
+`postgres`. If your local Postgres has a password, set `DB_PASSWORD` (the config
+defaults to no password, which matches the Docker setup's trust auth).
 
 ```
 createdb lacrosse         # or: psql -c 'create database lacrosse'
