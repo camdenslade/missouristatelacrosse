@@ -34,7 +34,9 @@ jobs:
           cache: gradle
 
       - name: Build boot jar
-        run: ./gradlew --no-daemon clean build
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon clean build
 
       - name: Resolve jar path
         id: jar
