@@ -16,7 +16,9 @@ services:
     environment:
       POSTGRES_DB: lacrosse
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      # Local dev only - no password. The DB is only reachable on the compose network
+      # and (optionally) host port 5433.
+      POSTGRES_HOST_AUTH_METHOD: trust
     # Host port is 5433 to avoid clashing with a local Postgres; the backend container
     # still reaches it at db:5432 on the internal network.
     ports:
@@ -38,7 +40,6 @@ services:
       SPRING_PROFILES_ACTIVE: local
       DB_URL: jdbc:postgresql://db:5432/lacrosse
       DB_USER: postgres
-      DB_PASSWORD: postgres
       PORT: "8080"
     ports:
       - "8080:8080"
