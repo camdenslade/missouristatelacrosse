@@ -13,6 +13,7 @@ jobs:
   frontend:
     name: Frontend (lint / typecheck / build)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -38,6 +39,7 @@ jobs:
   backend:
     name: Backend (gradle build + tests)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: backend
@@ -48,7 +50,10 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-          cache: gradle
+
+      # Gradle's own action - handles the dependency cache more reliably than
+      # setup-java's `cache: gradle` (which was hanging for 14+ min on cache upload).
+      - uses: gradle/actions/setup-gradle@v4
 
       - name: Build
         run: |
