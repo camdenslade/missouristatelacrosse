@@ -1,17 +1,16 @@
-// src/Men/Local/Pages/Store/Store.jsx
 import { useEffect, useReducer, useRef, useState } from "react";
 import { FaShoppingCart } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
+import Cart from "./components/Cart";
+import OrderLogsModal from "./components/OrderLogsModal";
+import ProductCard from "./components/ProductCard";
+import { useMenCart } from "./context/MenCartContext";
 import UnavailableOverlay from "../../../../Global/Common/UnavailableOverlay";
 import { useAuth } from "../../../../Global/Context/AuthContext";
 import { apiRequest } from "../../../../Services/API";
 import { getProgramInfo } from "../../../../Services/programHelper";
 import type { ApiCustomProduct, PrintifyProduct } from "../../../../types/api";
-import Cart from "./components/Cart";
-import OrderLogsModal from "./components/OrderLogsModal";
-import ProductCard from "./components/ProductCard";
-import { useMenCart } from "./context/MenCartContext";
 
 const initialState = {
   products: [],
@@ -40,7 +39,7 @@ export default function Store() {
   const touchCurrentX = useRef(0);
   const navigate = useNavigate();
   const isEnabled = import.meta.env.VITE_TEAMSTORE_ENABLED === "true";
-  const { user, roles } = useAuth();
+  const { roles } = useAuth();
   const { program } = getProgramInfo();
   const [showOrderLogs, setShowOrderLogs] = useState(false);
   const orderLookupPath = program === "women" ? "/women/order-lookup" : "/order-lookup";

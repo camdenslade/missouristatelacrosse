@@ -11,5 +11,5 @@ public interface PlayerRepository extends JpaRepository<Player, UUID> {
     List<Player> findAllByProfileId(UUID profileId);
     Optional<Player> findFirstByNameIgnoreCaseAndSeason(String name, String season);
     Optional<Player> findFirstByNameIgnoreCase(String name);
-    List<Player> findAllByUserUid(String userUid);
+    List<Player> findAllByNameIgnoreCase(String name);
 }

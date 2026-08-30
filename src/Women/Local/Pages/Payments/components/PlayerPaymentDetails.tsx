@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import AddParentForm from "./AddParentForm";
 import type { ApiPlayer, DuesPayment, ParentLink } from "../../../../../types/api";
 
@@ -7,7 +8,10 @@ type PlayerPaymentDetailsProps = {
   selectedPlayer: ApiPlayer | null;
   addParentEmail: string;
   setAddParentEmail: (val: string) => void;
+  addParentName: string;
+  setAddParentName: (val: string) => void;
   handleAddParent: () => Promise<void> | void;
+  handleLinkExistingParent: () => Promise<void> | void;
   handleRemoveParent: (email: string) => Promise<void> | void;
   message: string;
   customAmount: string;
@@ -23,12 +27,31 @@ const typeLabel: Record<string, { label: string; color: string; sign: string }> 
   ADJUSTMENT: { label: "Adjustment", color: "text-red-600", sign: "+" },
 };
 
+// Ledger entries come back newest-first. Balance and CREDIT/PAYMENT reduce balance,
+// CHARGE/ADJUSTMENT increase it (mirrors DuesPaymentController's switch) - walk
+// backwards from the player's current balance to reconstruct the balance immediately
+// after each historical entry, so the table reads like a real running-balance receipt.
+function withRunningBalance(ledger: DuesPayment[], currentBalance: number): Array<DuesPayment & { balanceAfter: number }> {
+  let running = currentBalance;
+  return ledger.map((entry, i) => {
+    if (i > 0) {
+      const prev = ledger[i - 1];
+      const effect = prev.type === "CHARGE" || prev.type === "ADJUSTMENT" ? Number(prev.amount) : -Number(prev.amount);
+      running = running - effect;
+    }
+    return { ...entry, balanceAfter: running };
+  });
+}
+
 export default function PlayerPaymentDetails({
   userRole,
   selectedPlayer,
   addParentEmail,
   setAddParentEmail,
+  addParentName,
+  setAddParentName,
   handleAddParent,
+  handleLinkExistingParent,
   handleRemoveParent,
   message,
   customAmount,
@@ -65,7 +88,7 @@ export default function PlayerPaymentDetails({
         </h2>
         <p className={`text-lg font-bold mt-1 ${balance > 0 ? "text-red-600" : "text-green-600"}`}>
           Balance: ${balance.toFixed(2)}
-          {balance <= 0 && <span className="ml-2 text-sm font-normal">✓ Paid up</span>}
+          {balance <= 0 && <span className="ml-2 text-sm font-normal">Paid up</span>}
         </p>
       </div>
 
@@ -114,7 +137,13 @@ export default function PlayerPaymentDetails({
         <AddParentForm
           addParentEmail={addParentEmail}
           setAddParentEmail={setAddParentEmail}
+          addParentName={addParentName}
+          setAddParentName={setAddParentName}
           handleAddParent={handleAddParent}
+          handleLinkExistingParent={handleLinkExistingParent}
+          isAdmin={userRole === "admin"}
+          playerName={selectedPlayer?.name}
+          excludeUid={selectedPlayer?.userUid}
           message={message}
         />
       )}
@@ -159,28 +188,43 @@ export default function PlayerPaymentDetails({
       {ledger.length > 0 && (
         <div>
           <h3 className="font-medium text-sm mb-2">Payment History</h3>
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="border border-gray-200 rounded-lg overflow-x-auto">
             <table className="w-full text-xs">
               <thead className="bg-gray-50 text-gray-600">
                 <tr>
                   <th className="text-left px-3 py-2">Date</th>
                   <th className="text-left px-3 py-2">Type</th>
                   <th className="text-left px-3 py-2">Note</th>
+                  {userRole === "admin" && <th className="text-left px-3 py-2">PayPal Order</th>}
                   <th className="text-right px-3 py-2">Amount</th>
+                  <th className="text-right px-3 py-2">Balance After</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {ledger.map((entry) => {
+                {withRunningBalance(ledger, balance).map((entry) => {
                   const meta = typeLabel[entry.type] ?? { label: entry.type, color: "text-gray-700", sign: "" };
                   return (
                     <tr key={entry.id} className="hover:bg-gray-50">
-                      <td className="px-3 py-2 text-gray-500">
-                        {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : "—"}
+                      <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
+                        {entry.createdAt
+                          ? new Date(entry.createdAt).toLocaleString(undefined, {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })
+                          : " - "}
                       </td>
                       <td className={`px-3 py-2 font-medium ${meta.color}`}>{meta.label}</td>
-                      <td className="px-3 py-2 text-gray-600">{entry.note || "—"}</td>
+                      <td className="px-3 py-2 text-gray-600">{entry.note || " - "}</td>
+                      {userRole === "admin" && (
+                        <td className="px-3 py-2 text-gray-400 font-mono" title={entry.payPalOrderId || undefined}>
+                          {entry.payPalOrderId ? `${entry.payPalOrderId.slice(0, 10)}…` : " - "}
+                        </td>
+                      )}
                       <td className={`px-3 py-2 text-right font-semibold ${meta.color}`}>
                         {meta.sign}${Number(entry.amount).toFixed(2)}
+                      </td>
+                      <td className="px-3 py-2 text-right text-gray-500">
+                        ${entry.balanceAfter.toFixed(2)}
                       </td>
                     </tr>
                   );

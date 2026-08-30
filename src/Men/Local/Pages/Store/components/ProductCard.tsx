@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import toast from "react-hot-toast";
 
-export default function ProductCard({ product, onAddToCart, isAdmin = false }) {
+export default function ProductCard({ product, onAddToCart, isAdmin: _isAdmin = false }) {
   const variants = Array.isArray(product.variants) ? product.variants : [];
   const options = Array.isArray(product.options) ? product.options : [];
 

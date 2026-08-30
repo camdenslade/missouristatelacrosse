@@ -1,4 +1,3 @@
-// src/Women/Local/Pages/Roster/components/CoachRow.jsx
 import { useState } from "react";
 
 export default function CoachRow({ coach, index, onEdit, onDelete, isAdmin }) {

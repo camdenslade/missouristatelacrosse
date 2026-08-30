@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import usePayPalButtons from "../../../../Global/Common/hooks/usePayPalButtons";
+
+import LiveChat from "../../../../Global/Common/components/LiveChat";
+import StreamPlayer from "../../../../Global/Common/components/StreamPlayer";
+import usePaymentButtons from "../../../../Global/Common/hooks/usePaymentButtons";
 import { enterRaffle, fetchRaffleBySlug } from "../../../../Global/Common/hooks/useRaffles";
 import { getProgramInfo } from "../../../../Services/programHelper";
-import StreamPlayer from "../../../../Global/Common/components/StreamPlayer";
-import LiveChat from "../../../../Global/Common/components/LiveChat";
 import type { ApiRaffle } from "../../../../types/api";
 
 // State
@@ -181,13 +182,13 @@ export default function RaffleDetail() {
         msg: `Your payment was received but your entry couldn't be recorded. Please contact us and provide your PayPal order ID: ${captureData.id}`,
       });
     },
-    [] // stable — reads fresh state via ref, never causes PayPal to reinitialize
+    [] // stable - reads fresh state via ref, never causes PayPal to reinitialize
   );
 
-  const { paypalLoaded } = usePayPalButtons(
+  const { ready: paymentReady } = usePaymentButtons(
     canPay && !isFree ? amount : null,
     "raffle-paypal-buttons",
-    handleSuccess as Parameters<typeof usePayPalButtons>[2]
+    handleSuccess as Parameters<typeof usePaymentButtons>[2]
   );
 
   const handleFreeSubmit = async () => {
@@ -317,7 +318,7 @@ export default function RaffleDetail() {
           <div>
             <span className="font-medium">Entry:</span>{" "}
             {isFree ? "Free" : raffle.allowBids
-              ? `Bid — minimum $${Number(raffle.ticketPrice).toFixed(2)}`
+              ? `Bid - minimum $${Number(raffle.ticketPrice).toFixed(2)}`
               : `$${Number(raffle.ticketPrice).toFixed(2)} per ticket${maxPer ? ` (max ${maxPer})` : ""}`
             }
           </div>
@@ -369,7 +370,7 @@ export default function RaffleDetail() {
               {raffle.allowBids ? (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Bid ($){Number(raffle.ticketPrice) > 0 ? ` — minimum $${Number(raffle.ticketPrice).toFixed(2)}` : ""}
+                    Your Bid ($){Number(raffle.ticketPrice) > 0 ? ` - minimum $${Number(raffle.ticketPrice).toFixed(2)}` : ""}
                   </label>
                   <input
                     type="number"
@@ -434,7 +435,7 @@ export default function RaffleDetail() {
                   </p>
                 )}
                 <div id="raffle-paypal-buttons" className={canPay ? "" : "opacity-30 pointer-events-none"} />
-                {canPay && !paypalLoaded && (
+                {canPay && !paymentReady && (
                   <p className="text-xs text-gray-400 text-center mt-2">Loading payment options...</p>
                 )}
               </>

@@ -1,10 +1,9 @@
-// src/Women/Local/Pages/Roster/contenthooks/useCoaches.js
 import { useCallback, useReducer } from "react";
 
 import { uploadCompressedImage } from "../../../../../Global/Common/hooks/uploadHelper";
 import { apiRequest } from "../../../../../Services/API";
-import { formatSeason } from "../hooks/seasonUtils";
 import type { JsonValue } from "../../../../../types/api";
+import { formatSeason } from "../hooks/seasonUtils";
 
 type CoachApi = {
   id: string;

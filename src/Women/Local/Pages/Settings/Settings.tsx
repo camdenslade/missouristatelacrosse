@@ -1,4 +1,3 @@
-// src/Women/Local/Pages/Settings/Settings.jsx
 import { useEffect, useReducer } from "react";
 
 import { useAuth } from "../../../../Global/Context/AuthContext";

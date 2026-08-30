@@ -1,9 +1,9 @@
-// src/Men/Local/Pages/Sponsor/SponsorMain.jsx
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import toast from "react-hot-toast";
-import SponsorLogos from "../../../../Global/Common/SponsorLogos";
+
 import { useSponsors } from "../../../../Global/Common/hooks/useSponsors";
+import SponsorLogos from "../../../../Global/Common/SponsorLogos";
 import { validateText } from "../../../../Global/Common/utils/validation";
 
 export default function SponsorMain() {
@@ -94,7 +94,7 @@ export default function SponsorMain() {
         <li>
           <strong>Advertisement Sponsor:</strong> Your business name and logo will be featured on
           our promotional materials and banners displayed at our facility. We’ll also give your
-          business shoutouts during home events — a great way to engage directly with fans and
+          business shoutouts during home events - a great way to engage directly with fans and
           potential customers.
           <span className="block text-sm text-gray-600 mt-1">
             ($500 – 4x8 banner, $250 – 4x4 banner)
@@ -128,7 +128,7 @@ export default function SponsorMain() {
 
       <p className="mb-4">
         Your support not only helps us promote sportsmanship, teamwork, and skill development among
-        young athletes — it also positions your business as a valuable contributor to the local
+        young athletes - it also positions your business as a valuable contributor to the local
         community.
       </p>
 

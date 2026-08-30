@@ -1,6 +1,6 @@
-// src/Men/Local/Pages/Store/Checkout/CheckoutSuccess.jsx
 import { useEffect, useReducer } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+
 import { apiRequest } from "../../../../../Services/API";
 import type {
   PrintifyProduct,
@@ -199,7 +199,7 @@ export default function CheckoutSuccess() {
         <ul className="space-y-1">
           {state.items.map((i, idx) => (
             <li key={idx}>
-              {i.title} — Qty {i.quantity}
+              {i.title} - Qty {i.quantity}
               {i.size && ` (Size: ${i.size})`}
             </li>
           ))}

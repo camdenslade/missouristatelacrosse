@@ -16,4 +16,6 @@ public interface GameRepository extends JpaRepository<Game, UUID> {
 
     @Query(value = "SELECT * FROM games WHERE data->>'isLive' = 'true'", nativeQuery = true)
     List<Game> findAllLive();
+
+    boolean existsBySeason(String season);
 }

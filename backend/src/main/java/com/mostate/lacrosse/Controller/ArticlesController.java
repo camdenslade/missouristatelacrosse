@@ -14,20 +14,33 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
+import com.google.firebase.auth.FirebaseToken;
+import com.mostate.lacrosse.Config.FirebaseAdminFilter;
+import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Model.Article;
 import com.mostate.lacrosse.Repository.ArticleRepository;
+import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Service.S3Service;
 import com.mostate.lacrosse.Utils.TextSanitizer;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/articles")
 public class ArticlesController {
     private final ArticleRepository repository;
     private final S3Service s3Service;
+    private final AuthorizationService authorizationService;
 
-    public ArticlesController(ArticleRepository repository, S3Service s3Service) {
+    public ArticlesController(ArticleRepository repository, S3Service s3Service, AuthorizationService authorizationService) {
         this.repository = repository;
         this.s3Service = s3Service;
+        this.authorizationService = authorizationService;
+    }
+
+    private boolean isAdmin(HttpServletRequest request, String program) {
+        String uid = (String) request.getAttribute("firebaseUid");
+        FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
+        return authorizationService.isAdmin(uid, program, token);
     }
 
     @GetMapping
@@ -65,14 +78,29 @@ public class ArticlesController {
     }
 
     @PostMapping
-    public ResponseEntity<ArticleResponse> create(@RequestBody Article article) {
+    public ResponseEntity<?> create(
+        HttpServletRequest request,
+        @RequestParam(defaultValue = "men") String program,
+        @RequestBody Article article
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Article sanitized = sanitizeArticle(article);
         Article saved = repository.save(sanitized);
         return ResponseEntity.ok(toResponse(saved, S3Service.IMAGE_TTL));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ArticleResponse> update(@PathVariable UUID id, @RequestBody Article payload) {
+    public ResponseEntity<?> update(
+        HttpServletRequest request,
+        @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program,
+        @RequestBody Article payload
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Article existing = repository.findById(id).orElse(null);
         if (existing == null) {
             return ResponseEntity.notFound().build();
@@ -88,7 +116,14 @@ public class ArticlesController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+    public ResponseEntity<?> delete(
+        HttpServletRequest request,
+        @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         repository.deleteById(id);
         return ResponseEntity.noContent().build();
     }

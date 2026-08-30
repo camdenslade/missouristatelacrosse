@@ -1,6 +1,9 @@
-import { useEffect, useReducer } from "react";
 import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";
+import { useCallback, useEffect, useReducer, useRef } from "react";
+
 import API_BASE from "../../../Services/API";
+import { resolvePaymentProvider } from "../hooks/usePaymentProvider";
+import useStripeCheckout from "../hooks/useStripeCheckout";
 
 interface KeyGateProps {
   gameId: string;
@@ -125,6 +128,54 @@ export default function KeyGate({
   };
 
   const tierPrice = tier === "TWO_SCREEN" ? priceTwoScreen : priceOneScreen;
+
+  // Payment rail: PayPal (client-side) or Stripe Embedded Checkout
+  const provider = resolvePaymentProvider();
+  const formComplete = displayName.trim() !== "" && email.trim() !== "";
+
+  // Keep the latest purchase context for a stable onSuccess (so the embedded
+  // checkout is not torn down every keystroke).
+  const purchaseCtx = useRef({ displayName, email, tier, gameId, gameLabel });
+  purchaseCtx.current = { displayName, email, tier, gameId, gameLabel };
+
+  const handleStripeSuccess = useCallback(
+    async (payload: { id: string }) => {
+      const ctx = purchaseCtx.current;
+      dispatch({ type: "SET_VIEW", view: "purchasing" });
+      try {
+        const res = await fetch(`${BASE_URL}/purchase`, {
+          method: "POST",
+          headers: { "X-Program": program, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gameId: ctx.gameId,
+            gameLabel: ctx.gameLabel,
+            tier: ctx.tier,
+            displayName: ctx.displayName.trim(),
+            email: ctx.email.trim(),
+            paymentOrderId: payload.id,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          dispatch({ type: "SET_ERROR", msg: data.error || "Purchase failed" });
+          return;
+        }
+        dispatch({ type: "SET_PURCHASED_KEY", key: data.keyCode });
+      } catch {
+        dispatch({ type: "SET_ERROR", msg: "Something went wrong. Check your email for your key." });
+        dispatch({ type: "SET_VIEW", view: "key" });
+      }
+    },
+    [program]
+  );
+
+  useStripeCheckout(
+    provider === "stripe" && view === "purchase" && formComplete ? tierPrice : null,
+    "stream-stripe-checkout",
+    handleStripeSuccess as Parameters<typeof useStripeCheckout>[2],
+    "pay",
+    "stream"
+  );
 
   // Auto-load free streams without requiring a button click
   useEffect(() => {
@@ -256,7 +307,11 @@ export default function KeyGate({
 
           {error && <p className="text-red-600 text-sm">{error}</p>}
 
-          {displayName.trim() && email.trim() && (
+          {formComplete && provider === "stripe" && (
+            <div id="stream-stripe-checkout" />
+          )}
+
+          {formComplete && provider === "paypal" && (
             <PayPalScriptProvider options={{ clientId: paypalClientId }}>
               <PayPalButtons
                 style={{ layout: "vertical", shape: "rect", label: "pay" }}
@@ -269,7 +324,7 @@ export default function KeyGate({
                           currency_code: "USD",
                           value: tierPrice.toFixed(2),
                         },
-                        description: `Stream access (${tier === "ONE_SCREEN" ? "1-Screen" : "2-Screen"}) — ${gameLabel}`,
+                        description: `Stream access (${tier === "ONE_SCREEN" ? "1-Screen" : "2-Screen"}) - ${gameLabel}`,
                       },
                     ],
                   });

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+
 import {
   checkTeammate,
   fetchEventBySlug,
   registerForEvent,
 } from "../../../../Global/Common/hooks/useEvents";
-import usePayPalButtons from "../../../../Global/Common/hooks/usePayPalButtons";
+import usePaymentButtons from "../../../../Global/Common/hooks/usePaymentButtons";
 import { getProgramInfo } from "../../../../Services/programHelper";
 import type { ApiEvent, ApiEventField, ApiEventTeamCheck } from "../../../../types/api";
 
@@ -250,10 +251,10 @@ export default function EventDetail() {
     [state]
   );
 
-  const { paypalLoaded } = usePayPalButtons(
+  const { ready: paymentReady } = usePaymentButtons(
     canPay && !isFree ? Number(state.event?.price) : null,
     "event-paypal-buttons",
-    handleSuccess as Parameters<typeof usePayPalButtons>[2],
+    handleSuccess as Parameters<typeof usePaymentButtons>[2],
     "pay"
   );
 
@@ -389,7 +390,7 @@ export default function EventDetail() {
               <div key={i}>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {event.teamSize > 2 ? `Teammate ${i + 1} Email` : "Teammate Email"}
-                  <span className="ml-1 text-xs text-gray-400 font-normal">— optional</span>
+                  <span className="ml-1 text-xs text-gray-400 font-normal"> - optional</span>
                 </label>
                 <input
                   type="email"
@@ -403,7 +404,7 @@ export default function EventDetail() {
                 )}
                 {!state.teamCheckLoading[i] && state.teamChecks[i] && !state.teamChecks[i]?.found && state.teammateEmails[i] && (
                   <p className="text-xs text-gray-400 mt-1">
-                    No existing registration found — your teammate will be notified when they sign up.
+                    No existing registration found - your teammate will be notified when they sign up.
                   </p>
                 )}
                 {state.teamChecks[i]?.found && (
@@ -463,7 +464,7 @@ export default function EventDetail() {
                 id="event-paypal-buttons"
                 className={canPay ? "" : "opacity-30 pointer-events-none"}
               />
-              {canPay && !paypalLoaded && (
+              {canPay && !paymentReady && (
                 <p className="text-xs text-gray-400 text-center mt-2">Loading payment options...</p>
               )}
             </>

@@ -1,7 +1,7 @@
-// src/Men/Local/Pages/Store/Cart.jsx
+import { X } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 const SHIPPING_FEE = 5;
 
@@ -134,7 +134,7 @@ export default function Cart({
                     onClick={() => removeFromCart(item.id, item.variantId)}
                     className="text-red-500 hover:text-red-700 font-bold text-lg"
                   >
-                    ✕
+                    <X size={16} />
                   </button>
                 </div>
               ))

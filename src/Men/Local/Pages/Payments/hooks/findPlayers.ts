@@ -1,15 +1,9 @@
-// src/Men/Local/Pages/Payments/hooks/findPlayers.js
 import { useEffect, useState } from "react";
+
 import { useAuth } from "../../../../../Global/Context/AuthContext";
 import { apiRequest } from "../../../../../Services/API";
 import type { ApiParentRecord, ApiPlayer, ApiUser, JsonValue, Program } from "../../../../../types/api";
-
-const getSeasonValue = (date = new Date()) => {
-  const y = date.getFullYear();
-  const m = date.getMonth() + 1;
-  const start = m >= 8 ? y : y - 1;
-  return `${String(start).slice(-2)}-${String(start + 1).slice(-2)}`;
-};
+import { fetchActiveSeasonCode, getSeasonValue } from "../../Roster/hooks/seasonUtils";
 
 const parsePlayerData = (player: ApiPlayer | null): Record<string, JsonValue> => {
   if (!player?.data) return {};
@@ -29,7 +23,15 @@ export default function usePlayers(parentProvidedLinkedPlayers: ApiPlayer[] = []
   const [players, setPlayers] = useState<ApiPlayer[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const currentSeason = getSeasonValue();
+  // Falls back to the calendar-guess season until the real admin-managed active season
+  // (which can be advanced/held independently of the Aug-1 cutoff — that's the whole point
+  // of Manage Seasons) has loaded, so this hook doesn't filter every player out against a
+  // season string the rest of the page has already moved past.
+  const [currentSeason, setCurrentSeason] = useState(getSeasonValue());
+  useEffect(() => {
+    fetchActiveSeasonCode().then(setCurrentSeason).catch(() => {});
+  }, []);
+
   const isWomenSite = window.location.pathname.toLowerCase().includes("/women");
   const program: Program = isWomenSite ? "women" : "men";
   const userRole = roles?.[program] || "";

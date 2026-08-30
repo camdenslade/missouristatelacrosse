@@ -1,4 +1,3 @@
-// src/Men/Local/Pages/Roster/contenthooks/usePlayers.js
 import { useCallback, useReducer } from "react";
 
 import { uploadCompressedImage } from "../../../../../Global/Common/hooks/uploadHelper";
@@ -134,6 +133,7 @@ export default function usePlayers(){
           classYear: formData.classYear,
           photo: photoURL || (typeof formData.photo === "string" ? formData.photo : ""),
           balance: formData.balance ?? 0,
+          profileId: formData.profileId || undefined,
           data,
         };
 
@@ -173,30 +173,12 @@ export default function usePlayers(){
     }
   }, [state.players]);
 
-  const findPlayerByName = useCallback(async (name: string) => {
-    if (!name?.trim() || name.length < 2) return null;
-    try{
-      const player = await apiRequest<PlayerApi>(
-        `/api/players/search?name=${encodeURIComponent(name.trim())}`
-      );
-      if (!player?.id) return null;
-      const extra = parsePlayerData(player);
-      return { ...player, ...extra, data: extra };
-    } catch (err){
-      console.error("Error finding player:", err);
-      const message = err instanceof Error ? err.message : "Failed to find player";
-      dispatch({ type: "ERROR", payload: message });
-      return null;
-    }
-  }, []);
-
   return {
     ...state,
     fetchPlayers,
     savePlayer,
     removePlayer,
     uploadPhoto,
-    findPlayerByName,
   };
 }
 

@@ -1,12 +1,12 @@
-// src/Men/Local/Pages/Schedule/Live/LiveGameUI.tsx
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { useReducer, useState } from "react";
 import toast from "react-hot-toast";
 
-import type { PlayerStat } from "../../../../../types/schedule";
-import type { Player } from "../../../../../types/roster";
-import { updateLiveGame } from "../hooks/LiveGameUpdater";
-import StreamPlayer from "../../../../../Global/Common/components/StreamPlayer";
 import LiveChat from "../../../../../Global/Common/components/LiveChat";
+import StreamPlayer from "../../../../../Global/Common/components/StreamPlayer";
+import type { Player } from "../../../../../types/roster";
+import type { PlayerStat } from "../../../../../types/schedule";
+import { updateLiveGame } from "../hooks/LiveGameUpdater";
 
 const QUARTERS = ["Q1", "Q2", "Q3", "Q4"];
 const FIELD_KEYS = [
@@ -506,7 +506,7 @@ export default function LiveGameUI({
             onClick={() => setShowStream((v) => !v)}
             className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-[#5E0009] transition-colors"
           >
-            <span>{showStream ? "▾" : "▸"}</span>
+            <span>{showStream ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</span>
             Stream Preview &amp; Chat Moderation
           </button>
           {showStream && (

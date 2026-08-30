@@ -1,4 +1,3 @@
-// src/Women/Local/Pages/Home/hooks/useArticles.js
 import { useEffect, useState } from "react";
 
 import { apiRequest } from "../../../../../Services/API";

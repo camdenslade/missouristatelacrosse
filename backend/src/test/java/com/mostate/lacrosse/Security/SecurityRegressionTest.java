@@ -1,7 +1,6 @@
 package com.mostate.lacrosse.Security;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -83,10 +82,10 @@ class SecurityRegressionTest {
         verify(orderLogService, never()).getAllOrderLogs(anyInt());
     }
 
-    @Test
-    void testOrderLogsResponse_DoesNotContainApiTokens() {
-        assertTrue(true, "Order logs should not contain API tokens - verified by service design");
-    }
+    // TODO: coverage here is limited to the order-logs endpoint. Widen to the
+    // FirebaseAdminFilter prefix matrix (ADMIN_PREFIXES / AUTH_REQUIRED_PREFIXES /
+    // OPTIONAL_AUTH_PREFIXES) and the payment endpoints. Two prior placebo tests
+    // (assertTrue(true, ...)) were removed because they asserted nothing.
 
     @Test
     void testAdminEndpoint_RequiresExplicitAdminCheck() {
@@ -101,11 +100,6 @@ class SecurityRegressionTest {
 
         verify(orderLogService).isAdmin(userId, program, token);
         verify(orderLogService, never()).getAllOrderLogs(anyInt());
-    }
-
-    @Test
-    void testOrderLogsEndpoint_NoWriteOperations() {
-        assertTrue(true, "Order logs endpoint is read-only (GET only) - verified by controller design");
     }
 
     @Test

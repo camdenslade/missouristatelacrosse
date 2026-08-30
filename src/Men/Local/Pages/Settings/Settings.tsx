@@ -1,9 +1,8 @@
-// src/Men/Local/Pages/Settings/Settings.jsx
 import { useEffect, useReducer } from "react";
 
+import { useAuth } from "../../../../Global/Context/AuthContext";
 import { apiRequest } from "../../../../Services/API";
 import { auth } from "../../../../Services/firebaseConfig";
-import { useAuth } from "../../../../Global/Context/AuthContext";
 
 
 

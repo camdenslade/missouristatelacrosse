@@ -25,13 +25,13 @@ import com.mostate.lacrosse.Repository.PrintifyOrderLogRepository;
 @Service
 public class PrintifyService {
 
-    @Value("${PRINTIFY_BASE_URL}")
+    @Value("${PRINTIFY_BASE_URL:https://api.printify.com/v1}")
     private String baseUrl;
 
-    @Value("${PRINTIFY_API_TOKEN}")
+    @Value("${PRINTIFY_API_TOKEN:}")
     private String apiToken;
 
-    @Value("${PRINTIFY_SHOP_ID}")
+    @Value("${PRINTIFY_SHOP_ID:}")
     private String shopId;
 
     private final RestTemplate rest = new RestTemplate();

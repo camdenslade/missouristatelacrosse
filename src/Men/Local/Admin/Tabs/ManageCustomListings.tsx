@@ -1,5 +1,5 @@
-// src/Men/Local/Admin/Tabs/ManageCustomListings.tsx
 import { useEffect, useRef, useState } from "react";
+
 import { apiRequest } from "../../../../Services/API";
 import { getProgramInfo } from "../../../../Services/programHelper";
 import type { ApiCustomProduct, CustomProductVariant } from "../../../../types/api";
@@ -396,7 +396,7 @@ export default function ManageCustomListings() {
                       Loading variants…
                     </div>
                   ) : variants.length === 0 ? (
-                    <p className="text-gray-400 text-sm text-center py-4">No variants yet — add one above.</p>
+                    <p className="text-gray-400 text-sm text-center py-4">No variants yet - add one above.</p>
                   ) : (
                     <div className="space-y-2">
                       {variants.map(v => (

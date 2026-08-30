@@ -9,6 +9,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "player_profiles")
@@ -26,6 +28,10 @@ public class PlayerProfile {
     @Column(name = "merge_key")
     private String mergeKey;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private String parents;
+
     @Column(name = "created_at")
     private Instant createdAt;
 
@@ -37,6 +43,9 @@ public class PlayerProfile {
         Instant now = Instant.now();
         createdAt = now;
         updatedAt = now;
+        if (parents == null) {
+            parents = "[]";
+        }
     }
 
     @PreUpdate
@@ -58,6 +67,9 @@ public class PlayerProfile {
 
     public String getMergeKey() {return mergeKey;}
     public void setMergeKey(String mergeKey) {this.mergeKey = mergeKey;}
+
+    public String getParents() {return parents;}
+    public void setParents(String parents) {this.parents = parents;}
 
     public Instant getCreatedAt() {return createdAt;}
     public void setCreatedAt(Instant createdAt) {this.createdAt = createdAt;}

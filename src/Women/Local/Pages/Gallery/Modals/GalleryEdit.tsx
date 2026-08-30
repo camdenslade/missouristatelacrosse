@@ -1,14 +1,13 @@
-// src/Women/Local/Pages/Gallery/Modals/GalleryEdit.jsx
-import { Check, Edit3, Folder, GripVertical, Trash2, Upload, X } from "lucide-react";
-import { useEffect, useReducer } from "react";
-import type { ChangeEvent } from "react";
-import toast from "react-hot-toast";
-import { useConfirm } from "../../../../../Global/Common/components/ConfirmModal";
-import { DndContext, closestCenter } from "@dnd-kit/core";
 import type { DragEndEvent } from "@dnd-kit/core";
-import { SortableContext, useSortable, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
+import { DndContext, closestCenter } from "@dnd-kit/core";
+import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Check, Edit3, Folder, GripVertical, Trash2, Upload, X } from "lucide-react";
+import type { ChangeEvent } from "react";
+import { useEffect, useReducer } from "react";
+import toast from "react-hot-toast";
 
+import { useConfirm } from "../../../../../Global/Common/components/ConfirmModal";
 import { deleteGallery, getGallery, reorderGallery, uploadGallery } from "../hooks/galleryService";
 
 const initialState = {
@@ -17,7 +16,7 @@ const initialState = {
   editingName: false,
   uploading: false,
   progress: 0,
-  localImages: [],
+  localImages: [] as string[],
   loadingImages: false,
 };
 
@@ -183,7 +182,7 @@ export default function GalleryEditModal({ galleries = {}, onClose, onRefresh })
     if (!over || active.id === over.id) return;
     const oldIndex = localImages.indexOf(active.id as string);
     const newIndex = localImages.indexOf(over.id as string);
-    const reordered = arrayMove(localImages, oldIndex, newIndex);
+    const reordered = arrayMove(localImages as string[], oldIndex, newIndex);
     dispatch({ type: "SET_IMAGES", images: reordered });
     try {
       await reorderGallery(selectedFolder, reordered);
@@ -193,7 +192,7 @@ export default function GalleryEditModal({ galleries = {}, onClose, onRefresh })
   };
 
   return (
-    <div className="fixed inset-0 bg-black/30 z-[9999] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/30 z-9999 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl relative p-6 overflow-y-auto max-h-[90vh]">
         <button
           onClick={onClose}

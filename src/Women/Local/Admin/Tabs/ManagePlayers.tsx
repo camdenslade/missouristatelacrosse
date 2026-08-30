@@ -1,4 +1,3 @@
-// src/Women/Local/Admin/Tabs/ManagePlayers.jsx
 import { useEffect, useReducer } from "react";
 
 import UserList from "./Users/UserList";
@@ -11,17 +10,20 @@ type UserRecord = ApiUser & { id: string };
 type ManagePlayersState = {
   users: UserRecord[];
   searchTerm: string;
+  roleFilter: string;
   loading: boolean;
 };
 
 type ManagePlayersAction =
   | { type: "SET_USERS"; users: UserRecord[] }
   | { type: "SET_SEARCH"; value: string }
+  | { type: "SET_ROLE_FILTER"; value: string }
   | { type: "SET_LOADING"; value: boolean };
 
 const initialState: ManagePlayersState = {
   users: [],
   searchTerm: "",
+  roleFilter: "",
   loading: true,
 };
 
@@ -31,6 +33,8 @@ function reducer(state: ManagePlayersState, action: ManagePlayersAction): Manage
       return { ...state, users: action.users, loading: false };
     case "SET_SEARCH":
       return { ...state, searchTerm: action.value };
+    case "SET_ROLE_FILTER":
+      return { ...state, roleFilter: action.value };
     case "SET_LOADING":
       return { ...state, loading: action.value };
     default:
@@ -40,7 +44,7 @@ function reducer(state: ManagePlayersState, action: ManagePlayersAction): Manage
 
 export default function ManagePlayers(){
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { users, searchTerm, loading } = state;
+  const { users, searchTerm, roleFilter, loading } = state;
 
   const program: Program = "women";
 
@@ -96,6 +100,24 @@ export default function ManagePlayers(){
     }
   };
 
+  const handleDisplayNameChange = async (userId: string, displayName: string) => {
+    try {
+      await apiRequest(`/api/users/${userId}`, {
+        method: "PUT",
+        json: { displayName },
+      });
+      dispatch({
+        type: "SET_USERS",
+        users: users.map((user) =>
+          user.id === userId ? { ...user, displayName } : user
+        ),
+      });
+    } catch (err) {
+      console.error("Failed to update display name:", err);
+      throw err;
+    }
+  };
+
   const handleDelete = async (userId: string) => {
     try {
       await apiRequest(`/api/users/${userId}`, { method: "DELETE" });
@@ -105,9 +127,16 @@ export default function ManagePlayers(){
     }
   };
 
-  const filteredUsers = users.filter((u) =>
-    u.displayName?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleResendInvite = async (userId: string) => {
+    await apiRequest(`/api/onboard/resend-invite`, {
+      method: "POST",
+      json: { uid: userId, program },
+    });
+  };
+
+  const filteredUsers = users
+    .filter((u) => u.displayName?.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter((u) => !roleFilter || (u.roles?.[program] || "user").toLowerCase() === roleFilter);
 
   return (
     <div className="max-w-4xl mx-auto bg-white p-6 rounded shadow animate-fadeIn">
@@ -116,6 +145,8 @@ export default function ManagePlayers(){
       <UserSearch
         searchTerm={searchTerm}
         setSearchTerm={(value) => dispatch({ type: "SET_SEARCH", value })}
+        roleFilter={roleFilter}
+        setRoleFilter={(value) => dispatch({ type: "SET_ROLE_FILTER", value })}
       />
 
       {loading && (
@@ -131,8 +162,10 @@ export default function ManagePlayers(){
           ...u,
           role: u.roles?.[program] || "user",
         }))}
-        handleRoleChange={handleRoleChange}
+        handleRoleChange={handleRoleChange as (userId: string, role: string) => void}
+        handleDisplayNameChange={handleDisplayNameChange}
         handleDelete={handleDelete}
+        handleResendInvite={handleResendInvite}
       />
     </div>
   );

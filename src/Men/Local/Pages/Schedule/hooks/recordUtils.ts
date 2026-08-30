@@ -1,4 +1,3 @@
-// src/Men/Local/Pages/Schedule/hooks/recordUtils.js
 export function calculateRecord(games){
   const record = {
     overall: { w: 0, l: 0 },
@@ -39,7 +38,7 @@ export function calculateRecord(games){
 
   if (sorted.length){
     let streak = 1;
-    let last = sorted[0].result;
+    const last = sorted[0].result;
     for (let i = 1; i < sorted.length; i++) {
       if (sorted[i].result === last) streak++;
       else break;

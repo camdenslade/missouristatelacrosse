@@ -1,58 +1,45 @@
-// src/Women/Local/Pages/Roster/components/RosterForm.jsx
-import { useReducer, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
-import Modal from "../../../../../Global/Common/Modal";
 import { uploadCompressedImage } from "../../../../../Global/Common/hooks/uploadHelper";
+import Modal from "../../../../../Global/Common/Modal";
+import { validateNumber, validateText } from "../../../../../Global/Common/utils/validation";
+import { apiRequest } from "../../../../../Services/API";
 import useCoaches from "../contenthooks/useCoaches";
 import usePlayers from "../contenthooks/usePlayers";
-import { formatSeason, generateSeasonOptions } from "../hooks/seasonUtils";
-import { validateNumber, validateText } from "../../../../../Global/Common/utils/validation";
+import { formatSeason, fetchSeasons, displaySeasonLabel } from "../hooks/seasonUtils";
+import type { Coach, Player, RosterFormData } from "../types";
 
 const CLASS_OPTIONS = ["Freshman", "Sophomore", "Junior", "Senior", "Graduate"];
 
-type RosterFormData = {
-  name: string;
-  number: string;
-  position: string;
-  height: string;
-  weight: string;
-  classYear: string;
-  hometown: string;
-  state: string;
-  highSchool: string;
-  previousSchool: string;
-  bio: string;
-  photo: File | string | null;
-  userID: string;
-  season: string;
+const initialForm = (
+  editingItem: Coach | Player | null,
+  selectedSeason: string
+): RosterFormData => {
+  const base = (editingItem ?? {}) as Partial<Player & Coach>;
+  return {
+    name: base.name || "",
+    number: base.number ? String(base.number) : "",
+    position: base.position || "",
+    height: base.height || "",
+    weight: base.weight || "",
+    classYear: base.classYear || "",
+    hometown: base.hometown || "",
+    state: base.state || "",
+    highSchool: base.highSchool || "",
+    previousSchool: base.previousSchool || "",
+    bio: base.bio || "",
+    photo: base.photo || null,
+    userID: base.userID || "",
+    season: base.season || selectedSeason,
+    email: base.email || "",
+    profileId: base.profileId || "",
+  };
 };
-
-type EditingItem = Partial<RosterFormData> & { id?: string | null };
 
 type FormAction =
   | { type: "SET"; field: keyof RosterFormData; value: RosterFormData[keyof RosterFormData] }
-  | { type: "RESET"; editingItem?: EditingItem | null; selectedSeason?: string };
-
-const initialForm = (
-  editingItem?: EditingItem | null,
-  selectedSeason?: string
-): RosterFormData => ({
-  name: editingItem?.name || "",
-  number: editingItem?.number || "",
-  position: editingItem?.position || "",
-  height: editingItem?.height || "",
-  weight: editingItem?.weight || "",
-  classYear: editingItem?.classYear || "",
-  hometown: editingItem?.hometown || "",
-  state: editingItem?.state || "",
-  highSchool: editingItem?.highSchool || "",
-  previousSchool: editingItem?.previousSchool || "",
-  bio: editingItem?.bio || "",
-  photo: editingItem?.photo || null,
-  userID: editingItem?.userID || "",
-  season: editingItem?.season || selectedSeason || "",
-});
+  | { type: "RESET"; editingItem: Coach | Player | null; selectedSeason: string };
 
 function formReducer(state: RosterFormData, action: FormAction): RosterFormData {
   switch (action.type) {
@@ -74,7 +61,7 @@ export default function RosterFormModal({
   selectedSeason,
 }: {
   isCoach: boolean;
-  editingItem?: EditingItem | null;
+  editingItem: Coach | Player | null;
   onClose: () => void;
   onSaved: () => Promise<void> | void;
   selectedSeason: string;
@@ -89,10 +76,18 @@ export default function RosterFormModal({
   );
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [lookupStatus, setLookupStatus] = useState<string>("");
+  const [candidates, setCandidates] = useState<Player[]>([]);
+  const [checkingCandidates, setCheckingCandidates] = useState(false);
   const [formError, setFormError] = useState<string>("");
+  const [seasonOptions, setSeasonOptions] = useState<{ value: string; label: string }[]>([]);
+  useEffect(() => {
+    fetchSeasons().then((seasons) =>
+      setSeasonOptions(seasons.map((s) => ({ value: s.code, label: s.label || displaySeasonLabel(s.code) })))
+    );
+  }, []);
 
   const nameLookupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { savePlayer, findPlayerByName } = usePlayers();
+  const { savePlayer } = usePlayers();
   const { saveCoach } = useCoaches();
 
   const handleInputChange = (
@@ -111,42 +106,66 @@ export default function RosterFormModal({
 
     dispatch({ type: "SET", field, value: target.value });
 
-    if (field === "name") {
+    // Only search for a brand-new roster entry - an existing row being edited already has
+    // whatever profile linkage it has, and re-searching mid-edit would be confusing.
+    if (field === "name" && !isCoach && !editingItem) {
+      // A prior match no longer applies once the name changes - clear it so a stale
+      // profileId doesn't get submitted for someone who no longer matches it.
+      dispatch({ type: "SET", field: "profileId", value: "" });
+      setLookupStatus("");
+      setCandidates([]);
       if (nameLookupTimer.current) clearTimeout(nameLookupTimer.current);
       nameLookupTimer.current = setTimeout(
-        () => lookupExistingPlayer(target.value),
+        () => searchCandidates(target.value),
         600
       );
     }
   };
 
-  const lookupExistingPlayer = async (nameValue: string) => {
+  const searchCandidates = async (nameValue: string) => {
     if (!nameValue?.trim() || nameValue.trim().length < 2) return;
 
+    setCheckingCandidates(true);
     try {
-      setLookupStatus("Searching...");
-      const existing = await findPlayerByName(nameValue);
-
-      if (existing) {
-        dispatch({ type: "SET", field: "hometown", value: existing.hometown || "" });
-        dispatch({ type: "SET", field: "state", value: existing.state || "" });
-        dispatch({ type: "SET", field: "highSchool", value: existing.highSchool || "" });
-        dispatch({ type: "SET", field: "previousSchool", value: existing.previousSchool || "" });
-        dispatch({ type: "SET", field: "classYear", value: existing.classYear || "" });
-
-        if (existing.photo) {
-          dispatch({ type: "SET", field: "photo", value: existing.photo });
-          setPreviewPhoto(existing.photo);
-        }
-
-        setLookupStatus(`Imported ${existing.name}'s info`);
-      } else {
-        setLookupStatus("No existing player found");
+      const results = await apiRequest<Player[]>(
+        `/api/players/search-candidates?name=${encodeURIComponent(nameValue.trim())}`
+      );
+      setCandidates(results || []);
+      if (!results || results.length === 0) {
+        setLookupStatus("No existing account found - this will be a new player.");
       }
     } catch (err) {
-      console.error("Lookup error:", err);
-      setLookupStatus("Error searching player");
+      console.error("Candidate search error:", err);
+      setCandidates([]);
+    } finally {
+      setCheckingCandidates(false);
     }
+  };
+
+  const selectCandidate = (candidate: Player) => {
+    dispatch({ type: "SET", field: "hometown", value: candidate.hometown || "" });
+    dispatch({ type: "SET", field: "state", value: candidate.state || "" });
+    dispatch({ type: "SET", field: "highSchool", value: candidate.highSchool || "" });
+    dispatch({ type: "SET", field: "previousSchool", value: candidate.previousSchool || "" });
+    dispatch({ type: "SET", field: "classYear", value: candidate.classYear || "" });
+    dispatch({ type: "SET", field: "email", value: candidate.email || "" });
+    // Explicitly link to the matched player's stable account so this new season row
+    // inherits their existing parent links, email, and payment history - this is the whole
+    // point of the picker, making that link a deliberate choice instead of a guess.
+    dispatch({ type: "SET", field: "profileId", value: candidate.profileId || "" });
+
+    if (candidate.photo) {
+      dispatch({ type: "SET", field: "photo", value: candidate.photo });
+      setPreviewPhoto(candidate.photo);
+    }
+
+    setLookupStatus(`Linked to ${candidate.name}'s existing account (${candidate.season} season).`);
+    setCandidates([]);
+  };
+
+  const dismissCandidates = () => {
+    setCandidates([]);
+    setLookupStatus("New player - no existing account linked.");
   };
 
   const handleRemoveImage = () => {
@@ -220,8 +239,6 @@ export default function RosterFormModal({
     }
   };
 
-  const seasonOptions = generateSeasonOptions();
-
   return (
     <Modal onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -236,11 +253,44 @@ export default function RosterFormModal({
             onChange={handleInputChange}
             className="p-2 border text-lg w-full"
           />
+          {checkingCandidates && (
+            <p className="text-sm text-gray-600 mt-1 italic">Checking for an existing account…</p>
+          )}
           {lookupStatus && (
             <p className="text-sm text-gray-600 mt-1 italic">{lookupStatus}</p>
           )}
           {formError && (
             <p className="text-sm text-red-600 mt-1">{formError}</p>
+          )}
+
+          {candidates.length > 0 && (
+            <div className="mt-2 border border-amber-300 bg-amber-50 rounded-lg p-3 space-y-2">
+              <p className="text-xs text-amber-800 font-medium">
+                Found possible existing account{candidates.length > 1 ? "s" : ""} for "{formData.name.trim()}" - 
+                pick one to carry their info/parent links/payment history forward, or confirm this is a new player:
+              </p>
+              {candidates.map((c) => (
+                <div key={c.id} className="flex items-center justify-between gap-2 bg-white border border-amber-200 rounded px-2 py-1.5">
+                  <span className="text-xs text-gray-700">
+                    {c.name} <span className="text-gray-400">({c.season}{c.highSchool ? ` - ${c.highSchool}` : ""})</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => selectCandidate(c)}
+                    className="px-2 py-1 text-xs bg-[#5E0009] text-white rounded hover:bg-[#7a0012] transition"
+                  >
+                    Use this account
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={dismissCandidates}
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-100 transition"
+              >
+                None of these - new player
+              </button>
+            </div>
           )}
         </div>
 
@@ -273,6 +323,7 @@ export default function RosterFormModal({
               ["state", "State"],
               ["highSchool", "High School"],
               ["previousSchool", "Previous School (optional)"],
+              ["email", "Email (optional)", "email"],
             ].map(([name, placeholder, type = "text"]) => (
               <input
                 key={name}
@@ -377,4 +428,3 @@ export default function RosterFormModal({
     </Modal>
   );
 }
-

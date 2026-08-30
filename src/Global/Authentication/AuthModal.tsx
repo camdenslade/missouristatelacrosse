@@ -1,4 +1,3 @@
-// src/Global/Authentication/AuthModal.jsx
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useReducer } from "react";
 import type { FormEvent } from "react";
@@ -6,8 +5,8 @@ import type { FormEvent } from "react";
 import { apiRequest } from "../../Services/API";
 import { auth } from "../../Services/firebaseConfig";
 import { getActiveProgram } from "../../Services/programHelper";
-import { validateEmail, validateText } from "../Common/utils/validation";
 import type { ApiUser, Program } from "../../types/api";
+import { validateEmail, validateText } from "../Common/utils/validation";
 
 const initialState = {
   isSignUp: false,
@@ -111,13 +110,11 @@ export default function AuthModal({ onClose }: AuthModalProps) {
             programs: [program],
           },
         });
-        console.log(`Created new ${program} user: ${newDisplayName}`);
       } else {
         const roles = userData.roles || {};
         const updates: Partial<ApiUser> = {};
         if (!roles[program]) {
           updates.roles = { [program]: "player" };
-          console.log(`Added ${program} role to existing user`);
         }
         const programs = Array.isArray(userData.programs) ? userData.programs : [];
         if (!programs.includes(program)) {

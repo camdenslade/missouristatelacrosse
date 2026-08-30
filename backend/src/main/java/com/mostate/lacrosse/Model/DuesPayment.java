@@ -33,6 +33,9 @@ public class DuesPayment {
     @Column(name = "paid_by_uid")
     private String paidByUid;
 
+    @Column(name = "paypal_order_id")
+    private String payPalOrderId;
+
     @Column(name = "created_at")
     private Instant createdAt;
 
@@ -55,6 +58,9 @@ public class DuesPayment {
 
     public String getPaidByUid() { return paidByUid; }
     public void setPaidByUid(String paidByUid) { this.paidByUid = paidByUid; }
+
+    public String getPayPalOrderId() { return payPalOrderId; }
+    public void setPayPalOrderId(String payPalOrderId) { this.payPalOrderId = payPalOrderId; }
 
     public Instant getCreatedAt() { return createdAt; }
 }

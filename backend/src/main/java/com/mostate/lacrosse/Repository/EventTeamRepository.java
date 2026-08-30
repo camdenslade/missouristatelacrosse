@@ -7,5 +7,4 @@ import com.mostate.lacrosse.Model.EventTeam;
 
 public interface EventTeamRepository extends JpaRepository<EventTeam, UUID> {
     List<EventTeam> findAllByEventId(UUID eventId);
-    long countByEventIdAndComplete(UUID eventId, boolean complete);
 }

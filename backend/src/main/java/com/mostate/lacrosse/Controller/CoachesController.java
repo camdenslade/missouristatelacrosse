@@ -14,12 +14,18 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.google.firebase.auth.FirebaseToken;
+import com.mostate.lacrosse.Config.FirebaseAdminFilter;
+import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Model.Coach;
 import com.mostate.lacrosse.Repository.CoachRepository;
+import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Service.S3Service;
 import com.mostate.lacrosse.Utils.JsonUtils;
 import com.mostate.lacrosse.Utils.TextSanitizer;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 @RestController
@@ -28,10 +34,18 @@ import jakarta.validation.Valid;
 public class CoachesController {
     private final CoachRepository repository;
     private final S3Service s3Service;
+    private final AuthorizationService authorizationService;
 
-    public CoachesController(CoachRepository repository, S3Service s3Service) {
+    public CoachesController(CoachRepository repository, S3Service s3Service, AuthorizationService authorizationService) {
         this.repository = repository;
         this.s3Service = s3Service;
+        this.authorizationService = authorizationService;
+    }
+
+    private boolean isAdmin(HttpServletRequest request, String program) {
+        String uid = (String) request.getAttribute("firebaseUid");
+        FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
+        return authorizationService.isAdmin(uid, program, token);
     }
 
     @GetMapping
@@ -44,17 +58,29 @@ public class CoachesController {
     }
 
     @PostMapping
-    public ResponseEntity<CoachResponse> create(@Valid @RequestBody CoachPayload payload) {
+    public ResponseEntity<?> create(
+        HttpServletRequest request,
+        @RequestParam(defaultValue = "men") String program,
+        @Valid @RequestBody CoachPayload payload
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Coach coach = new Coach();
         applyPayload(coach, payload);
         return ResponseEntity.ok(toResponse(repository.save(coach)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CoachResponse> update(
+    public ResponseEntity<?> update(
+        HttpServletRequest request,
         @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program,
         @Valid @RequestBody CoachPayload payload
     ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         Coach existing = repository.findById(id).orElse(null);
         if (existing == null) {
             return ResponseEntity.notFound().build();
@@ -64,7 +90,14 @@ public class CoachesController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+    public ResponseEntity<?> delete(
+        HttpServletRequest request,
+        @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         repository.deleteById(id);
         return ResponseEntity.noContent().build();
     }

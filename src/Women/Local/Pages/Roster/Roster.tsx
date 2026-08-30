@@ -1,16 +1,15 @@
-// src/Women/Local/Pages/Roster/Roster.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { getCurrentYear, setCurrentYear } from "../../../../Services/yearHelper";
 import CoachRow from "./components/CoachRow";
 import PlayerRow from "./components/PlayerRow";
 import RosterFormModal from "./components/RosterForm";
 import useCoaches from "./contenthooks/useCoaches";
 import usePlayers from "./contenthooks/usePlayers";
 import { rosterPrintStyle } from "./hooks/printStyles";
-import { displaySeasonLabel, generateSeasonValues, normalizeSeasonParam } from "./hooks/seasonUtils";
+import { displaySeasonLabel, fetchSeasonCodes, normalizeSeasonParam } from "./hooks/seasonUtils";
 import useRosterState from "./hooks/useRosterState";
+import { getCurrentYear, setCurrentYear } from "../../../../Services/yearHelper";
 
 function Spinner(){
   return (
@@ -32,28 +31,28 @@ export default function WRoster({ userRole }){
 
   const {
     players,
-    loading: playersLoading,
-    error: playersError,
     fetchPlayers,
     removePlayer,
   } = usePlayers();
 
   const {
     coaches,
-    loading: coachesLoading,
-    error: coachesError,
     fetchCoaches,
     removeCoach,
   } = useCoaches();
 
+  const [managedSeasons, setManagedSeasons] = useState<string[]>([]);
+  useEffect(() => {
+    fetchSeasonCodes().then(setManagedSeasons);
+  }, []);
+
   const availableSeasons = useMemo(() => {
-    const base = generateSeasonValues();
     const found = [
       ...players.map((p) => p.season),
       ...coaches.map((c) => c.season),
     ].filter((season): season is string => Boolean(season));
-    return Array.from(new Set([...base, ...found])).sort((a, b) => a.localeCompare(b));
-  }, [players, coaches]);
+    return Array.from(new Set([...managedSeasons, ...found])).sort((a, b) => a.localeCompare(b));
+  }, [players, coaches, managedSeasons]);
 
   const filteredPlayers = useMemo(
     () => players.filter((p) => p.season === selectedSeason),

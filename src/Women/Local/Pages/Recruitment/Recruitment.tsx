@@ -1,14 +1,13 @@
-// src/Women/Local/Pages/Recruitment/Recruitment.jsx
 import { useReducer } from "react";
-import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
+import { Link } from "react-router-dom";
 
-import { apiRequest } from "../../../../Services/API";
 import {
   validateEmail,
   validatePhone,
   validateText,
 } from "../../../../Global/Common/utils/validation";
+import { apiRequest } from "../../../../Services/API";
 
 const initialState = {
   formData: {

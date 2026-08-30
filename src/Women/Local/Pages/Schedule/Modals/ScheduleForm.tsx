@@ -1,10 +1,14 @@
-// src/Women/Local/Pages/Schedule/Modals/ScheduleForm.jsx
 import React, { useEffect, useReducer, useRef } from "react";
 
-import Modal from "../../../../../Global/Common/Modal";
 import { uploadCompressedImage } from "../../../../../Global/Common/hooks/uploadHelper";
-import { apiRequest } from "../../../../../Services/API";
+import Modal from "../../../../../Global/Common/Modal";
+import {
+  getSeasonValue as getCurrentSeasonShort,
+  fetchSeasons,
+  displaySeasonLabel,
+} from "../../../../../Global/Common/utils/seasonUtils";
 import { validateText, validateUrl } from "../../../../../Global/Common/utils/validation";
+import { apiRequest } from "../../../../../Services/API";
 import type { ScheduleGame } from "../../../../../types/schedule";
 
 type ScheduleFormData = {
@@ -35,28 +39,6 @@ type TeamLookup = {
   nameLower?: string | null;
   logo?: string | null;
   link?: string | null;
-};
-
-const getCurrentSeasonShort = () => {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth() + 1;
-  const start = m >= 8 ? y : y - 1;
-  return `${String(start).slice(-2)}-${String(start + 1).slice(-2)}`;
-};
-
-const generateSeasonOptions = () => {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth() + 1;
-  const currentStart = m >= 8 ? y : y - 1;
-  return Array.from({ length: 4 }, (_, i) => {
-    const start = currentStart - i;
-    return {
-      value: `${String(start).slice(-2)}-${String(start + 1).slice(-2)}`,
-      label: `${start}-${start + 1}`,
-    };
-  });
 };
 
 const formatEditDate = (value?: EditingGame["date"]): string => {
@@ -125,6 +107,7 @@ export default function ScheduleFormModal({
   const [uploadProgress, setUploadProgress] = React.useState<string | null>(null);
   const [loadingLookup, setLoadingLookup] = React.useState<boolean>(false);
   const [formError, setFormError] = React.useState<string>("");
+  const [seasonOptions, setSeasonOptions] = React.useState<{ value: string; label: string }[]>([]);
   const opponentInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -132,6 +115,12 @@ export default function ScheduleFormModal({
       dispatch({ type: "SET", field: "season", value: selectedSeason });
     }
   }, [selectedSeason, editingGame]);
+
+  useEffect(() => {
+    fetchSeasons().then((seasons) =>
+      setSeasonOptions(seasons.map((s) => ({ value: s.code, label: s.label || displaySeasonLabel(s.code) })))
+    );
+  }, []);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -166,7 +155,7 @@ export default function ScheduleFormModal({
       const match = teams.find((t) => t.nameLower === lower || t.nameLower?.startsWith(lower));
 
       if (!match) {
-        setLookupMsg("No saved team found — will create new on save.");
+        setLookupMsg("No saved team found - will create new on save.");
         return;
       }
 
@@ -232,8 +221,6 @@ export default function ScheduleFormModal({
     await onSave(gameData, editingGame?.id || null);
     onClose();
   };
-
-  const seasonOptions = generateSeasonOptions();
 
   return (
     <Modal onClose={onClose}>

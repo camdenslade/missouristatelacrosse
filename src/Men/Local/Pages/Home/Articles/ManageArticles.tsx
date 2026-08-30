@@ -1,14 +1,13 @@
-// src/Men/Local/Pages/Home/Articles/ManageArticles.jsx
 import { useEffect, useReducer } from "react";
-import type { ApiArticle, ApiUser } from "../../../../../types/api";
 import toast from "react-hot-toast";
-import { useConfirm } from "../../../../../Global/Common/components/ConfirmModal";
 
+import ArticleForm from "./ArticleForm";
+import ArticleList from "./ArticleList";
+import { useConfirm } from "../../../../../Global/Common/components/ConfirmModal";
 import { useAuth } from "../../../../../Global/Context/AuthContext";
 import { apiRequest } from "../../../../../Services/API";
 import { getActiveProgram } from "../../../../../Services/programHelper";
-import ArticleForm from "./ArticleForm";
-import ArticleList from "./ArticleList";
+import type { ApiArticle, ApiUser } from "../../../../../types/api";
 
 type ManageArticlesState = {
   articles: ApiArticle[];
@@ -61,7 +60,6 @@ export default function ManageArticlesModal({ isOpen, onClose }: ManageArticlesP
   const { user } = useAuth();
   const [state, dispatch] = useReducer(reducer, initialState);
   const { articles, editingArticle, hasPermission, loadingRole } = state;
-  const collectionName = "articles";
 
   useEffect(() => {
     if (!user) return;

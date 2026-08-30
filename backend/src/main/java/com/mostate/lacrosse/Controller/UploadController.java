@@ -11,9 +11,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.google.firebase.auth.FirebaseToken;
+import com.mostate.lacrosse.Config.FirebaseAdminFilter;
 import com.mostate.lacrosse.Config.TenantContext;
+import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Dto.UploadPresignResponse;
+import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Service.S3Service;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 
@@ -22,14 +27,24 @@ import jakarta.validation.constraints.NotBlank;
 @Validated
 public class UploadController {
     private final S3Service s3Service;
+    private final AuthorizationService authorizationService;
 
-    public UploadController(S3Service s3Service) {
+    public UploadController(S3Service s3Service, AuthorizationService authorizationService) {
         this.s3Service = s3Service;
+        this.authorizationService = authorizationService;
     }
 
+    // Every current caller is an admin tool (Roster/Events/Raffles/Gallery/Articles/
+    // Sponsors/Games/Coaches admin forms) — gated to stop anyone from minting presigned
+    // upload URLs into the org's S3 bucket for free.
     @PostMapping("/presign")
-    public ResponseEntity<UploadPresignResponse> presign(@Valid @RequestBody PresignRequest request) {
+    public ResponseEntity<?> presign(HttpServletRequest httpRequest, @Valid @RequestBody PresignRequest request) {
         String program = TenantContext.getTenant();
+        String uid = (String) httpRequest.getAttribute("firebaseUid");
+        FirebaseToken token = (FirebaseToken) httpRequest.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
+        if (!authorizationService.isAdmin(uid, program, token)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         var result = s3Service.presignUpload(
             program,
             request.folder(),

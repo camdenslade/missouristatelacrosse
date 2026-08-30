@@ -1,4 +1,3 @@
-// src/Men/Local/Pages/Gallery/Modals/GalleryUpload.jsx
 import { Image as ImageIcon, Loader2, X } from "lucide-react";
 import { useEffect, useReducer } from "react";
 import toast from "react-hot-toast";
@@ -127,10 +126,10 @@ export default function GalleryUploadModal({ onClose, onUpload }){
               disabled={uploading}
               className="w-full border border-gray-300 rounded-lg p-2"
             >
-              <option value="">— None / Custom Folder —</option>
+              <option value=""> - None / Custom Folder - </option>
               {games.map((game) => (
                 <option key={game.id} value={game.id}>
-                  {game.opponent} —{" "}
+                  {game.opponent} - {" "}
                   {game.dateObj?.toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",

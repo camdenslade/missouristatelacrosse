@@ -1,4 +1,3 @@
-// src/Women/Local/Pages/Home/Articles/ArticleRow.jsx
 export default function ArticleRow({ article, onEdit, onDelete }) {
   const programLabel =
     article.program === "women"

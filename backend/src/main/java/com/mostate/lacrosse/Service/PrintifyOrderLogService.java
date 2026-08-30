@@ -1,60 +1,36 @@
 package com.mostate.lacrosse.Service;
 
 import java.util.List;
-import java.util.Map;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.auth.FirebaseToken;
 import com.mostate.lacrosse.Model.PrintifyOrderLog;
-import com.mostate.lacrosse.Model.UserAccount;
 import com.mostate.lacrosse.Repository.PrintifyOrderLogRepository;
-import com.mostate.lacrosse.Repository.UserAccountRepository;
 
 @Service
 public class PrintifyOrderLogService {
-    
+
     private final PrintifyOrderLogRepository orderLogRepo;
-    private final UserAccountRepository userRepository;
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final AuthorizationService authorizationService;
 
     public PrintifyOrderLogService(
         PrintifyOrderLogRepository orderLogRepo,
-        UserAccountRepository userRepository
+        AuthorizationService authorizationService
     ) {
         this.orderLogRepo = orderLogRepo;
-        this.userRepository = userRepository;
+        this.authorizationService = authorizationService;
     }
 
     /**
      * Verifies if a user is an admin for the given program.
-     * 
+     *
      * @param userId Firebase user ID
      * @param program "men" or "women"
      * @return true if user is admin for the program
      */
     public boolean isAdmin(String userId, String program, FirebaseToken token) {
-        if (userId == null || userId.isEmpty() || program == null || program.isEmpty()) {
-            return false;
-        }
-
-        try {
-            UserAccount user = userRepository.findByFirebaseUid(userId).orElse(null);
-            if (user == null || user.getRoles() == null) {
-                return isGeneralAdmin(token);
-            }
-            Map<String, Object> roles = mapper.readValue(
-                user.getRoles(),
-                new TypeReference<Map<String, Object>>() {}
-            );
-            Object role = roles.get(program.toLowerCase());
-            return role != null && "admin".equalsIgnoreCase(String.valueOf(role));
-        } catch (Exception e) {
-            System.err.println("Error checking admin status: " + e.getMessage());
-            return isGeneralAdmin(token);
-        }
+        return authorizationService.isAdmin(userId, program, token);
     }
 
     /**
@@ -80,14 +56,6 @@ public class PrintifyOrderLogService {
             return java.util.Optional.empty();
         }
         return orderLogRepo.findFirstByOrderIdOrderByTimestampDesc(orderId);
-    }
-
-    private boolean isGeneralAdmin(FirebaseToken token) {
-        if (token == null) {
-            return false;
-        }
-        Object claim = token.getClaims().get("role");
-        return claim != null && "admin".equalsIgnoreCase(String.valueOf(claim));
     }
 }
 

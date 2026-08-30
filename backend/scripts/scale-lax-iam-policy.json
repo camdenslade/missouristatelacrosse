@@ -1,0 +1,21 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "LaxsiteDescribe",
+      "Effect": "Allow",
+      "Action": "ec2:DescribeInstances",
+      "Resource": "*"
+    },
+    {
+      "Sid": "LaxsiteResize",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:StopInstances",
+        "ec2:StartInstances",
+        "ec2:ModifyInstanceAttribute"
+      ],
+      "Resource": "arn:aws:ec2:us-east-1:390402548152:instance/i-0800e9fce88ebd384"
+    }
+  ]
+}

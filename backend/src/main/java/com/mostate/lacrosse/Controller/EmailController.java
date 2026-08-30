@@ -7,9 +7,14 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.google.firebase.auth.FirebaseToken;
+import com.mostate.lacrosse.Config.FirebaseAdminFilter;
 import com.mostate.lacrosse.Dto.ErrorResponse;
+import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Service.EmailService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -22,13 +27,29 @@ import jakarta.validation.constraints.NotEmpty;
 public class EmailController {
 
     private final EmailService emailService;
+    private final AuthorizationService authorizationService;
 
-    public EmailController(EmailService emailService) {
+    public EmailController(EmailService emailService, AuthorizationService authorizationService) {
         this.emailService = emailService;
+        this.authorizationService = authorizationService;
     }
 
+    private boolean isAdmin(HttpServletRequest request, String program) {
+        String uid = (String) request.getAttribute("firebaseUid");
+        FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
+        return authorizationService.isAdmin(uid, program, token);
+    }
+
+    // Admin bulk-send tool (EmailCenter.tsx) — arbitrary recipients/subject/body, must be admin-only.
     @PostMapping("/group")
-    public ResponseEntity<EmailStatusResponse> sendGroupEmail(@Valid @RequestBody EmailRequest req) {
+    public ResponseEntity<?> sendGroupEmail(
+        HttpServletRequest request,
+        @RequestParam(defaultValue = "men") String program,
+        @Valid @RequestBody EmailRequest req
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         int success = 0;
         int failures = 0;
         for (String to : req.getRecipients()) {
@@ -98,6 +119,16 @@ public class EmailController {
         return ResponseEntity.ok(new EmailStatusResponse("Sponsor inquiry processed successfully."));
     }
 
+    // Called by DonateSuccess.tsx / FundraiserSuccess.tsx right after a successful PayPal
+    // capture, with fully pre-composed subject/body — was previously a dead endpoint
+    // (frontend called it, nothing implemented it server-side), so donor/fundraiser
+    // confirmation emails were silently never sent.
+    @PostMapping("/send")
+    public ResponseEntity<EmailStatusResponse> send(@Valid @RequestBody SendRequest body) {
+        emailService.sendEmail(body.to(), body.subject(), body.body());
+        return ResponseEntity.ok(new EmailStatusResponse("Email sent."));
+    }
+
     @PostMapping("/receipt")
     public ResponseEntity<EmailStatusResponse> sendReceipt(@Valid @RequestBody ReceiptRequest body) {
         String email = body.email();
@@ -117,8 +148,18 @@ public class EmailController {
         return ResponseEntity.ok(new EmailStatusResponse("Receipt sent."));
     }
 
+    // Not called by any current frontend flow — gated admin-only rather than left open,
+    // since an arbitrary-recipient "thank you for your donation" send is a phishing/spam
+    // relay risk with no legitimate anonymous use case.
     @PostMapping("/donation")
-    public ResponseEntity<EmailStatusResponse> sendDonationThankYou(@Valid @RequestBody DonationRequest body) {
+    public ResponseEntity<?> sendDonationThankYou(
+        HttpServletRequest request,
+        @RequestParam(defaultValue = "men") String program,
+        @Valid @RequestBody DonationRequest body
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         String email = body.email();
         String name = body.name();
         String amount = body.amount();
@@ -135,8 +176,18 @@ public class EmailController {
         return ResponseEntity.ok(new EmailStatusResponse("Donation thank-you sent."));
     }
 
+    // Not called by any current frontend flow — AccountRequestService already sends its
+    // own approval email inline. Gated admin-only: the caller-supplied "link" field is
+    // otherwise a direct phishing vector (arbitrary link, official branding, any recipient).
     @PostMapping("/account-approved")
-    public ResponseEntity<EmailStatusResponse> sendAccountApproval(@Valid @RequestBody AccountApprovalRequest body) {
+    public ResponseEntity<?> sendAccountApproval(
+        HttpServletRequest request,
+        @RequestParam(defaultValue = "men") String program,
+        @Valid @RequestBody AccountApprovalRequest body
+    ) {
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         String email = body.email();
         String name = body.name();
         String link = body.link();
@@ -176,6 +227,12 @@ public class EmailController {
         String phone,
         @NotBlank String request,
         String program
+    ) {}
+
+    public record SendRequest(
+        @Email @NotBlank String to,
+        @NotBlank String subject,
+        @NotBlank String body
     ) {}
 
     public record ReceiptRequest(

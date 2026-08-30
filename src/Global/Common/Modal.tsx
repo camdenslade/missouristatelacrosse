@@ -1,4 +1,4 @@
-// src/Global/Common/Modal.jsx
+import { X } from "lucide-react";
 export default function Modal({ children, onClose, size = "md" }) {
   const sizeClasses = {
     sm: "max-w-sm",
@@ -34,7 +34,7 @@ export default function Modal({ children, onClose, size = "md" }) {
           className="absolute top-2 right-2 text-gray-600 hover:text-black"
           onClick={onClose}
         >
-          ✕
+          <X size={16} />
         </button>
 
         {children}

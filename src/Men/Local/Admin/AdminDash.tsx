@@ -1,4 +1,3 @@
-// src/Men/Local/Admin/AdminDash.jsx
 import { useMemo, useReducer } from "react";
 
 import AccountRequests from "./Tabs/AccountRequests";
@@ -7,6 +6,7 @@ import ManageCustomListings from "./Tabs/ManageCustomListings";
 import ManageEvents from "./Tabs/ManageEvents";
 import ManagePlayers from "./Tabs/ManagePlayers";
 import ManageRaffles from "./Tabs/ManageRaffles";
+import ManageSeasons from "./Tabs/ManageSeasons";
 import ManageSponsors from "./Tabs/ManageSponsors";
 import StreamSetup from "./Tabs/StreamSetup";
 
@@ -34,6 +34,7 @@ export default function AdminDashboard(){
       { id: "events", label: "Events" },
       { id: "raffles", label: "Raffles" },
       { id: "custom-listings", label: "Custom Listings" },
+      { id: "seasons", label: "Seasons" },
       { id: "stream", label: "Stream Setup" },
     ],
     []
@@ -55,6 +56,8 @@ export default function AdminDashboard(){
         return <ManageRaffles />;
       case "custom-listings":
         return <ManageCustomListings />;
+      case "seasons":
+        return <ManageSeasons />;
       case "stream":
         return <StreamSetup />;
       default:
@@ -66,25 +69,27 @@ export default function AdminDashboard(){
     <div className="max-w-6xl mx-auto mt-8 bg-white shadow rounded p-6">
       <h1 className="text-3xl font-bold mb-6 text-center">Admin Dashboard</h1>
 
-      {/* Tab controls */}
-      <div className="flex justify-center gap-4 mb-6">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => dispatch({ type: "SET_TAB", tab: tab.id })}
-            className={`px-4 py-2 rounded transition-all ${
-              activeTab === tab.id
-                ? "bg-gray-900 text-white"
-                : "bg-gray-200 hover:bg-gray-300"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6 items-start">
+        {/* Tab controls: stacked sidebar */}
+        <nav className="flex flex-row flex-wrap md:flex-col gap-2 md:sticky md:top-4">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => dispatch({ type: "SET_TAB", tab: tab.id })}
+              className={`px-4 py-2 rounded text-left transition-all ${
+                activeTab === tab.id
+                  ? "bg-gray-900 text-white"
+                  : "bg-gray-200 hover:bg-gray-300"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
 
-      {/* Tab content */}
-      <div className="animate-fadeIn">{renderActiveTab}</div>
+        {/* Tab content */}
+        <div className="animate-fadeIn min-w-0">{renderActiveTab}</div>
+      </div>
     </div>
   );
 }

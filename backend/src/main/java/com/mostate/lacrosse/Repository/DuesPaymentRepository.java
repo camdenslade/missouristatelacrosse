@@ -7,4 +7,6 @@ import com.mostate.lacrosse.Model.DuesPayment;
 
 public interface DuesPaymentRepository extends JpaRepository<DuesPayment, UUID> {
     List<DuesPayment> findByPlayerIdOrderByCreatedAtDesc(UUID playerId);
+    boolean existsByPayPalOrderId(String payPalOrderId);
+    java.util.Optional<DuesPayment> findByPayPalOrderId(String payPalOrderId);
 }

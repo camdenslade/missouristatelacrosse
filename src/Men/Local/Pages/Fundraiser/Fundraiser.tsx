@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import usePayPalButtons from "../../../../Global/Common/hooks/usePayPalButtons";
+import { useNavigate } from "react-router-dom";
+
+import usePaymentButtons from "../../../../Global/Common/hooks/usePaymentButtons";
 import { apiRequest } from "../../../../Services/API";
 
 const GOAL = 3000;
@@ -43,13 +44,22 @@ export default function Fundraiser() {
   };
 
   const handleSuccess = (captureData: unknown, amount: number) => {
+    // Never show a success page without a real captured order id - otherwise a backend
+    // hiccup that returns an empty/incomplete capture response would silently look like a
+    // successful donation with no actual charge behind it.
+    const orderId = (captureData as { id?: string } | null)?.id;
+    if (!orderId) {
+      console.error("PayPal onApprove returned no order id - not confirming donation:", captureData);
+      toast.error("Something went wrong confirming your donation. Please contact us before trying again.");
+      return;
+    }
     setDonationAmount("");
     setConfirmedAmount(null);
     setRaised((prev) => (prev ?? 0) + amount);
     navigate("/fundraiser/success", { state: { order: captureData, amount } });
   };
 
-  usePayPalButtons(confirmedAmount, "paypal-fundraiser-buttons", handleSuccess, "donate", SOURCE);
+  usePaymentButtons(confirmedAmount, "paypal-fundraiser-buttons", handleSuccess, "donate", SOURCE);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center py-10 px-4">
@@ -168,7 +178,7 @@ export default function Fundraiser() {
           <p className="text-xs text-gray-400 text-center">
             Donations are securely processed via PayPal.{" "}
             <span className="text-gray-500">
-              Missouri State Lacrosse is a registered 501(c)(3) — all donations are tax deductible.
+              Missouri State Lacrosse is a registered 501(c)(3) - all donations are tax deductible.
             </span>
           </p>
         </div>

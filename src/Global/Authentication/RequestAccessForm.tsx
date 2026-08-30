@@ -1,4 +1,3 @@
-// src/Global/Authentcation/RequestAccessForm.jsx
 import { useReducer } from "react";
 
 import { apiRequest } from "../../Services/API";

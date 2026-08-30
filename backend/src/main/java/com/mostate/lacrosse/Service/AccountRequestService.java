@@ -1,7 +1,5 @@
 package com.mostate.lacrosse.Service;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +30,7 @@ public class AccountRequestService {
     private final UserAccountRepository userRepository;
     private final PlayerRepository playerRepository;
     private final PlayerProfileService profileService;
+    private final SeasonService seasonService;
     private final ObjectMapper mapper = new ObjectMapper();
 
     public AccountRequestService(
@@ -39,13 +38,15 @@ public class AccountRequestService {
         EmailService emailService,
         UserAccountRepository userRepository,
         PlayerRepository playerRepository,
-        PlayerProfileService profileService
+        PlayerProfileService profileService,
+        SeasonService seasonService
     ) {
         this.repository = repository;
         this.emailService = emailService;
         this.userRepository = userRepository;
         this.playerRepository = playerRepository;
         this.profileService = profileService;
+        this.seasonService = seasonService;
     }
 
     public String createRequest(AccountRequestModel requestModel) {
@@ -79,13 +80,13 @@ public class AccountRequestService {
         try {
             UUID requestId = UUID.fromString(id);
             repository.deleteById(requestId);
-            System.out.println("❌ [" + program + "] Request rejected and deleted: " + id);
+            System.out.println("[" + program + "] Request rejected and deleted: " + id);
         } catch (Exception e) {
             throw new RuntimeException("Failed to reject account request", e);
         }
     }
 
-    public void approveRequest(String id, String program) {
+    public void approveRequest(String id, String program, String role) {
         try {
             UUID requestId = UUID.fromString(id);
             AccountRequestModel req = repository.findById(requestId)
@@ -103,6 +104,10 @@ public class AccountRequestService {
                     : (sanitizedReqProgram != null ? sanitizedReqProgram.toLowerCase() : "men");
             String displayName = TextSanitizer.clean(req.getDisplayName());
             String email = TextSanitizer.clean(req.getEmail());
+            String sanitizedRole = TextSanitizer.clean(role);
+            String effectiveRole = (sanitizedRole != null && !sanitizedRole.isEmpty())
+                    ? sanitizedRole.toLowerCase()
+                    : "user";
 
             UserRecord userRecord;
             try {
@@ -148,40 +153,32 @@ public class AccountRequestService {
                 System.err.println("Email sending failed: " + mailEx.getMessage());
             }
 
-            String currentSeason = LocalDate.now().getMonthValue() >= 7
-                    ? (LocalDate.now().getYear() % 100) + "-" + ((LocalDate.now().getYear() + 1) % 100)
-                    : ((LocalDate.now().getYear() - 1) % 100) + "-" + (LocalDate.now().getYear() % 100);
+            String currentSeason = seasonService.getActiveCode();
 
 
-            Player player = playerRepository
-                .findFirstByNameIgnoreCaseAndSeason(displayName, currentSeason)
-                .orElse(null);
+            // Only link to an existing roster player — never create a new one here.
+            // This request is self-service (e.g. alumni signing up), so we can't assume
+            // the requester should be added to the roster as a player. The admin picks the
+            // role explicitly at approval time; we only touch the roster if that role is "player".
             var profile = profileService.findOrCreateByFirebaseUid(
                 userRecord.getUid(),
                 displayName,
                 email
             );
-            if (player != null) {
-                player.setUserUid(userRecord.getUid());
-                if (profile != null) {
-                    player.setProfileId(profile.getId());
-                }
-                playerRepository.save(player);
-            } else {
-                Player newPlayer = new Player();
-                newPlayer.setName(displayName);
-                newPlayer.setEmail(email);
-                newPlayer.setSeason(currentSeason);
-                newPlayer.setUserUid(userRecord.getUid());
-                if (profile != null) {
-                    newPlayer.setProfileId(profile.getId());
-                }
-                newPlayer.setBalance(BigDecimal.ZERO);
-                playerRepository.save(newPlayer);
-            }
-
             Map<String, Object> roles = new HashMap<>();
-            roles.put(effectiveProgram, "player");
+            roles.put(effectiveProgram, effectiveRole);
+            if ("player".equals(effectiveRole)) {
+                Player player = playerRepository
+                    .findFirstByNameIgnoreCaseAndSeason(displayName, currentSeason)
+                    .orElse(null);
+                if (player != null) {
+                    player.setUserUid(userRecord.getUid());
+                    if (profile != null) {
+                        player.setProfileId(profile.getId());
+                    }
+                    playerRepository.save(player);
+                }
+            }
 
             Map<String, Object> userData = new HashMap<>();
             userData.put("displayName", displayName);

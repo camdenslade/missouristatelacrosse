@@ -16,6 +16,12 @@ import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRespon
 @Configuration
 public class FirebaseConfig {
 
+    private final org.springframework.core.env.Environment env;
+
+    public FirebaseConfig(org.springframework.core.env.Environment env) {
+        this.env = env;
+    }
+
     @PostConstruct
     public void init() {
         try {
@@ -54,8 +60,15 @@ public class FirebaseConfig {
             System.out.println("Firebase initialized successfully from AWS Secrets Manager.");
 
         } catch (Exception e) {
-            System.err.println("Failed to initialize Firebase: " + e.getMessage());
-            e.printStackTrace();
+            boolean localDev = env.acceptsProfiles(
+                org.springframework.core.env.Profiles.of("local", "dev", "test"));
+            if (localDev) {
+                System.out.println("[FirebaseConfig] Firebase not initialized ("
+                    + e.getMessage() + ") - token verification is disabled in this profile.");
+            } else {
+                System.err.println("Failed to initialize Firebase: " + e.getMessage());
+                e.printStackTrace();
+            }
         }
     }
 }

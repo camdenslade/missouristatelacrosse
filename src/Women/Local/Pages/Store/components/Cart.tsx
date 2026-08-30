@@ -1,8 +1,6 @@
-// src/Women/Local/Pages/Store/Cart.jsx
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import useStore from "../hooks/useStore";
+import { useNavigate } from "react-router-dom";
 
 const SHIPPING_FEE = 5;
 
@@ -27,10 +25,7 @@ export default function Cart({
     safeCart.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0)
   );
 
-  const totalBeforeShipping = subtotal + (confirmedDonation || 0);
-  const totalWithShipping = totalBeforeShipping + SHIPPING_FEE;
-
-  useStore(totalBeforeShipping, "paypal-buttons-container");
+  const totalWithShipping = subtotal + (confirmedDonation || 0) + SHIPPING_FEE;
 
   const handleConfirmDonation = () => {
     const val = parseFloat(donation);
@@ -170,7 +165,7 @@ export default function Cart({
                 onClick={() => {
                   setShowCart(false);
 
-                  navigate("/checkout", {
+                  navigate("/women/checkout", {
                     state: {
                       cart: safeCart,
                       donation: confirmedDonation > 0 ? confirmedDonation : 0,

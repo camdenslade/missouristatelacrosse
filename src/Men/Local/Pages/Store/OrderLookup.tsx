@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
+
 import { apiRequest } from "../../../../Services/API";
 import type { PrintifyProduct, PublicOrderDetails } from "../../../../types/api";
 
@@ -85,7 +86,7 @@ export default function OrderLookup() {
 
   const shippingLines = useMemo(() => {
     if (!shipping) return [];
-    const lines = [];
+    const lines: string[] = [];
     if (shipping.first_name || shipping.last_name) {
       lines.push(
         [shipping.first_name, shipping.last_name]
@@ -177,7 +178,7 @@ export default function OrderLookup() {
                 {items.length > 0 ? (
                   items.map((item, idx) => (
                     <li key={idx}>
-                      <span className="font-medium">{item.title}</span> — Qty {item.quantity}
+                      <span className="font-medium">{item.title}</span> - Qty {item.quantity}
                       {item.size && <span> (Size: {item.size})</span>}
                     </li>
                   ))

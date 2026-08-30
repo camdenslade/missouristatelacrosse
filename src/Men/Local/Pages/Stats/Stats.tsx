@@ -1,28 +1,13 @@
-import { useEffect, useMemo, useReducer } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getCurrentYear, setCurrentYear } from "../../../../Services/yearHelper";
-import useGames from "../Schedule/hooks/useGames";
-import usePlayers from "../Roster/contenthooks/usePlayers";
-import useSeasonStats from "./hooks/useSeasonStats";
+
 import FieldStatsTable from "./components/FieldStatsTable";
 import GoalieStatsTable from "./components/GoalieStatsTable";
-
-const getSeasonValue = (date = new Date()) => {
-  const y = date.getFullYear();
-  const m = date.getMonth() + 1;
-  const start = m >= 8 ? y : y - 1;
-  return `${String(start).slice(-2)}-${String(start + 1).slice(-2)}`;
-};
-
-const generateSeasonValues = () => {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth() + 1;
-  const currentStart = m >= 8 ? y : y - 1;
-  return Array.from({ length: 4 }, (_, i) =>
-    `${String(currentStart - i).slice(-2)}-${String(currentStart - i + 1).slice(-2)}`
-  );
-};
+import useSeasonStats from "./hooks/useSeasonStats";
+import { setCurrentYear } from "../../../../Services/yearHelper";
+import usePlayers from "../Roster/contenthooks/usePlayers";
+import { getSeasonValue, fetchActiveSeasonCode, fetchSeasonCodes, displaySeasonLabel } from "../Roster/hooks/seasonUtils";
+import useGames from "../Schedule/hooks/useGames";
 
 type State = {
   selectedSeason: string;
@@ -57,11 +42,17 @@ export default function Stats() {
   const { players, fetchPlayers } = usePlayers();
   const [state, dispatch] = useReducer(reducer, initialState);
   const { selectedSeason, loading } = state;
+  const [managedSeasons, setManagedSeasons] = useState<string[]>([]);
+  useEffect(() => {
+    fetchSeasonCodes().then(setManagedSeasons);
+  }, []);
 
   useEffect(() => {
-    const current = getSeasonValue();
     if (!season) {
-      navigate(`/stats/${current}`, { replace: true });
+      (async () => {
+        const current = await fetchActiveSeasonCode();
+        navigate(`/stats/${current}`, { replace: true });
+      })();
       return;
     }
     if (season !== state.selectedSeason) {
@@ -80,7 +71,7 @@ export default function Stats() {
   const seasonGames = games.filter((g) => g.season === selectedSeason);
   const { fieldStats: rawFieldStats, goalieStats: rawGoalieStats } = useSeasonStats(seasonGames);
 
-  // Build name→number lookup from roster to fill in numbers for older stats
+  // Build name -> number lookup from roster to fill in numbers for older stats
   const numberMap = useMemo(() => {
     const map = new Map<string, string | number>();
     for (const p of players.filter((p) => p.season === selectedSeason)) {
@@ -112,7 +103,7 @@ export default function Stats() {
   };
 
   const availableSeasons = Array.from(
-    new Set([...generateSeasonValues(), ...games.map((g) => g.season || "")])
+    new Set([...managedSeasons, ...games.map((g) => g.season || "")].filter(Boolean))
   ).sort();
 
   const isLoading = loading || gamesLoading;
@@ -127,14 +118,14 @@ export default function Stats() {
         >
           {availableSeasons.map((s) => (
             <option key={s} value={s}>
-              {s} Season
+              {displaySeasonLabel(s)} Season
             </option>
           ))}
         </select>
       </div>
 
       <h1 className="text-3xl font-bold text-center text-[#5E0009] mb-8">
-        {selectedSeason} Season Stats
+        {displaySeasonLabel(selectedSeason)} Season Stats
       </h1>
 
       {isLoading ? (

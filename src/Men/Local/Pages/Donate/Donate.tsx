@@ -1,11 +1,10 @@
-// src/Men/Pages/Donate/Donate.jsx
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
-import usePayPalButtons from "../../../../Global/Common/hooks/usePayPalButtons";
-import SponsorLogos from "../../../../Global/Common/SponsorLogos";
+import usePaymentButtons from "../../../../Global/Common/hooks/usePaymentButtons";
 import { useSponsors } from "../../../../Global/Common/hooks/useSponsors";
+import SponsorLogos from "../../../../Global/Common/SponsorLogos";
 import UnavailableOverlay from "../../../../Global/Common/UnavailableOverlay";
 
 export default function Donate() {
@@ -33,7 +32,7 @@ export default function Donate() {
     });
   };
 
-  usePayPalButtons(confirmedAmount, "paypal-donate-buttons", handleSuccess);
+  usePaymentButtons(confirmedAmount, "paypal-donate-buttons", handleSuccess);
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center bg-gray-50 p-6">

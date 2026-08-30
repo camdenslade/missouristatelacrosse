@@ -1,4 +1,3 @@
-// src/Women/Local/Pages/Roster/hooks/printStyles.js
 export const rosterPrintStyle = `
   @media print {
     @page { margin: 0; size: auto; }

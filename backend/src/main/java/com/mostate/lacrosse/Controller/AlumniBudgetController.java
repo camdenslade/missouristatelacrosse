@@ -14,22 +14,29 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.google.firebase.auth.FirebaseToken;
+import com.mostate.lacrosse.Config.FirebaseAdminFilter;
 import com.mostate.lacrosse.Config.TenantContext;
 import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Model.AlumniBudget;
 import com.mostate.lacrosse.Repository.AlumniBudgetRepository;
+import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Utils.TextSanitizer;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/alumni-budget")
 public class AlumniBudgetController {
 
     private final AlumniBudgetRepository repository;
+    private final AuthorizationService authorizationService;
 
-    public AlumniBudgetController(AlumniBudgetRepository repository) {
+    public AlumniBudgetController(AlumniBudgetRepository repository, AuthorizationService authorizationService) {
         this.repository = repository;
+        this.authorizationService = authorizationService;
     }
 
+    // Public: transparency page for alumni/donors.
     @GetMapping
     public ResponseEntity<List<BudgetResponse>> list() {
         String program = TenantContext.getTenant();
@@ -40,8 +47,11 @@ public class AlumniBudgetController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody BudgetPayload payload) {
+    public ResponseEntity<?> create(HttpServletRequest request, @RequestBody BudgetPayload payload) {
         String program = TenantContext.getTenant();
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         AlumniBudget entry = new AlumniBudget();
         entry.setProgram(program);
         applyPayload(entry, payload);
@@ -49,7 +59,10 @@ public class AlumniBudgetController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable UUID id, @RequestBody BudgetPayload payload) {
+    public ResponseEntity<?> update(HttpServletRequest request, @PathVariable UUID id, @RequestBody BudgetPayload payload) {
+        if (!isAdmin(request, TenantContext.getTenant())) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         AlumniBudget entry = repository.findById(id).orElse(null);
         if (entry == null) return ResponseEntity.notFound().build();
         applyPayload(entry, payload);
@@ -57,15 +70,21 @@ public class AlumniBudgetController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+    public ResponseEntity<?> delete(HttpServletRequest request, @PathVariable UUID id) {
+        if (!isAdmin(request, TenantContext.getTenant())) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         repository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 
     /** Accepts CSV text: year,category,description,amount,type */
     @PostMapping("/import")
-    public ResponseEntity<?> importCsv(@RequestBody String csvBody) {
+    public ResponseEntity<?> importCsv(HttpServletRequest request, @RequestBody String csvBody) {
         String program = TenantContext.getTenant();
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
         if (csvBody == null || csvBody.isBlank()) {
             return ResponseEntity.badRequest().body(new ErrorResponse("CSV body is empty"));
         }
@@ -92,6 +111,12 @@ public class AlumniBudgetController {
         }
         List<AlumniBudget> saved = repository.saveAll(imported);
         return ResponseEntity.ok(saved.stream().map(this::toResponse).toList());
+    }
+
+    private boolean isAdmin(HttpServletRequest request, String program) {
+        String uid = (String) request.getAttribute("firebaseUid");
+        FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
+        return authorizationService.isAdmin(uid, program, token);
     }
 
     private void applyPayload(AlumniBudget entry, BudgetPayload payload) {

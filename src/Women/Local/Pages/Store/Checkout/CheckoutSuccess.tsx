@@ -1,6 +1,6 @@
-// src/Women/Local/Pages/Store/Checkout/CheckoutSuccess.jsx
 import { useEffect, useReducer } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+
 import { apiRequest } from "../../../../../Services/API";
 
 type PayPalOrderItem = {
@@ -79,9 +79,9 @@ export default function CheckoutSuccess() {
 
       try {
         dispatch({ type: "FETCH_START" });
-        const data = await apiRequest<PayPalOrder>(`/api/paypal/capture?orderID=${orderID}`, {
-          method: "POST",
-        });
+        // Read-only: re-displaying an already-captured order (refresh/back/shared link)
+        // should never re-invoke capture, even though /capture is itself idempotent.
+        const data = await apiRequest<PayPalOrder>(`/api/paypal/receipt?orderID=${orderID}`);
         dispatch({ type: "FETCH_SUCCESS", payload: data });
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to fetch order";

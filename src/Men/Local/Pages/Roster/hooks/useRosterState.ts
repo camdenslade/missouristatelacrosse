@@ -1,8 +1,7 @@
-// src/Men/Local/Pages/Roster/hooks/useRosterState.js
 import { useReducer, useEffect } from "react";
 import type { Dispatch } from "react";
 
-import { getSeasonValue } from "./seasonUtils";
+import { fetchActiveSeasonCode } from "./seasonUtils";
 import type { RosterAction, RosterState } from "../types";
 
 const initialState: RosterState = {
@@ -39,9 +38,15 @@ export default function useRosterState(
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
-    const season =
-      seasonParam || localStorage.getItem("selectedSeason") || getSeasonValue();
-    dispatch({ type: "SET_SEASON", payload: season });
+    let cancelled = false;
+    (async () => {
+      const cached = localStorage.getItem("selectedSeason");
+      const season = seasonParam || cached || (await fetchActiveSeasonCode());
+      if (!cancelled) dispatch({ type: "SET_SEASON", payload: season });
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [seasonParam]);
 
   return [state, dispatch];

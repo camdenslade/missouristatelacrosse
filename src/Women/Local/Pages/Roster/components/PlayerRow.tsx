@@ -1,5 +1,7 @@
+import { ChevronUp, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import type { SyntheticEvent } from "react";
+
 import { apiRequest } from "../../../../../Services/API";
 
 type PlayerRowProps = {
@@ -166,7 +168,7 @@ export default function PlayerRow({ player, index, season, onEdit, onDelete, isA
                 className="text-gray-800 font-bold text-2xl hover:text-[#5E0009] transition-colors flex items-center gap-1.5 text-left"
               >
                 {name}
-                <span className="text-sm text-gray-400 font-normal">{showStats ? "▴" : "▾"}</span>
+                <span className="text-sm text-gray-400 font-normal">{showStats ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
               </button>
             </div>
             <div className="sm:hidden mt-2 text-sm">{infoLine}</div>

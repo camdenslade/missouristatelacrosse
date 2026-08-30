@@ -1,20 +1,19 @@
-// src/Women/Local/Pages/Store/Store.jsx
 import { useEffect, useReducer, useRef, useState } from "react";
 import { FaShoppingCart } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
+import Cart from "./components/Cart";
+import OrderLogsModal from "./components/OrderLogsModal";
+import ProductCard from "./components/ProductCard";
+import { useWomenCart } from "./context/WomenCartContext";
 import UnavailableOverlay from "../../../../Global/Common/UnavailableOverlay";
 import { useAuth } from "../../../../Global/Context/AuthContext";
 import { apiRequest } from "../../../../Services/API";
 import { getProgramInfo } from "../../../../Services/programHelper";
 import type { ApiCustomProduct, PrintifyProduct } from "../../../../types/api";
-import Cart from "./components/Cart";
-import OrderLogsModal from "./components/OrderLogsModal";
-import ProductCard from "./components/ProductCard";
 
 const initialState = {
   products: [],
-  cart: [],
   loading: true,
   showCart: false,
 };
@@ -27,22 +26,6 @@ function reducer(state, action) {
       return { ...state, loading: action.payload };
     case "TOGGLE_CART":
       return { ...state, showCart: action.payload };
-    case "ADD_TO_CART": {
-      const product = action.payload;
-      const exists = state.cart.find(
-        (item) => item.id === product.id && item.variantId === product.variantId
-      );
-      const newCart = exists
-        ? state.cart.map((item) =>
-            item.id === product.id && item.variantId === product.variantId
-              ? { ...item, quantity: (item.quantity || 1) + 1 }
-              : item
-          )
-        : [...state.cart, { ...product, quantity: 1 }];
-      return { ...state, cart: newCart, showCart: true };
-    }
-    case "SET_CART":
-      return { ...state, cart: action.payload };
     default:
       return state;
   }
@@ -50,12 +33,13 @@ function reducer(state, action) {
 
 export default function WStore() {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const { cart, addToCart, setCart, totalItems } = useWomenCart();
   const sidebarRef = useRef(null);
   const touchStartX = useRef(0);
   const touchCurrentX = useRef(0);
   const navigate = useNavigate();
   const isEnabled = import.meta.env.VITE_TEAMSTORE_ENABLED_WOMEN === "true";
-  const { user, roles } = useAuth();
+  const { roles } = useAuth();
   const [showOrderLogs, setShowOrderLogs] = useState(false);
   const { program } = getProgramInfo();
   const orderLookupPath = program === "women" ? "/women/order-lookup" : "/order-lookup";
@@ -98,12 +82,9 @@ export default function WStore() {
     if (isEnabled) fetchProducts();
   }, [isEnabled]);
 
-  const addToCart = (product) => {
-    dispatch({ type: "ADD_TO_CART", payload: product });
-  };
-
-  const setCart = (newCart) => {
-    dispatch({ type: "SET_CART", payload: newCart });
+  const handleAddToCart = (product) => {
+    addToCart(product);
+    setShowCart(true);
   };
 
   const setShowCart = (val) => {
@@ -121,10 +102,6 @@ export default function WStore() {
       setShowCart(false);
     }
   };
-
-  const totalItems = Array.isArray(state.cart)
-    ? state.cart.reduce((sum, item) => sum + (item.quantity || 1), 0)
-    : 0;
 
   return (
     <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -168,7 +145,7 @@ export default function WStore() {
                 <ProductCard
                   key={`${p.id}-${idx}`}
                   product={p}
-                  onAddToCart={addToCart}
+                  onAddToCart={handleAddToCart}
                   isAdmin={isAdmin}
                 />
               ))}
@@ -180,7 +157,7 @@ export default function WStore() {
             className="fixed bottom-6 right-6 w-16 h-16 bg-[#5E0009] text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-800 hover:shadow-xl hover:scale-105 transition-all"
           >
             <FaShoppingCart className="text-2xl" />
-            {state.cart.length > 0 && (
+            {cart.length > 0 && (
               <span className="absolute -top-1 -right-1 bg-white text-[#5E0009] rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow border border-gray-100">
                 {totalItems}
               </span>
@@ -188,7 +165,7 @@ export default function WStore() {
           </button>
 
           <Cart
-            cart={Array.isArray(state.cart) ? state.cart : []}
+            cart={Array.isArray(cart) ? cart : []}
             setCart={setCart}
             showCart={state.showCart}
             setShowCart={setShowCart}

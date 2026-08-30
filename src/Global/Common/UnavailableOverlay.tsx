@@ -1,4 +1,3 @@
-// src/Global/Common/UnavailableOverlay.jsx
 export default function UnavailableOverlay({ message = "Currently Unavailable", offsetTop = 0 }) {
   return (
     <div

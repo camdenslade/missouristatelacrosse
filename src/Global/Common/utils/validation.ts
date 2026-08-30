@@ -1,4 +1,6 @@
 const htmlPattern = /<[^>]*>/;
+// Intentionally matches C0 control chars + DEL so they can be stripped from user input.
+// eslint-disable-next-line no-control-regex
 const controlPattern = /[\u0000-\u001F\u007F]/;
 
 export const normalizeText = (value) =>

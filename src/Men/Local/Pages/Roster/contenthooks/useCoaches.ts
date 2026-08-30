@@ -1,4 +1,3 @@
-// src/Men/Local/Pages/Roster/contenthooks/useCoaches.js
 import { useCallback, useReducer } from "react";
 
 import { uploadCompressedImage } from "../../../../../Global/Common/hooks/uploadHelper";

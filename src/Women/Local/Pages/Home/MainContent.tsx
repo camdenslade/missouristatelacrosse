@@ -1,12 +1,13 @@
-// src/Women/Local/Pages/Home/MainContent.jsx
 import { motion } from "framer-motion";
+import { X } from "lucide-react";
 import { useEffect, useLayoutEffect, useReducer, useState } from "react";
 import type { FormEvent } from "react";
-import SponsorLogos from "../../../../Global/Common/SponsorLogos";
+
 import { useSponsors } from "../../../../Global/Common/hooks/useSponsors";
+import SponsorLogos from "../../../../Global/Common/SponsorLogos";
+import { validateText, validateUrl } from "../../../../Global/Common/utils/validation";
 import { useAuth } from "../../../../Global/Context/AuthContext";
 import { apiRequest } from "../../../../Services/API";
-import { validateText, validateUrl } from "../../../../Global/Common/utils/validation";
 import type { ApiArticle, ApiFundraiser } from "../../../../types/api";
 
 const heroImages = [
@@ -278,7 +279,7 @@ export default function MainContent() {
                 onClick={() => setShowManager(false)}
                 className="text-[#5E0009] text-lg font-semibold"
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
             <form onSubmit={addFundraiser} className="flex flex-col md:flex-row gap-3 mb-6">

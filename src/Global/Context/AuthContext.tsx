@@ -1,5 +1,5 @@
-// src/Global/Context/AuthContext.jsx
 import { onAuthStateChanged, signOut } from "firebase/auth";
+import type { User as FirebaseUser } from "firebase/auth";
 import {
   createContext,
   useCallback,
@@ -9,11 +9,11 @@ import {
   useReducer,
 } from "react";
 import type { ReactNode } from "react";
-import type { User as FirebaseUser } from "firebase/auth";
 
 import { apiRequest } from "../../Services/API";
 import { auth } from "../../Services/firebaseConfig";
 import { getActiveProgram } from "../../Services/programHelper";
+import { fetchActiveSeasonCode } from "../Common/utils/seasonUtils";
 
 type ProgramKey = "men" | "women" | string;
 type UserRole = "admin" | "player" | "user" | "parent" | string;
@@ -190,7 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         );
 
         if (!data.playerId && currentRole && ["player", "admin"].includes(currentRole) && displayName) {
-          await tryAutoLinkPlayer(currentUser, displayName, program);
+          await tryAutoLinkPlayer(currentUser, displayName);
         }
       } catch (err) {
         console.error("Auth revalidation error:", err);
@@ -230,17 +230,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 async function tryAutoLinkPlayer(
   firebaseUser: FirebaseUser,
-  displayName: string,
-  program: string | null
+  displayName: string
 ) {
   try {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = now.getMonth() + 1;
-    const start = m >= 8 ? y : y - 1;
-    const currentSeason = `${String(start).slice(-2)}-${String(
-      start + 1
-    ).slice(-2)}`;
+    const currentSeason = await fetchActiveSeasonCode();
 
     let player = await apiRequest<{ id?: string; email?: string }>(
       `/api/players/search?name=${encodeURIComponent(displayName)}&season=${encodeURIComponent(currentSeason)}`
@@ -267,14 +260,6 @@ async function tryAutoLinkPlayer(
         method: "PUT",
         json: { userUid: firebaseUser.uid },
       });
-
-      console.log(
-        `Linked ${displayName} to ${program} player ${playerId} (${currentSeason})`
-      );
-    } else {
-      console.log(
-        `No ${program} player found for ${displayName} in ${currentSeason}`
-      );
     }
   } catch (err) {
     console.error("Error auto-linking player:", err);

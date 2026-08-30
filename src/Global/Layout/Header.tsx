@@ -2,9 +2,9 @@ import { useEffect, useReducer, useRef } from "react";
 import { FaBars, FaTimes, FaUserCircle } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 
+import MobileMenu from "./Mobile";
 import { getProgramInfo } from "../../Services/programHelper";
 import { useAuth } from "../Context/AuthContext";
-import MobileMenu from "./Mobile";
 
 const initialState = {
   showUserMenu: false,

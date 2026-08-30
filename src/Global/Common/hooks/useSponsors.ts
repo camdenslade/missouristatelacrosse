@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useReducer } from "react";
+
+import { uploadCompressedImage } from "./uploadHelper";
 import { apiRequest } from "../../../Services/API";
 import type { ApiSponsor } from "../../../types/api";
-import { uploadCompressedImage } from "./uploadHelper";
 
 type SponsorsState = {
   sponsors: ApiSponsor[];

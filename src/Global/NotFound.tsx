@@ -1,7 +1,7 @@
-// src/Global/NotFound.jsx
 import { motion } from "framer-motion";
 import { Helmet } from "react-helmet";
 import { Link, useLocation } from "react-router-dom";
+
 import routes from "./routesList";
 
 export default function NotFound() {

@@ -1,11 +1,8 @@
-// src/Men/Local/Pages/Schedule/Schedule.jsx
-import { addHours, isWithinInterval, parseISO, subHours, subMinutes } from "date-fns";
+import { addHours, isWithinInterval, subMinutes } from "date-fns";
 import type { ReactElement } from "react";
 import { useEffect, useMemo, useReducer, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getCurrentYear, setCurrentYear } from "../../../../Services/yearHelper";
-import type { ScheduleGame } from "../../../../types/schedule";
-import usePlayers from "../Roster/contenthooks/usePlayers";
+
 import GameRow from "./components/GameRow";
 import NextGameSection from "./components/HighlightGame";
 import RecordGrid from "./components/RecordGrid";
@@ -16,33 +13,10 @@ import LiveGameUI from "./Live/LiveGameUI";
 import LiveGameViewer from "./Live/LiveGameViewer";
 import ScheduleFormModal from "./Modals/ScheduleForm";
 import ScoreModal from "./Modals/Score";
-
-const getSeasonValue = (date = new Date()) => {
-  const y = date.getFullYear();
-  const m = date.getMonth() + 1;
-  const start = m >= 8 ? y : y - 1;
-  return `${String(start).slice(-2)}-${String(start + 1).slice(-2)}`;
-};
-const generateSeasonValues = () => {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth() + 1;
-  const currentStart = m >= 8 ? y : y - 1;
-  return Array.from({ length: 4 }, (_, i) =>
-    `${String(currentStart - i).slice(-2)}-${String(currentStart - i + 1).slice(-2)}`
-  );
-};
-const isGameLive = (g: ScheduleGame | null) => {
-  if (!g?.date || !g?.time || g.time === "TBD") return false;
-  try {
-    const dt = parseISO(`${g.date}T${g.time}`);
-    const now = new Date();
-    return isWithinInterval(now, { start: subHours(dt, 0.1), end: addHours(dt, 2) });
-  } catch {
-    return false;
-  }
-};
-
+import { setCurrentYear } from "../../../../Services/yearHelper";
+import type { ScheduleGame } from "../../../../types/schedule";
+import usePlayers from "../Roster/contenthooks/usePlayers";
+import { getSeasonValue, fetchActiveSeasonCode, fetchSeasonCodes, displaySeasonLabel } from "../Roster/hooks/seasonUtils";
 // Admin sees LiveGameUI for explicitly-live games (isLive=true) or on game day
 const isAdminStreamWindow = (g: ScheduleGame): boolean => {
   const gData = g.data as Record<string, unknown> | null | undefined;
@@ -122,6 +96,10 @@ export default function Schedule({ userRole }: { userRole?: string | null }) {
   const { fetchPlayers, players: allPlayers } = usePlayers();
   const [state, dispatch] = useReducer(reducer, initialState);
   const [allSeasonGames, setAllSeasonGames] = useState<ScheduleGame[]>([]);
+  const [managedSeasons, setManagedSeasons] = useState<string[]>([]);
+  useEffect(() => {
+    fetchSeasonCodes().then(setManagedSeasons);
+  }, []);
   const {
     games,
     selectedSeason,
@@ -133,10 +111,11 @@ export default function Schedule({ userRole }: { userRole?: string | null }) {
   } = state;
 
   useEffect(() => {
-    const cachedYear = getCurrentYear();
-    const current = getSeasonValue();
     if (!season) {
-      navigate(`/schedule/${current}`, { replace: true });
+      (async () => {
+        const current = await fetchActiveSeasonCode();
+        navigate(`/schedule/${current}`, { replace: true });
+      })();
       return;
     }
     if (season !== state.selectedSeason) {
@@ -191,7 +170,7 @@ export default function Schedule({ userRole }: { userRole?: string | null }) {
   const { countdown, prev } = useCountdown(nextGame?.dateObj ?? null);
   const liveGame = (() => {
     if (userRole?.toLowerCase() === "admin") {
-      // Search all games (all seasons) — prefer explicitly-live, then fall back to today
+      // Search all games (all seasons) - prefer explicitly-live, then fall back to today
       const explicitlyLive = allSeasonGames.find(
         (g) => (g.data as Record<string, unknown> | null | undefined)?.isLive === true
       );
@@ -216,7 +195,7 @@ export default function Schedule({ userRole }: { userRole?: string | null }) {
   };
 
   const availableSeasons = Array.from(
-    new Set([...generateSeasonValues(), ...games.map((g) => g.season || "")])
+    new Set([...managedSeasons, ...games.map((g) => g.season || "")].filter(Boolean))
   ).sort();
 
   const renderDivider = (label: string) => (
@@ -248,7 +227,7 @@ export default function Schedule({ userRole }: { userRole?: string | null }) {
         >
           {availableSeasons.map((s) => (
             <option key={s} value={s}>
-              {s} Season
+              {displaySeasonLabel(s)} Season
             </option>
           ))}
         </select>
@@ -327,7 +306,7 @@ export default function Schedule({ userRole }: { userRole?: string | null }) {
           })()
         ) : (
           <div className="text-center text-gray-500 py-10">
-            No games found for {selectedSeason}.
+            No games found for {displaySeasonLabel(selectedSeason)}.
           </div>
         )}
       </div>

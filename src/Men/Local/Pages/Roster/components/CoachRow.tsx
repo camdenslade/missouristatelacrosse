@@ -1,6 +1,6 @@
-// src/Men/Local/Pages/Roster/components/CoachRow.jsx
 import { useState } from "react";
 import type { SyntheticEvent } from "react";
+
 import type { Coach } from "../types";
 
 type CoachRowProps = {

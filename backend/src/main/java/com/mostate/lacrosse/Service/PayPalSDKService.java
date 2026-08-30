@@ -17,29 +17,36 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class PayPalSDKService {
 
-    @Value("${PAYPAL_CLIENT_ID}")
+    @Value("${PAYPAL_CLIENT_ID:}")
     private String clientId;
 
-    @Value("${PAYPAL_CLIENT_SECRET}")
+    @Value("${PAYPAL_CLIENT_SECRET:}")
     private String clientSecret;
 
-    @Value("${PAYPAL_BASE_URL}")
+    @Value("${PAYPAL_BASE_URL:https://api-m.sandbox.paypal.com}")
     private String baseUrl;
 
+    private final org.springframework.core.env.Environment env;
     private final RestTemplate rest = new RestTemplate();
     private static final ParameterizedTypeReference<Map<String, Object>> MAP_RESPONSE =
         new ParameterizedTypeReference<>() {};
 
+    public PayPalSDKService(org.springframework.core.env.Environment env) {
+        this.env = env;
+    }
+
     @PostConstruct
     private void validateConfig(){
-        if (clientId == null || clientId.isBlank()){
-            throw new IllegalStateException("paypal.client.id is not configured");
-        }
-        if (clientSecret == null || clientSecret.isBlank()){
-            throw new IllegalStateException("paypal.client.secret is not configured");
-        }
-        if (baseUrl == null || baseUrl.isBlank()){
-            throw new IllegalStateException("paypal.base-url is not configured");
+        boolean localDev = env.acceptsProfiles(
+            org.springframework.core.env.Profiles.of("local", "dev", "test"));
+        if (clientId == null || clientId.isBlank()
+            || clientSecret == null || clientSecret.isBlank()) {
+            String msg = "PayPal is not configured (PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET)";
+            if (localDev) {
+                System.out.println("[PayPalSDKService] " + msg + " - PayPal endpoints will not work in this profile");
+                return;
+            }
+            throw new IllegalStateException(msg);
         }
         boolean isLive = baseUrl.contains("api.paypal.com") || baseUrl.contains("api-m.paypal.com");
         System.out.println("[PayPalSDKService] Initialized with baseUrl=" + baseUrl + " (" + (isLive ? "LIVE" : "SANDBOX") + ")");

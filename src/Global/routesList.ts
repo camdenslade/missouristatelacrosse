@@ -1,4 +1,3 @@
-// src/Global/routesList.js
 export default [
   { path: "/" },
   { path: "/schedule" },

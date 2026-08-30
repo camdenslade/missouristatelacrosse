@@ -1,10 +1,10 @@
-# Build artifacts
+# Build artifacts - the image builds the jar itself from source, so none of this is
+# needed in the build context (dropping the ~130MB build/ dir also speeds the build).
 build/
 bin/
 .gradle/
 *.class
 *.jar
-!build/libs/*.jar
 
 # IDE files
 .idea/
