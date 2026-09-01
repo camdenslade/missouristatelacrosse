@@ -130,7 +130,7 @@ export default function WGallery() {
         <p className="italic">{error}</p>
         <button
           onClick={loadGallery}
-          className="mt-4 bg-[#5E0009] text-white px-4 py-2 rounded hover:bg-red-800"
+          className="mt-4 bg-[#5E0009] text-white px-4 py-2 rounded hover:bg-[#7a0012]"
         >
           Retry
         </button>
@@ -149,7 +149,7 @@ export default function WGallery() {
         <div className="absolute top-4 right-4">
           <button
             onClick={() => setState((p) => ({ ...p, showUploadModal: true }))}
-            className="bg-[#5E0009] text-white px-4 py-2 rounded hover:bg-red-800"
+            className="bg-[#5E0009] text-white px-4 py-2 rounded hover:bg-[#7a0012]"
           >
             Upload Photo
           </button>

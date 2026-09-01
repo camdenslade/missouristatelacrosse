@@ -190,9 +190,12 @@ public class StripeService {
         if (source == null || source.isBlank()) {
             return "Missouri State Lacrosse";
         }
-        return switch (source.toLowerCase()) {
+        String normalized = source.toLowerCase();
+        if (normalized.startsWith("fundraiser")) {
+            return "Missouri State Lacrosse - Fundraiser";
+        }
+        return switch (normalized) {
             case "dues" -> "Missouri State Lacrosse - Dues";
-            case "fundraiser" -> "Missouri State Lacrosse - Fundraiser";
             case "stream" -> "Missouri State Lacrosse - Stream Access";
             case "pay" -> "Missouri State Lacrosse - Event Registration";
             default -> "Missouri State Lacrosse";

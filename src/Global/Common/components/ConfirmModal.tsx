@@ -37,7 +37,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               </button>
               <button
                 onClick={() => handle(true)}
-                className="px-4 py-2 rounded-lg bg-[#5E0009] text-white hover:bg-red-900 text-sm"
+                className="px-4 py-2 rounded-lg bg-[#5E0009] text-white hover:bg-[#7a0012] text-sm"
               >
                 Confirm
               </button>

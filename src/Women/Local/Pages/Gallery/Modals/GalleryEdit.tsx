@@ -234,7 +234,7 @@ export default function GalleryEditModal({ galleries = {}, onClose, onRefresh })
                   />
                   <button
                     onClick={handleRename}
-                    className="bg-[#5E0009] text-white px-3 py-1 rounded hover:bg-red-800 text-sm flex items-center gap-1"
+                    className="bg-[#5E0009] text-white px-3 py-1 rounded hover:bg-[#7a0012] text-sm flex items-center gap-1"
                   >
                     <Check size={14} /> Save
                   </button>
@@ -248,7 +248,7 @@ export default function GalleryEditModal({ galleries = {}, onClose, onRefresh })
                 </button>
               )}
 
-              <label className="flex items-center gap-2 bg-[#5E0009] text-white px-3 py-2 rounded hover:bg-red-800 cursor-pointer">
+              <label className="flex items-center gap-2 bg-[#5E0009] text-white px-3 py-2 rounded hover:bg-[#7a0012] cursor-pointer">
                 <Upload size={16} />
                 Add Photos
                 <input

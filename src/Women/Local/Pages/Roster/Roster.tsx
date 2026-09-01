@@ -136,13 +136,13 @@ export default function WRoster({ userRole }){
             <div className="flex justify-center gap-4 mb-8 print:hidden no-print">
               <button
                 onClick={() => dispatch({ type: "OPEN_MODAL", isCoach: false })}
-                className="px-6 py-3 bg-[#5E0009] text-white hover:bg-red-800 text-lg"
+                className="px-6 py-3 bg-[#5E0009] text-white hover:bg-[#7a0012] text-lg"
               >
                 Add Player
               </button>
               <button
                 onClick={() => dispatch({ type: "OPEN_MODAL", isCoach: true })}
-                className="px-6 py-3 bg-[#5E0009] text-white hover:bg-red-800 text-lg"
+                className="px-6 py-3 bg-[#5E0009] text-white hover:bg-[#7a0012] text-lg"
               >
                 Add Coach
               </button>

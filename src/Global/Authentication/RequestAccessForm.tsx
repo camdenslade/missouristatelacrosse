@@ -120,7 +120,7 @@ export default function RequestAccessForm(){
       <button
         type="submit"
         disabled={submitting}
-        className={`bg-[#5E0009] text-white py-2 px-4 rounded hover:bg-red-800 transition ${
+        className={`bg-[#5E0009] text-white py-2 px-4 rounded hover:bg-[#7a0012] transition ${
           submitting ? "opacity-60 cursor-not-allowed" : ""
         }`}
       >

@@ -261,7 +261,7 @@ export default function LiveGameViewer({ game }: { game: any }) {
             href={donateUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="shrink-0 ml-4 px-4 py-2 bg-[#5E0009] text-white text-sm font-semibold rounded hover:bg-red-900 transition-colors"
+            className="shrink-0 ml-4 px-4 py-2 bg-[#5E0009] text-white text-sm font-semibold rounded hover:bg-[#7a0012] transition-colors"
           >
             Donate
           </a>

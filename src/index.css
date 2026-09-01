@@ -7,3 +7,12 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Instagram's embed.js sets its own inline width/height on the iframe once it
+   finishes sizing the post, and fights any !important override we try to force
+   on it (that fight is what caused the "renders big, then snaps small" flash).
+   So instead of overriding its size, just let the fixed-height wrapper
+   (.instagram-embed-frame) crop it via overflow: hidden. */
+.instagram-embed-frame iframe.instagram-media-rendered {
+  max-width: 100%;
+}

@@ -313,7 +313,7 @@ export default function GameRow({
         <div className="flex flex-col px-0 sm:px-4 mt-2 sm:mt-0 gap-1 shrink-0">
           <button
             onClick={() => onEnterScore(game)}
-            className="px-3 py-1 bg-[#5E0009] text-white w-full sm:w-auto hover:bg-red-800 transition"
+            className="px-3 py-1 bg-[#5E0009] text-white w-full sm:w-auto hover:bg-[#7a0012] transition"
           >
             Enter Score
           </button>

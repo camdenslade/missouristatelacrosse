@@ -486,7 +486,7 @@ export default function LiveGameUI({
           <button
             onClick={() => handleSave()}
             disabled={saving}
-            className="bg-[#5E0009] text-white text-sm font-semibold px-5 py-2 rounded hover:bg-red-900 disabled:opacity-50 transition-colors"
+            className="bg-[#5E0009] text-white text-sm font-semibold px-5 py-2 rounded hover:bg-[#7a0012] disabled:opacity-50 transition-colors"
           >
             {saving ? "Saving…" : "Save Live Update"}
           </button>

@@ -412,7 +412,7 @@ export default function RosterFormModal({
         <div className="flex justify-between mt-2">
           <button
             type="submit"
-            className="px-4 py-2 bg-[#5E0009] text-white text-lg hover:bg-red-800"
+            className="px-4 py-2 bg-[#5E0009] text-white text-lg hover:bg-[#7a0012]"
           >
             {editingItem ? "Save Changes" : "Add"}
           </button>

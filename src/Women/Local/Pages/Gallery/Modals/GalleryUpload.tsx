@@ -176,7 +176,7 @@ export default function GalleryUploadModal({ onClose, onUpload }){
               type="submit"
               disabled={uploading}
               className={`px-4 py-2 rounded text-white font-medium ${
-                uploading ? "bg-gray-400" : "bg-[#5E0009] hover:bg-red-800"
+                uploading ? "bg-gray-400" : "bg-[#5E0009] hover:bg-[#7a0012]"
               }`}
             >
               {uploading ? "Uploading..." : "Upload"}

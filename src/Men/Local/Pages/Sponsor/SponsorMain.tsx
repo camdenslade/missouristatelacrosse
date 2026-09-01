@@ -162,7 +162,7 @@ export default function SponsorMain() {
       <div className="text-center">
         <button
           onClick={() => setOpen(true)}
-          className="bg-[#5E0009] text-white px-8 py-3 rounded-md font-semibold hover:bg-red-800 transition"
+          className="bg-[#5E0009] text-white px-8 py-3 rounded-md font-semibold hover:bg-[#7a0012] transition"
         >
           Contact Us
         </button>
@@ -242,7 +242,7 @@ export default function SponsorMain() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="bg-[#5E0009] text-white font-semibold py-2 rounded-md hover:bg-red-800 transition disabled:opacity-70"
+                  className="bg-[#5E0009] text-white font-semibold py-2 rounded-md hover:bg-[#7a0012] transition disabled:opacity-70"
                 >
                   {loading ? "Submitting..." : "Submit"}
                 </button>

@@ -2,9 +2,9 @@ import { useEffect, useReducer, useRef } from "react";
 import { FaBars, FaTimes, FaUserCircle } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 
-import MobileMenu from "./Mobile";
 import { getProgramInfo } from "../../Services/programHelper";
 import { useAuth } from "../Context/AuthContext";
+import MobileMenu from "./Mobile";
 
 const initialState = {
   showUserMenu: false,
@@ -61,7 +61,7 @@ export default function Header({ onManageArticles, onManageArticlesWomen, onAuth
   
 
   const linkHover =
-    "text-xs font-semibold uppercase tracking-widest hover:text-white/70 transition-colors duration-200";
+    "text-sm font-semibold uppercase tracking-widest hover:text-white/70 transition-colors duration-200";
   const programLink = (path) =>
     `${base}${path.startsWith("/") ? path : `/${path}`}`;
 
@@ -82,26 +82,27 @@ export default function Header({ onManageArticles, onManageArticlesWomen, onAuth
 
   return (
     <header className="bg-[#5E0009] text-white w-full shadow-lg sticky top-0 z-50 border-b border-white/10">
-      <div className="w-full px-6 py-3 flex items-center">
+      <div className="w-full px-6 py-4 flex items-center">
         <Link
           to={programLink("")}
-          className="inline-flex items-center"
+          className="relative z-10 inline-flex items-center shrink-0 -my-6 md:-my-8"
           onClick={() => dispatch({ type: "CLOSE_USER_MENU" })}
         >
           <img
-            src="/assets/msu.png"
+            src="/missouri-state-white.png"
             alt="Missouri State Lacrosse"
-            className="h-9 sm:h-10 md:h-11 object-contain"
+            className="h-20 sm:h-20 md:h-20 w-auto object-contain drop-shadow-lg"
           />
         </Link>
 
-        <div className="ml-auto flex items-center gap-5">
-          <nav className="hidden md:flex items-center gap-5">
+        <span className="hidden md:block w-px h-10 bg-white/25 mx-8 shrink-0" aria-hidden="true" />
+
+        <nav className="hidden md:flex items-center gap-6">
             <Link to={programLink("")} className={linkHover}>Home</Link>
             <div className="relative group flex items-center">
               <Link to={programLink("/schedule")} className={linkHover}>Schedule</Link>
               <div className="absolute left-0 top-full pt-2 hidden group-hover:block z-50 min-w-[140px]">
-                <div className="bg-white text-gray-800 shadow-xl rounded-md overflow-hidden border border-gray-100 text-xs font-semibold uppercase tracking-widest">
+                <div className="bg-white text-gray-800 shadow-xl rounded-md overflow-hidden border border-gray-100 text-sm font-semibold uppercase tracking-widest">
                   <Link to={programLink("/schedule")} className="block px-4 py-2.5 hover:bg-gray-50 transition-colors">
                     Schedule
                   </Link>
@@ -114,16 +115,25 @@ export default function Header({ onManageArticles, onManageArticlesWomen, onAuth
             <Link to={programLink("/roster")} className={linkHover}>Roster</Link>
             <Link to={programLink("/store")} className={linkHover}>Store</Link>
             <Link to={programLink("/recruitment")} className={linkHover}>Recruitment</Link>
-            <Link to={programLink("/event-signup")} className={linkHover}>Events</Link>
             <div className="relative group flex items-center">
-              <Link to={programLink("/donate")} className={linkHover}>Donate</Link>
+              <Link to={programLink("/event-signup")} className={linkHover}>Events</Link>
               <div className="absolute left-0 top-full pt-2 hidden group-hover:block z-50 min-w-[140px]">
-                <div className="bg-white text-gray-800 shadow-xl rounded-md overflow-hidden border border-gray-100 text-xs font-semibold uppercase tracking-widest">
-                  <Link to={programLink("/donate")} className="block px-4 py-2.5 hover:bg-gray-50 transition-colors">
-                    Donate
+                <div className="bg-white text-gray-800 shadow-xl rounded-md overflow-hidden border border-gray-100 text-sm font-semibold uppercase tracking-widest">
+                  <Link to={programLink("/event-signup")} className="block px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                    Events
                   </Link>
                   <Link to={programLink("/raffles")} className="block px-4 py-2.5 hover:bg-gray-50 transition-colors">
                     Raffles
+                  </Link>
+                </div>
+              </div>
+            </div>
+            <div className="relative group flex items-center">
+              <Link to={programLink("/donate")} className={linkHover}>Donate</Link>
+              <div className="absolute left-0 top-full pt-2 hidden group-hover:block z-50 min-w-[140px]">
+                <div className="bg-white text-gray-800 shadow-xl rounded-md overflow-hidden border border-gray-100 text-sm font-semibold uppercase tracking-widest">
+                  <Link to={programLink("/donate")} className="block px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                    Donate
                   </Link>
                   <Link to={programLink("/sponsorships")} className="block px-4 py-2.5 hover:bg-gray-50 transition-colors">
                     Sponsorships
@@ -136,22 +146,14 @@ export default function Header({ onManageArticles, onManageArticlesWomen, onAuth
               <Link to={programLink("/payments")} className={linkHover}>Payments</Link>
             )}
             {canSeeAlumni && (
-              <div className="relative group flex items-center">
-                <span className={`${linkHover} cursor-default`}>Alumni</span>
-                <div className="absolute left-0 top-full pt-2 hidden group-hover:block z-50 min-w-40">
-                  <div className="bg-white text-gray-800 shadow-xl rounded-md overflow-hidden border border-gray-100 text-xs font-semibold uppercase tracking-widest">
-                    <Link to={programLink("/alumni-budget")} className="block px-4 py-2.5 hover:bg-gray-50 transition-colors">
-                      Program Budget
-                    </Link>
-                  </div>
-                </div>
-              </div>
+              <Link to={programLink("/alumni-budget")} className={linkHover}>Alumni</Link>
             )}
           </nav>
 
+        <div className="ml-auto flex items-center gap-5">
           <div className="relative hidden md:block" ref={userMenuRef}>
             <FaUserCircle
-              className="h-7 w-7 cursor-pointer opacity-90 hover:opacity-100 transition-opacity"
+              className="h-9 w-9 cursor-pointer opacity-90 hover:opacity-100 transition-opacity"
               aria-label="User menu"
               onClick={() =>
                 user

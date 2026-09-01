@@ -406,7 +406,7 @@ export default function ScheduleFormModal({
         <div className="flex justify-between mt-2">
           <button
             type="submit"
-            className="px-4 py-2 bg-[#5E0009] text-white text-lg rounded hover:bg-red-800"
+            className="px-4 py-2 bg-[#5E0009] text-white text-lg rounded hover:bg-[#7a0012]"
           >
             {editingGame ? "Save Changes" : "Add Game"}
           </button>
