@@ -88,7 +88,7 @@ export default function InstagramManagerModal({ open, onClose, contentKey }: Ins
               <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/60">
                 Admin
               </div>
-              <h3 className="text-xl font-bold leading-tight">Instagram Feed Manager</h3>
+              <h3 className="text-xl font-bold leading-tight text-white">Instagram Feed Manager</h3>
             </div>
             <button
               onClick={onClose}
