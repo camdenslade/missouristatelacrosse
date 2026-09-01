@@ -411,13 +411,13 @@ export default function ManageRaffles() {
   return (
     <div>
       <div className="flex justify-between items-center mb-5">
-        <h2 className="text-xl font-bold">Raffles</h2>
+        <h2 className="text-lg font-bold text-gray-900">Raffles</h2>
         <button
           onClick={() => {
             setImageItems([]);
             dispatch({ type: "OPEN_CREATE" });
           }}
-          className="px-4 py-2 bg-[#5E0009] text-white rounded hover:bg-[#7a0010] text-sm font-semibold"
+          className="px-4 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] text-sm font-semibold"
         >
           + New Raffle
         </button>
@@ -462,7 +462,7 @@ export default function ManageRaffles() {
                     <div className="flex gap-1 flex-wrap">
                       <button
                         onClick={() => dispatch({ type: "OPEN_ENTRIES", raffle })}
-                        className="text-xs px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 font-medium"
+                        className="text-xs px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 font-medium"
                       >
                         Entries
                       </button>
@@ -470,13 +470,13 @@ export default function ManageRaffles() {
                         <>
                           <button
                             onClick={() => handleDraw(raffle)}
-                            className="text-xs px-2 py-1 rounded bg-purple-50 text-purple-700 hover:bg-purple-100 font-medium"
+                            className="text-xs px-2 py-1 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 font-medium"
                           >
                             Draw
                           </button>
                           <button
                             onClick={() => handleClose(raffle)}
-                            className="text-xs px-2 py-1 rounded bg-yellow-50 text-yellow-700 hover:bg-yellow-100 font-medium"
+                            className="text-xs px-2 py-1 rounded-lg bg-yellow-50 text-yellow-700 hover:bg-yellow-100 font-medium"
                           >
                             Close
                           </button>
@@ -485,7 +485,7 @@ export default function ManageRaffles() {
                       {(raffle.status === "closed" || raffle.status === "drawn") && (
                         <button
                           onClick={() => handleReopen(raffle)}
-                          className="text-xs px-2 py-1 rounded bg-green-50 text-green-700 hover:bg-green-100 font-medium"
+                          className="text-xs px-2 py-1 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 font-medium"
                         >
                           Reopen
                         </button>
@@ -495,13 +495,13 @@ export default function ManageRaffles() {
                           setImageItems(raffleToImages(raffle));
                           dispatch({ type: "OPEN_EDIT", raffle });
                         }}
-                        className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium"
+                        className="text-xs px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(raffle.id)}
-                        className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 hover:bg-red-100 font-medium"
+                        className="text-xs px-2 py-1 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-medium"
                       >
                         Delete
                       </button>
@@ -537,13 +537,13 @@ function RaffleForm({
   onRemoveImage: (idx: number) => void;
 }) {
   const f = state.form;
-  const input = "w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]";
+  const input = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]";
 
   return (
     <div>
       <div className="flex items-center gap-3 mb-5">
         <button onClick={onCancel} className="text-sm text-gray-500 hover:text-gray-700">Back</button>
-        <h2 className="text-xl font-bold">{state.editingId ? "Edit Raffle" : "New Raffle"}</h2>
+        <h2 className="text-lg font-bold text-gray-900">{state.editingId ? "Edit Raffle" : "New Raffle"}</h2>
       </div>
 
       <div className="space-y-4 max-w-2xl">
@@ -574,7 +574,7 @@ function RaffleForm({
           <div className="flex flex-wrap gap-3 mt-2">
             {imageItems.map((item, idx) => (
               <div key={idx} className="relative">
-                <img src={item.preview} alt="" className="h-20 w-24 object-cover rounded border border-gray-200" />
+                <img src={item.preview} alt="" className="h-20 w-24 object-cover rounded-lg border border-gray-200" />
                 <button
                   type="button"
                   onClick={() => onRemoveImage(idx)}
@@ -584,7 +584,7 @@ function RaffleForm({
                 </button>
               </div>
             ))}
-            <label className="h-20 w-24 border-2 border-dashed border-gray-300 rounded flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 text-gray-400 text-xs text-center gap-1">
+            <label className="h-20 w-24 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 text-gray-400 text-xs text-center gap-1">
               <span className="text-lg leading-none">+</span>
               <span>Add Photo</span>
               <input
@@ -672,7 +672,7 @@ function RaffleForm({
 
         {/* Error */}
         {state.errorMsg && (
-          <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded px-3 py-2">
+          <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">
             {state.errorMsg}
           </div>
         )}
@@ -681,7 +681,7 @@ function RaffleForm({
           <button
             onClick={onSave}
             disabled={state.saving}
-            className="px-5 py-2 bg-[#5E0009] text-white rounded hover:bg-[#7a0010] text-sm font-semibold disabled:opacity-50"
+            className="px-5 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] text-sm font-semibold disabled:opacity-50"
           >
             {state.saving ? "Saving..." : "Save Raffle"}
           </button>
@@ -700,7 +700,7 @@ function StreamKeyField({ value }: { value: string }) {
   const [revealed, setRevealed] = useState(false);
   return (
     <div className="flex items-center gap-2 flex-1">
-      <code className="bg-white border border-gray-200 rounded px-2 py-1 flex-1 truncate">
+      <code className="bg-white border border-gray-200 rounded-lg px-2 py-1 flex-1 truncate">
         {revealed ? value : "•".repeat(value.length)}
       </code>
       <button onClick={() => setRevealed(r => !r)} className="text-gray-400 hover:text-gray-700 shrink-0">
@@ -757,14 +757,14 @@ function EntriesView({
   const isBid = raffle.allowBids;
   const paid = entries.filter((e) => e.paid);
   const totalRevenue = paid.reduce((sum, e) => sum + (Number(e.amountPaid) || 0), 0);
-  const input = "w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]";
+  const input = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]";
 
   return (
     <div>
       <div className="flex items-center gap-3 mb-5">
         <button onClick={onBack} className="text-sm text-gray-500 hover:text-gray-700">Back to raffles</button>
         <div>
-          <h2 className="text-xl font-bold">{raffle.name}</h2>
+          <h2 className="text-lg font-bold text-gray-900">{raffle.name}</h2>
           <p className="text-sm text-gray-400">
             {paid.length} paid {isBid ? "bids" : "entries"} · ${totalRevenue.toFixed(2)} collected
           </p>
@@ -789,7 +789,7 @@ function EntriesView({
         {!raffle.streamKey ? (
           <button
             onClick={onStreamSetup}
-            className="px-3 py-1.5 text-sm bg-gray-800 text-white rounded hover:bg-gray-900 font-medium"
+            className="px-3 py-1.5 text-sm bg-gray-800 text-white rounded-lg hover:bg-gray-900 font-medium"
           >
             Setup Stream
           </button>
@@ -797,7 +797,7 @@ function EntriesView({
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-xs">
               <span className="text-gray-500 w-20 shrink-0">RTMP URL</span>
-              <code className="bg-white border border-gray-200 rounded px-2 py-1 flex-1 truncate">{raffle.rtmpsUrl}</code>
+              <code className="bg-white border border-gray-200 rounded-lg px-2 py-1 flex-1 truncate">{raffle.rtmpsUrl}</code>
               <button onClick={() => navigator.clipboard.writeText(raffle.rtmpsUrl ?? "")} className="text-gray-400 hover:text-gray-700 shrink-0">Copy</button>
             </div>
             <div className="flex items-center gap-2 text-xs">
@@ -806,7 +806,7 @@ function EntriesView({
             </div>
             <button
               onClick={onToggleLive}
-              className={`mt-1 px-3 py-1.5 text-sm rounded font-medium text-white ${raffle.isLive ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}`}
+              className={`mt-1 px-3 py-1.5 text-sm rounded-lg font-medium text-white ${raffle.isLive ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}`}
             >
               {raffle.isLive ? "End Stream" : "Go Live"}
             </button>
@@ -831,13 +831,13 @@ function EntriesView({
           <>
             <button
               onClick={() => onDraw(raffle)}
-              className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 font-medium"
+              className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium"
             >
               Draw Winner
             </button>
             <button
               onClick={() => onClose(raffle)}
-              className="px-3 py-1.5 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700 font-medium"
+              className="px-3 py-1.5 text-sm bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 font-medium"
             >
               Close Raffle
             </button>
@@ -846,14 +846,14 @@ function EntriesView({
         {(raffle.status === "closed" || raffle.status === "drawn") && (
           <button
             onClick={() => onReopen(raffle)}
-            className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 font-medium"
+            className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
           >
             Reopen
           </button>
         )}
         <button
           onClick={onToggleAddEntry}
-          className="px-3 py-1.5 text-sm bg-[#5E0009] text-white rounded hover:bg-[#7a0010] font-medium ml-auto"
+          className="px-3 py-1.5 text-sm bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] font-medium ml-auto"
         >
           {addEntryOpen ? "Cancel" : "+ Add Entry"}
         </button>
@@ -924,7 +924,7 @@ function EntriesView({
           <button
             onClick={onAddEntry}
             disabled={addEntrySubmitting}
-            className="px-4 py-2 bg-[#5E0009] text-white rounded text-sm font-semibold hover:bg-[#7a0010] disabled:opacity-50"
+            className="px-4 py-2 bg-[#5E0009] text-white rounded-lg text-sm font-semibold hover:bg-[#7a0012] disabled:opacity-50"
           >
             {addEntrySubmitting ? "Adding..." : "Add Entry"}
           </button>
@@ -975,7 +975,7 @@ function EntriesView({
                   <td className="px-4 py-2">
                     <button
                       onClick={() => onPickWinner(e)}
-                      className="text-xs px-2 py-1 rounded bg-purple-50 text-purple-700 hover:bg-purple-100 font-medium"
+                      className="text-xs px-2 py-1 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 font-medium"
                     >
                       Pick
                     </button>

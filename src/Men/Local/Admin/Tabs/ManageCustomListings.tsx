@@ -244,12 +244,12 @@ export default function ManageCustomListings() {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Custom Listings</h2>
+          <h2 className="text-lg font-bold text-gray-900">Custom Listings</h2>
           <p className="text-sm text-gray-500 mt-0.5">Manage products and their variants / stock</p>
         </div>
         <button
           onClick={openAdd}
-          className="flex items-center gap-1.5 px-4 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0010] text-sm font-semibold transition"
+          className="flex items-center gap-1.5 px-4 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] text-sm font-semibold transition"
         >
           <span className="text-lg leading-none">+</span> New Listing
         </button>
@@ -377,7 +377,7 @@ export default function ManageCustomListings() {
                       <button
                         type="submit"
                         disabled={variantSaving}
-                        className="px-4 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0010] text-sm font-semibold transition disabled:opacity-50"
+                        className="px-4 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] text-sm font-semibold transition disabled:opacity-50"
                       >
                         {variantSaving ? "Saving…" : editingVariantId ? "Update" : "Add Variant"}
                       </button>
@@ -503,7 +503,7 @@ export default function ManageCustomListings() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 py-2.5 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0010] text-sm font-semibold transition disabled:opacity-50"
+                  className="flex-1 py-2.5 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] text-sm font-semibold transition disabled:opacity-50"
                 >
                   {saving ? "Saving…" : productModal === "edit" ? "Save Changes" : "Create Listing"}
                 </button>

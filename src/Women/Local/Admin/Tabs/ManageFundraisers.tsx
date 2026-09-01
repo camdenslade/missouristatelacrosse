@@ -258,13 +258,13 @@ export default function ManageFundraisers() {
   return (
     <div>
       <div className="flex justify-between items-center mb-5">
-        <h2 className="text-xl font-bold">Fundraiser Campaigns</h2>
+        <h2 className="text-lg font-bold text-gray-900">Fundraiser Campaigns</h2>
         <button
           onClick={() => {
             setImageItem(null);
             dispatch({ type: "OPEN_CREATE" });
           }}
-          className="px-4 py-2 bg-[#5E0009] text-white rounded hover:bg-[#7a0010] text-sm font-semibold"
+          className="px-4 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] text-sm font-semibold"
         >
           + New Campaign
         </button>
@@ -325,13 +325,13 @@ export default function ManageFundraisers() {
                           setImageItem(fundraiserToImage(f)[0] ?? null);
                           dispatch({ type: "OPEN_EDIT", fundraiser: f });
                         }}
-                        className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium"
+                        className="text-xs px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(f.id)}
-                        className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 hover:bg-red-100 font-medium"
+                        className="text-xs px-2 py-1 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-medium"
                       >
                         Delete
                       </button>
@@ -367,13 +367,13 @@ function FundraiserForm({
   onRemoveImage: () => void;
 }) {
   const f = state.form;
-  const input = "w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]";
+  const input = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]";
 
   return (
     <div>
       <div className="flex items-center gap-3 mb-5">
         <button onClick={onCancel} className="text-sm text-gray-500 hover:text-gray-700">Back</button>
-        <h2 className="text-xl font-bold">{state.editingId ? "Edit Campaign" : "New Campaign"}</h2>
+        <h2 className="text-lg font-bold text-gray-900">{state.editingId ? "Edit Campaign" : "New Campaign"}</h2>
       </div>
 
       <div className="space-y-4 max-w-2xl">
@@ -400,7 +400,7 @@ function FundraiserForm({
           <label className="block text-sm font-medium text-gray-700 mb-1">Campaign Image</label>
           {imageItem ? (
             <div className="relative w-40">
-              <img src={imageItem.preview} alt="" className="h-24 w-40 object-cover rounded border border-gray-200" />
+              <img src={imageItem.preview} alt="" className="h-24 w-40 object-cover rounded-lg border border-gray-200" />
               <button
                 type="button"
                 onClick={onRemoveImage}
@@ -410,7 +410,7 @@ function FundraiserForm({
               </button>
             </div>
           ) : (
-            <label className="h-24 w-40 border-2 border-dashed border-gray-300 rounded flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 text-gray-400 text-xs text-center gap-1">
+            <label className="h-24 w-40 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 text-gray-400 text-xs text-center gap-1">
               <span className="text-lg leading-none">+</span>
               <span>Add Image</span>
               <input
@@ -459,7 +459,7 @@ function FundraiserForm({
             <button
               type="button"
               onClick={() => dispatch({ type: "ADD_EXPENSE" })}
-              className="text-xs px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 font-medium"
+              className="text-xs px-2 py-1 rounded-lg bg-gray-200 hover:bg-gray-300 font-medium"
             >
               + Add Line Item
             </button>
@@ -528,7 +528,7 @@ function FundraiserForm({
         </label>
 
         {state.errorMsg && (
-          <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded px-3 py-2">
+          <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">
             {state.errorMsg}
           </div>
         )}
@@ -537,7 +537,7 @@ function FundraiserForm({
           <button
             onClick={onSave}
             disabled={state.saving}
-            className="px-5 py-2 bg-[#5E0009] text-white rounded hover:bg-[#7a0010] text-sm font-semibold disabled:opacity-50"
+            className="px-5 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] text-sm font-semibold disabled:opacity-50"
           >
             {state.saving ? "Saving..." : "Save Campaign"}
           </button>

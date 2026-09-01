@@ -139,22 +139,26 @@ export default function ManagePlayers(){
     .filter((u) => !roleFilter || (u.roles?.[program] || "user").toLowerCase() === roleFilter);
 
   return (
-    <div className="max-w-4xl mx-auto bg-white p-6 rounded shadow animate-fadeIn">
-      <h2 className="text-2xl font-bold mb-4">Manage Users - Men&#39;s Program</h2>
+    <div className="max-w-4xl mx-auto animate-fadeIn">
+      <h2 className="text-lg font-bold text-gray-900 mb-4">
+        Manage Users <span className="text-[#5E0009]">Men&#39;s Program</span>
+      </h2>
 
-      <UserSearch
-        searchTerm={searchTerm}
-        setSearchTerm={(value) => dispatch({ type: "SET_SEARCH", value })}
-        roleFilter={roleFilter}
-        setRoleFilter={(value) => dispatch({ type: "SET_ROLE_FILTER", value })}
-      />
+      <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 shadow-sm mb-6">
+        <UserSearch
+          searchTerm={searchTerm}
+          setSearchTerm={(value) => dispatch({ type: "SET_SEARCH", value })}
+          roleFilter={roleFilter}
+          setRoleFilter={(value) => dispatch({ type: "SET_ROLE_FILTER", value })}
+        />
+      </div>
 
       {loading && (
-        <p className="text-gray-600 mt-4 animate-pulse">Loading users...</p>
+        <p className="text-gray-500 mt-4 animate-pulse text-sm">Loading users...</p>
       )}
 
       {!loading && filteredUsers.length === 0 && (
-        <p className="text-gray-500 mt-4 text-center">No users found.</p>
+        <p className="text-gray-400 mt-4 text-center text-sm">No users found.</p>
       )}
 
       <UserList

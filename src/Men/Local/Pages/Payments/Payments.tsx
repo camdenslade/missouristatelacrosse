@@ -121,7 +121,11 @@ export default function Payments() {
       },
     });
     const refreshed = await apiRequest<ApiPlayer>(`/api/players/${player.id}`).catch(() => null);
-    if (refreshed?.id) dispatch({ type: "SET_SELECTED_PLAYER", player: refreshed });
+    if (refreshed?.id) {
+      dispatch({ type: "SET_SELECTED_PLAYER", player: refreshed });
+      // Keep the roster table (which reads from `players`, not the reducer) in sync too.
+      setPlayers((prev) => prev.map((pl) => (pl.id === refreshed.id ? refreshed : pl)));
+    }
     await fetchLedger(player.id);
     dispatch({ type: "SET_FIELD", field: "confirmedAmount", value: null });
     dispatch({ type: "SET_FIELD", field: "customAmount", value: "" });
@@ -136,7 +140,10 @@ export default function Payments() {
       json: { playerId: player.id, amount, type, note: note || null, paidByUid: user?.uid ?? null },
     });
     const refreshed = await apiRequest<ApiPlayer>(`/api/players/${player.id}`).catch(() => null);
-    if (refreshed?.id) dispatch({ type: "SET_SELECTED_PLAYER", player: refreshed });
+    if (refreshed?.id) {
+      dispatch({ type: "SET_SELECTED_PLAYER", player: refreshed });
+      setPlayers((prev) => prev.map((pl) => (pl.id === refreshed.id ? refreshed : pl)));
+    }
     await fetchLedger(player.id);
     toast.success("Balance updated.");
   };
@@ -176,7 +183,10 @@ export default function Payments() {
   useEffect(() => {
     if (!state.selectedPlayerId) return;
     const p = seasonPlayers.find((x) => x.id === state.selectedPlayerId) || null;
-    if (p && p.id !== state.selectedPlayer?.id) {
+    // Compares by reference, not just id, so edits made in the roster table (which replace
+    // the player object in `players` on every keystroke) also refresh the detail panel -
+    // otherwise the panel kept showing the pre-edit balance/email until a manual reload.
+    if (p && p !== state.selectedPlayer) {
       dispatch({ type: "SET_SELECTED_PLAYER", player: p });
     }
   }, [state.selectedPlayerId, seasonPlayers, state.selectedPlayer]);
@@ -402,6 +412,7 @@ export default function Payments() {
               setPlayers={setPlayers}
               userEmails={state.userEmails}
               onSelectedPlayer={(p) => dispatch({ type: "SET_SELECTED_PLAYER", player: p })}
+              selectedPlayerId={state.selectedPlayerId}
             />
           )}
 

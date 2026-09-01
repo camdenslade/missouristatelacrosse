@@ -88,7 +88,7 @@ export default function ManageSeasons() {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Manage Seasons</h2>
+        <h2 className="text-lg font-bold text-gray-900">Manage Seasons</h2>
         <p className="text-sm text-gray-500 mt-0.5">
           Control which seasons appear on Roster/Schedule and which one is active by default.
         </p>
@@ -119,7 +119,7 @@ export default function ManageSeasons() {
         <button
           type="submit"
           disabled={saving}
-          className="px-4 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0010] text-sm font-semibold transition disabled:opacity-50"
+          className="px-4 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] text-sm font-semibold transition disabled:opacity-50"
         >
           {saving ? "Adding…" : "Add Season"}
         </button>

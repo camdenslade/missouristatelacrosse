@@ -326,14 +326,14 @@ export default function ManageEvents() {
   return (
     <div>
       <div className="flex justify-between items-center mb-5">
-        <h2 className="text-xl font-bold">Events</h2>
+        <h2 className="text-lg font-bold text-gray-900">Events</h2>
         <button
           onClick={() => {
             imageFileRef.current = null;
             setImagePreview(null);
             dispatch({ type: "OPEN_CREATE" });
           }}
-          className="px-4 py-2 bg-[#5E0009] text-white rounded hover:bg-[#7a0010] text-sm font-semibold"
+          className="px-4 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] text-sm font-semibold"
         >
           + New Event
         </button>
@@ -392,7 +392,7 @@ export default function ManageEvents() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => dispatch({ type: "OPEN_SUBMISSIONS", event })}
-                        className="text-xs px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 font-medium"
+                        className="text-xs px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 font-medium"
                       >
                         Submissions
                       </button>
@@ -402,13 +402,13 @@ export default function ManageEvents() {
                           setImagePreview(event.image || null);
                           dispatch({ type: "OPEN_EDIT", event });
                         }}
-                        className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium"
+                        className="text-xs px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(event.id)}
-                        className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 hover:bg-red-100 font-medium"
+                        className="text-xs px-2 py-1 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-medium"
                       >
                         Delete
                       </button>
@@ -446,7 +446,7 @@ function EventForm({
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(f.address.trim())}`
     : null;
 
-  const input = "w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]";
+  const input = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]";
 
   return (
     <div>
@@ -454,7 +454,7 @@ function EventForm({
         <button onClick={onCancel} className="text-sm text-gray-500 hover:text-gray-700">
           Back
         </button>
-        <h2 className="text-xl font-bold">{state.editingId ? "Edit Event" : "New Event"}</h2>
+        <h2 className="text-lg font-bold text-gray-900">{state.editingId ? "Edit Event" : "New Event"}</h2>
       </div>
 
       <div className="space-y-4 max-w-2xl">
@@ -528,7 +528,7 @@ function EventForm({
           <input
             type="file"
             accept="image/*"
-            className="text-sm text-gray-600 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+            className="text-sm text-gray-600 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
             onChange={(e) => {
               const file = e.target.files?.[0] ?? null;
               const preview = file ? URL.createObjectURL(file) : (state.form.image || null);
@@ -537,7 +537,7 @@ function EventForm({
           />
           {imagePreview && (
             <div className="mt-2 flex items-center gap-3">
-              <img src={imagePreview} alt="Preview" className="h-20 w-32 object-cover rounded border border-gray-200" />
+              <img src={imagePreview} alt="Preview" className="h-20 w-32 object-cover rounded-lg border border-gray-200" />
               <button
                 type="button"
                 onClick={() => {
@@ -598,7 +598,7 @@ function EventForm({
             </label>
             <button
               onClick={() => dispatch({ type: "ADD_FIELD" })}
-              className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded font-medium"
+              className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium"
             >
               + Add Field
             </button>
@@ -624,7 +624,7 @@ function EventForm({
 
         {/* Error */}
         {state.errorMsg && (
-          <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded px-3 py-2">
+          <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">
             {state.errorMsg}
           </div>
         )}
@@ -634,7 +634,7 @@ function EventForm({
           <button
             onClick={onSave}
             disabled={state.saving}
-            className="px-5 py-2 bg-[#5E0009] text-white rounded hover:bg-[#7a0010] text-sm font-semibold disabled:opacity-50"
+            className="px-5 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] text-sm font-semibold disabled:opacity-50"
           >
             {state.saving ? "Saving..." : "Save Event"}
           </button>
@@ -665,7 +665,7 @@ function FieldEditor({
   optionInput: string;
   dispatch: React.Dispatch<Action>;
 }) {
-  const smallInput = "border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E0009]";
+  const smallInput = "border border-gray-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E0009]";
 
   return (
     <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
@@ -742,7 +742,7 @@ function FieldEditor({
             {(field.options ?? []).map((opt) => (
               <span
                 key={opt}
-                className="flex items-center gap-1 text-xs bg-white border border-gray-300 rounded px-2 py-0.5"
+                className="flex items-center gap-1 text-xs bg-white border border-gray-300 rounded-lg px-2 py-0.5"
               >
                 {opt}
                 <button
@@ -769,7 +769,7 @@ function FieldEditor({
             />
             <button
               onClick={() => dispatch({ type: "ADD_OPTION", fieldId: field.id })}
-              className="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded"
+              className="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded-lg"
             >
               Add
             </button>
@@ -909,7 +909,7 @@ function SubmissionsView({
           Back to events
         </button>
         <div>
-          <h2 className="text-xl font-bold">{event.name}</h2>
+          <h2 className="text-lg font-bold text-gray-900">{event.name}</h2>
           <p className="text-sm text-gray-400">Submission audit - {registrations.length} registrations</p>
         </div>
       </div>
@@ -969,7 +969,7 @@ function SubmissionsView({
                     )}
                     <div className="flex flex-wrap gap-2 items-center">
                       <input
-                        className="text-xs px-2 py-1 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#5E0009]"
+                        className="text-xs px-2 py-1 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-[#5E0009]"
                         placeholder="Pair team name"
                         value={pairNameInputs[teamId] ?? teamLabel ?? ""}
                         onChange={(e) =>
@@ -979,7 +979,7 @@ function SubmissionsView({
                       <button
                         onClick={() => handlePairTeam(teamId, members)}
                         disabled={pairingTeams[teamId]}
-                        className="text-xs px-2 py-1 rounded border border-[#5E0009] text-[#5E0009] font-medium disabled:opacity-50"
+                        className="text-xs px-2 py-1 rounded-lg border border-[#5E0009] text-[#5E0009] font-medium disabled:opacity-50"
                       >
                         {pairingTeams[teamId] ? "Pairing…" : "Pair team"}
                       </button>
@@ -994,7 +994,7 @@ function SubmissionsView({
                       <button
                         onClick={() => handleReminder(teamId)}
                         disabled={pendingCount === 0 || isSending}
-                        className="text-xs px-2 py-1 rounded border border-[#5E0009] text-[#5E0009] font-medium disabled:opacity-50"
+                        className="text-xs px-2 py-1 rounded-lg border border-[#5E0009] text-[#5E0009] font-medium disabled:opacity-50"
                       >
                         {isSending ? "Sending…" : "Remind teammates"}
                       </button>
