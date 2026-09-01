@@ -252,7 +252,7 @@ export default function MainContent() {
       <section
         className={`relative ${
           menRole === "admin" ? "mt-4" : ""
-        } h-[80vh] md:h-[90vh] flex items-center justify-start overflow-hidden bg-gray-900 pb-40 sm:pb-32 md:pb-28`}
+        } h-[80vh] md:h-[90vh] flex items-center justify-start overflow-hidden bg-gray-900 pb-20 sm:pb-24 md:pb-28`}
       >
         {slides.map((img, i) => (
           <motion.img
@@ -300,7 +300,7 @@ export default function MainContent() {
           <p className="max-w-xl text-white/90 text-base md:text-lg drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
             Built on our four pillars of attitude, effort, example, and commitment.
           </p>
-          <div className="flex flex-col items-start gap-4 mt-2 mb-20 md:mb-0 md:flex-row md:flex-wrap md:items-center">
+          <div className="flex flex-col items-start gap-4 mt-2 md:flex-row md:flex-wrap md:items-center">
             <a
               href="/recruitment"
               className="bg-white text-[#5E0009] px-6 py-3 rounded-full font-semibold hover:bg-gray-200 transition"
@@ -330,36 +330,36 @@ export default function MainContent() {
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 z-20 bg-black/50 backdrop-blur-sm border-t border-white/10">
-          <div className="w-full px-6 md:px-12 py-5 grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="w-full px-6 md:px-12 py-2.5 md:py-5 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1.5 md:gap-6">
             <div>
-              <div className="text-white/60 text-[11px] font-semibold uppercase tracking-widest mb-1">
+              <div className="text-white/60 text-[9px] md:text-[11px] font-semibold uppercase tracking-widest mb-0.5 md:mb-1">
                 League
               </div>
-              <div className="text-white font-bold text-sm md:text-base uppercase">
+              <div className="text-white font-bold text-xs md:text-base uppercase leading-tight">
                 Men's Collegiate Lacrosse Association
               </div>
             </div>
             <div>
-              <div className="text-white/60 text-[11px] font-semibold uppercase tracking-widest mb-1">
+              <div className="text-white/60 text-[9px] md:text-[11px] font-semibold uppercase tracking-widest mb-0.5 md:mb-1">
                 Conference
               </div>
-              <div className="text-white font-bold text-sm md:text-base uppercase">
+              <div className="text-white font-bold text-xs md:text-base uppercase leading-tight">
                 Lone Star Alliance
               </div>
             </div>
             <div>
-              <div className="text-white/60 text-[11px] font-semibold uppercase tracking-widest mb-1">
+              <div className="text-white/60 text-[9px] md:text-[11px] font-semibold uppercase tracking-widest mb-0.5 md:mb-1">
                 Recruitment Status
               </div>
-              <div className="text-white font-bold text-sm md:text-base uppercase">
+              <div className="text-white font-bold text-xs md:text-base uppercase leading-tight">
                 Still Open
               </div>
             </div>
             <div>
-              <div className="text-white/60 text-[11px] font-semibold uppercase tracking-widest mb-1">
+              <div className="text-white/60 text-[9px] md:text-[11px] font-semibold uppercase tracking-widest mb-0.5 md:mb-1">
                 Home Turf
               </div>
-              <div className="text-white font-bold text-sm md:text-base uppercase">
+              <div className="text-white font-bold text-xs md:text-base uppercase leading-tight">
                 Allison North Stadium
               </div>
             </div>

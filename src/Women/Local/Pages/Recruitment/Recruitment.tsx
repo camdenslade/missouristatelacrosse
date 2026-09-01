@@ -1,3 +1,4 @@
+import { ArrowRight } from "lucide-react";
 import { useReducer } from "react";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
@@ -116,56 +117,71 @@ export default function WRecruitmentForm({ userRole }) {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
-        <h2 className="text-3xl sm:text-5xl font-bold">Recruitment Form</h2>
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-linear-to-r from-[#5E0009] via-[#7a1020] to-[#5E0009] text-white px-6 py-14 text-center">
+        <div className="inline-flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/70 mb-3">
+          <span className="h-px w-6 bg-white/40" />
+          Join the Team
+          <span className="h-px w-6 bg-white/40" />
+        </div>
+        <h1 className="text-4xl md:text-5xl font-extrabold">Recruitment Form</h1>
+        <p className="text-white/80 mt-3 max-w-lg mx-auto">
+          Interested in playing for Missouri State Lacrosse? Tell us about yourself and
+          we'll be in touch.
+        </p>
 
         {(userRole === "admin" || userRole === "player") && (
           <Link
             to="/women/recruitment/submissions"
-            className="px-4 py-2 bg-[#5E0009] text-white text-lg rounded hover:bg-[#7a0012] transition"
+            className="inline-flex items-center gap-1.5 mt-6 bg-white text-[#5E0009] px-5 py-2.5 rounded-full font-semibold hover:bg-gray-200 transition"
           >
             View Submissions
+            <ArrowRight size={16} strokeWidth={3} />
           </Link>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {[
-          { name: "name", placeholder: "Full Name", type: "text" },
-          { name: "email", placeholder: "Email", type: "email" },
-          { name: "phone", placeholder: "Phone Number", type: "text" },
-          { name: "classYear", placeholder: "Class Year", type: "text" },
-          { name: "position", placeholder: "Position", type: "text" },
-          { name: "hometown", placeholder: "Hometown", type: "text" },
-          { name: "highSchool", placeholder: "High School", type: "text" },
-          { name: "state", placeholder: "State", type: "text" },
-          { name: "instagram", placeholder: "Instagram Handle (optional)", type: "text" },
-        ].map((field) => (
-          <input
-            key={field.name}
-            type={field.type}
-            name={field.name}
-            placeholder={field.placeholder}
-            value={state.formData[field.name]}
-            onChange={handleChange}
-            required={field.name !== "instagram"}
-            className="p-3 border rounded shadow-sm text-lg focus:outline-none focus:ring-2 focus:ring-[#5E0009] w-full"
-          />
-        ))}
-
-        {state.error && (
-          <p className="text-red-600 text-sm font-medium">{state.error}</p>
-        )}
-
-        <button
-          type="submit"
-          disabled={state.submitting}
-          className="px-4 py-3 bg-[#5E0009] text-white text-lg rounded hover:bg-[#7a0012] transition w-full sm:w-auto mt-4"
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 pb-16">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white rounded-2xl shadow-lg p-6 md:p-8 flex flex-col gap-4"
         >
-          {state.submitting ? "Submitting..." : "Submit"}
-        </button>
-      </form>
+          {[
+            { name: "name", placeholder: "Full Name", type: "text" },
+            { name: "email", placeholder: "Email", type: "email" },
+            { name: "phone", placeholder: "Phone Number", type: "text" },
+            { name: "classYear", placeholder: "Class Year", type: "text" },
+            { name: "position", placeholder: "Position", type: "text" },
+            { name: "hometown", placeholder: "Hometown", type: "text" },
+            { name: "highSchool", placeholder: "High School", type: "text" },
+            { name: "state", placeholder: "State", type: "text" },
+            { name: "instagram", placeholder: "Instagram Handle (optional)", type: "text" },
+          ].map((field) => (
+            <input
+              key={field.name}
+              type={field.type}
+              name={field.name}
+              placeholder={field.placeholder}
+              value={state.formData[field.name]}
+              onChange={handleChange}
+              required={field.name !== "instagram"}
+              className="p-3 border border-gray-200 rounded-xl shadow-sm text-base focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition w-full"
+            />
+          ))}
+
+          {state.error && (
+            <p className="text-red-600 text-sm font-medium">{state.error}</p>
+          )}
+
+          <button
+            type="submit"
+            disabled={state.submitting}
+            className="px-6 py-3 bg-[#5E0009] text-white font-semibold rounded-full hover:bg-[#7a0012] transition w-full sm:w-auto mt-2 disabled:opacity-60"
+          >
+            {state.submitting ? "Submitting..." : "Submit"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
