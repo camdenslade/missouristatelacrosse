@@ -300,7 +300,7 @@ export default function MainContent() {
           <p className="max-w-xl text-white/90 text-base md:text-lg drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
             Built on our four pillars of attitude, effort, example, and commitment.
           </p>
-          <div className="flex flex-wrap items-center gap-4 mt-2">
+          <div className="flex flex-wrap items-center gap-4 mt-2 mb-5 md:mb-0">
             <a
               href="/recruitment"
               className="bg-white text-[#5E0009] px-6 py-3 rounded-full font-semibold hover:bg-gray-200 transition"
