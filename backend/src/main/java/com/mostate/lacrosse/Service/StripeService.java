@@ -143,6 +143,10 @@ public class StripeService {
 
         Map<String, Object> payer = new HashMap<>();
         payer.put("email_address", payerEmail(session));
+        Map<String, Object> name = payerName(session);
+        if (name != null) {
+            payer.put("name", name);
+        }
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("id", session.getId());
@@ -157,6 +161,29 @@ public class StripeService {
             return session.getCustomerDetails().getEmail();
         }
         return session.getCustomerEmail();
+    }
+
+    // Stripe gives a single display name; the receipt payload mirrors PayPal's
+    // { given_name, surname } split so the success pages render it unchanged.
+    private static Map<String, Object> payerName(Session session) {
+        if (session.getCustomerDetails() == null) {
+            return null;
+        }
+        String full = session.getCustomerDetails().getName();
+        if (full == null || full.isBlank()) {
+            return null;
+        }
+        full = full.trim();
+        int split = full.indexOf(' ');
+        Map<String, Object> name = new HashMap<>();
+        if (split > 0) {
+            name.put("given_name", full.substring(0, split));
+            name.put("surname", full.substring(split + 1).trim());
+        } else {
+            name.put("given_name", full);
+            name.put("surname", "");
+        }
+        return name;
     }
 
     private static String productLabel(String source) {
