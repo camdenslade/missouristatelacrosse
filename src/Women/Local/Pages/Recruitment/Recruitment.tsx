@@ -123,7 +123,7 @@ export default function WRecruitmentForm({ userRole }) {
         {(userRole === "admin" || userRole === "player") && (
           <Link
             to="/women/recruitment/submissions"
-            className="px-4 py-2 bg-[#5E0009] text-white text-lg rounded hover:bg-red-800 transition"
+            className="px-4 py-2 bg-[#5E0009] text-white text-lg rounded hover:bg-[#7a0012] transition"
           >
             View Submissions
           </Link>
@@ -161,7 +161,7 @@ export default function WRecruitmentForm({ userRole }) {
         <button
           type="submit"
           disabled={state.submitting}
-          className="px-4 py-3 bg-[#5E0009] text-white text-lg rounded hover:bg-red-800 transition w-full sm:w-auto mt-4"
+          className="px-4 py-3 bg-[#5E0009] text-white text-lg rounded hover:bg-[#7a0012] transition w-full sm:w-auto mt-4"
         >
           {state.submitting ? "Submitting..." : "Submit"}
         </button>

@@ -209,7 +209,7 @@ export default function CheckoutSuccess() {
       <div className="text-center mt-6">
         <button
           onClick={() => navigate("/store")}
-          className="px-6 py-2 bg-[#5E0009] text-white rounded hover:bg-red-800"
+          className="px-6 py-2 bg-[#5E0009] text-white rounded hover:bg-[#7a0012]"
         >
           Back to Store
         </button>

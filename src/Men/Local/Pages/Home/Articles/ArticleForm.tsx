@@ -139,7 +139,7 @@ export default function ArticleForm({ article, onSave, onCancel }: ArticleFormPr
       <div className="flex gap-2">
         <button
           type="submit"
-          className="bg-[#5E0009] text-white px-4 py-2 rounded hover:bg-red-800 transition"
+          className="bg-[#5E0009] text-white px-4 py-2 rounded hover:bg-[#7a0012] transition"
         >
           {article ? "Update Article" : "Add Article"}
         </button>

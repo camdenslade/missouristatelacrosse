@@ -86,7 +86,7 @@ export default function SponsorForm() {
         <br />
         <button
           onClick={() => setOpen(true)}
-          className="text-[#5E0009] font-semibold underline hover:text-red-800 transition"
+          className="text-[#5E0009] font-semibold underline hover:text-[#7a0012] transition"
         >
           Contact us for more details
         </button>
@@ -95,7 +95,7 @@ export default function SponsorForm() {
 
       <a
         href="/work-with-us"
-        className="inline-block bg-[#5E0009] text-white px-8 py-3 rounded-md font-semibold hover:bg-red-800 transition"
+        className="inline-block bg-[#5E0009] text-white px-8 py-3 rounded-md font-semibold hover:bg-[#7a0012] transition"
       >
         Become a Sponsor
       </a>
@@ -186,7 +186,7 @@ export default function SponsorForm() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="bg-[#5E0009] text-white font-semibold py-2 rounded-md hover:bg-red-800 transition disabled:opacity-70"
+                  className="bg-[#5E0009] text-white font-semibold py-2 rounded-md hover:bg-[#7a0012] transition disabled:opacity-70"
                 >
                   {loading ? "Sending..." : "Submit"}
                 </button>

@@ -4,13 +4,18 @@ import AccountRequests from "./Tabs/AccountRequests";
 import EmailCenter from "./Tabs/EmailCenter";
 import ManageCustomListings from "./Tabs/ManageCustomListings";
 import ManageEvents from "./Tabs/ManageEvents";
+import ManageFundraisers from "./Tabs/ManageFundraisers";
 import ManagePlayers from "./Tabs/ManagePlayers";
 import ManageRaffles from "./Tabs/ManageRaffles";
 import ManageSeasons from "./Tabs/ManageSeasons";
 import ManageSponsors from "./Tabs/ManageSponsors";
 import StreamSetup from "./Tabs/StreamSetup";
 
-const initialState = { activeTab: "players" };
+function getInitialTab() {
+  if (typeof window === "undefined") return "players";
+  const params = new URLSearchParams(window.location.search);
+  return params.get("tab") || "players";
+}
 
 function reducer(state, action){
   switch (action.type){
@@ -22,7 +27,7 @@ function reducer(state, action){
 }
 
 export default function AdminDashboard(){
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, dispatch] = useReducer(reducer, undefined, () => ({ activeTab: getInitialTab() }));
   const { activeTab } = state;
 
   const tabs = useMemo(
@@ -33,6 +38,7 @@ export default function AdminDashboard(){
       { id: "sponsors", label: "Sponsors" },
       { id: "events", label: "Events" },
       { id: "raffles", label: "Raffles" },
+      { id: "fundraisers", label: "Fundraisers" },
       { id: "custom-listings", label: "Custom Listings" },
       { id: "seasons", label: "Seasons" },
       { id: "stream", label: "Stream Setup" },
@@ -54,6 +60,8 @@ export default function AdminDashboard(){
         return <ManageEvents />;
       case "raffles":
         return <ManageRaffles />;
+      case "fundraisers":
+        return <ManageFundraisers />;
       case "custom-listings":
         return <ManageCustomListings />;
       case "seasons":

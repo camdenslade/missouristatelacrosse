@@ -15,6 +15,8 @@ import { useAuth } from "./Global/Context/AuthContext";
 import Footer from "./Global/Layout/Footer";
 import Header from "./Global/Layout/Header";
 import NotFound from "./Global/NotFound";
+import PrivacyPolicy from "./Global/PrivacyPolicy";
+import TermsOfService from "./Global/TermsOfService";
 import AdminDashboard from "./Men/Local/Admin/AdminDash";
 import AlumniBudget from "./Men/Local/Pages/AlumniBudget/AlumniBudget";
 import Donate from "./Men/Local/Pages/Donate/Donate";
@@ -48,6 +50,8 @@ import WDonateSuccess from "./Women/Local/Pages/Donate/DonateSuccess";
 import WDues from "./Women/Local/Pages/Dues/Dues";
 import WEventDetail from "./Women/Local/Pages/EventSignup/EventDetail";
 import WEventSignup from "./Women/Local/Pages/EventSignup/EventSignup";
+import WFundraiser from "./Women/Local/Pages/Fundraiser/Fundraiser";
+import WFundraiserSuccess from "./Women/Local/Pages/Fundraiser/FundraiserSuccess";
 import WGallery from "./Women/Local/Pages/Gallery/GalleryMain";
 import WManageArticlesModal from "./Women/Local/Pages/Home/Articles/ManageArticles";
 import WHome from "./Women/Local/Pages/Home/HomeWrapper";
@@ -135,8 +139,8 @@ export default function App() {
             <Route path="/order-lookup" element={<OrderLookup />} />
             <Route path="/donate" element={<Donate />} />
             <Route path="/donate/success" element={<DonateSuccess />} />
-            <Route path="/fundraiser" element={<Fundraiser />} />
-            <Route path="/fundraiser/success" element={<FundraiserSuccess />} />
+            <Route path="/fundraiser/:slug" element={<Fundraiser />} />
+            <Route path="/fundraiser/:slug/success" element={<FundraiserSuccess />} />
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/sponsorships" element={<SponsorMain />} />
             <Route path="/recruitment" element={<RecruitmentForm userRole={menRole} />} />
@@ -250,6 +254,8 @@ export default function App() {
             />
             <Route path="/women/event-signup" element={<WEventSignup />} />
             <Route path="/women/event-signup/:slug" element={<WEventDetail />} />
+            <Route path="/women/fundraiser/:slug" element={<WFundraiser />} />
+            <Route path="/women/fundraiser/:slug/success" element={<WFundraiserSuccess />} />
             <Route path="/women/raffles" element={<WRaffles />} />
             <Route path="/women/raffles/:slug" element={<WRaffleDetail />} />
             <Route
@@ -282,6 +288,9 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms-of-service" element={<TermsOfService />} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

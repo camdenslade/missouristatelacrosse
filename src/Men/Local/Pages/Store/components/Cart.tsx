@@ -161,7 +161,7 @@ export default function Cart({
                   />
                   <button
                     onClick={handleConfirmDonation}
-                    className="bg-[#5E0009] text-white px-3 rounded hover:bg-red-800 transition"
+                    className="bg-[#5E0009] text-white px-3 rounded hover:bg-[#7a0012] transition"
                   >
                     {confirmedDonation ? "Update" : "Add"}
                   </button>
@@ -193,7 +193,7 @@ export default function Cart({
                     },
                   });
                 }}
-                className="bg-[#5E0009] text-white py-2 rounded font-semibold hover:bg-red-800 transition"
+                className="bg-[#5E0009] text-white py-2 rounded font-semibold hover:bg-[#7a0012] transition"
               >
                 Proceed to Checkout
               </button>

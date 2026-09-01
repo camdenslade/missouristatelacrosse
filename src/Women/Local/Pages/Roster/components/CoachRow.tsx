@@ -59,7 +59,7 @@ export default function CoachRow({ coach, index, onEdit, onDelete, isAdmin }) {
           </button>
           <button
             onClick={() => onDelete?.(coach, true)}
-            className="px-3 py-1 bg-[#5E0009] hover:bg-red-900 text-white rounded text-sm"
+            className="px-3 py-1 bg-[#5E0009] hover:bg-[#7a0012] text-white rounded text-sm"
           >
             Delete
           </button>

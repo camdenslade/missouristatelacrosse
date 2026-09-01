@@ -1,9 +1,11 @@
-import { motion } from "framer-motion";
-import { X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronRight, HandCoins, Instagram, Plus, Settings, Trash2, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useReducer, useState } from "react";
 import type { FormEvent } from "react";
+import { Link } from "react-router-dom";
 
 import { useSponsors } from "../../../../Global/Common/hooks/useSponsors";
+import InstagramManagerModal from "../../../../Global/Common/InstagramManagerModal";
 import SponsorLogos from "../../../../Global/Common/SponsorLogos";
 import { validateText, validateUrl } from "../../../../Global/Common/utils/validation";
 import { useAuth } from "../../../../Global/Context/AuthContext";
@@ -54,6 +56,8 @@ export default function MainContent() {
   const [fundraisers, setFundraisers] = useState<ApiFundraiser[]>([]);
   const [activeFundraiser, setActiveFundraiser] = useState<ApiFundraiser | null>(null);
   const [showManager, setShowManager] = useState(false);
+  const [showInstagramManager, setShowInstagramManager] = useState(false);
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const [fundraiserError, setFundraiserError] = useState("");
   type FundraiserFormState = {
     title: string;
@@ -158,25 +162,34 @@ export default function MainContent() {
     <>
       {activeFundraiser && (
         <div className="sticky top-0 z-30 bg-gradient-to-r from-[#5E0009] via-[#7a1020] to-[#5E0009] text-white shadow-lg overflow-hidden">
-          <div className="relative px-6 py-3">
+          <div className="relative px-6 py-3.5">
             {/* Shimmer sweep */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shimmer_3s_ease-in-out_infinite] pointer-events-none" />
             <style>{`@keyframes shimmer{0%,100%{transform:translateX(-100%)}50%{transform:translateX(100%)}}`}</style>
 
             <div className="flex flex-col md:flex-row items-center justify-between gap-3 relative">
-              <p className="font-bold text-lg md:text-xl tracking-wide text-center md:text-left">
+              <p className="font-bold text-base md:text-lg tracking-wide text-center md:text-left">
                 {activeFundraiser.title}
               </p>
 
-              {activeFundraiser.link && (
+              {activeFundraiser.link ? (
                 <a
                   href={activeFundraiser.link}
                   target="_blank"
                   rel="noreferrer"
-                  className="bg-white text-[#5E0009] font-bold px-6 py-2.5 hover:bg-yellow-300 transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap"
+                  className="inline-flex items-center gap-1.5 bg-white text-[#5E0009] font-bold px-5 py-2 rounded-full hover:bg-gray-200 transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap"
                 >
                   Donate Now
+                  <ChevronRight size={16} strokeWidth={3} />
                 </a>
+              ) : (
+                <Link
+                  to={activeFundraiser.slug ? `/women/fundraiser/${activeFundraiser.slug}` : "/women/donate"}
+                  className="inline-flex items-center gap-1.5 bg-white text-[#5E0009] font-bold px-5 py-2 rounded-full hover:bg-gray-200 transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap"
+                >
+                  Donate Now
+                  <ChevronRight size={16} strokeWidth={3} />
+                </Link>
               )}
             </div>
           </div>
@@ -184,15 +197,58 @@ export default function MainContent() {
       )}
 
       {womenRole === "admin" && (
-        <div className="bg-gray-50 flex justify-center px-8 py-4">
+        <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3">
+          <AnimatePresence>
+            {adminMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 12, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 12, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className="flex flex-col items-end gap-2"
+              >
+                <button
+                  onClick={() => {
+                    setShowManager(true);
+                    setAdminMenuOpen(false);
+                  }}
+                  className="inline-flex items-center gap-2 bg-white text-[#5E0009] px-5 py-2.5 rounded-full font-semibold shadow-lg hover:bg-gray-100 transition whitespace-nowrap"
+                >
+                  <HandCoins size={16} />
+                  Manage Fundraisers
+                </button>
+                <button
+                  onClick={() => {
+                    setShowInstagramManager(true);
+                    setAdminMenuOpen(false);
+                  }}
+                  className="inline-flex items-center gap-2 bg-white text-[#5E0009] px-5 py-2.5 rounded-full font-semibold shadow-lg hover:bg-gray-100 transition whitespace-nowrap"
+                >
+                  <Instagram size={16} />
+                  Manage Instagram Feed
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <button
-            onClick={() => setShowManager(true)}
-            className="bg-[#5E0009] text-white px-6 py-2 font-semibold hover:bg-red-800 transition"
+            onClick={() => setAdminMenuOpen((v) => !v)}
+            aria-label="Admin options"
+            className="w-14 h-14 bg-[#5E0009] text-white rounded-full flex items-center justify-center shadow-lg hover:bg-[#7a0012] hover:shadow-xl transition-all"
           >
-            Manage Fundraisers
+            <Settings
+              size={22}
+              className={`transition-transform duration-300 ${adminMenuOpen ? "rotate-90" : ""}`}
+            />
           </button>
         </div>
       )}
+
+      <InstagramManagerModal
+        open={showInstagramManager}
+        onClose={() => setShowInstagramManager(false)}
+        contentKey="instagramFeedw"
+      />
 
       <section
         className={`relative ${
@@ -244,7 +300,7 @@ export default function MainContent() {
           <div className="flex flex-col gap-3 mt-6">
             <a
               href="/women/recruitment"
-              className="bg-[#5E0009] text-white px-6 py-3 font-semibold hover:bg-red-800 transition"
+              className="bg-[#5E0009] text-white px-6 py-3 font-semibold hover:bg-[#7a0012] transition"
             >
               Recruitment Form
             </a>
@@ -256,7 +312,7 @@ export default function MainContent() {
             </a>
             <a
               href="/women/donate"
-              className="bg-[#5E0009] text-white px-6 py-3 font-semibold hover:bg-red-800 transition"
+              className="bg-[#5E0009] text-white px-6 py-3 font-semibold hover:bg-[#7a0012] transition"
             >
               Donate
             </a>
@@ -271,82 +327,103 @@ export default function MainContent() {
       </section>
 
       {showManager && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-white w-[90%] max-w-3xl p-8 shadow-xl">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-2xl font-bold text-[#5E0009]">Fundraiser Manager</h3>
-              <button
-                onClick={() => setShowManager(false)}
-                className="text-[#5E0009] text-lg font-semibold"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <form onSubmit={addFundraiser} className="flex flex-col md:flex-row gap-3 mb-6">
-              <input
-                placeholder="Title"
-                value={form.title}
-                onChange={(e) => setForm({ title: e.target.value })}
-                className="flex-1 border p-2"
-              />
-              <input
-                placeholder="Link"
-                value={form.link}
-                onChange={(e) => setForm({ link: e.target.value })}
-                className="flex-1 border p-2"
-              />
-              <button
-                type="submit"
-                className="bg-[#5E0009] text-white px-4 py-2 hover:bg-red-800"
-              >
-                Add
-              </button>
-            </form>
-            {fundraiserError && (
-              <p className="text-sm text-red-600 mb-4">{fundraiserError}</p>
-            )}
-            {fundraisers.length === 0 ? (
-              <p className="text-gray-600">No fundraisers yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {fundraisers.map((f) => (
-                  <div
-                    key={f.id}
-                    className="flex justify-between items-center bg-gray-50 border p-3"
-                  >
-                    <div>
-                      <p className="font-semibold">{f.title}</p>
-                      {f.link && (
-                        <a
-                          href={f.link}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-blue-600 underline text-sm"
-                        >
-                          Link
-                        </a>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => toggleActive(f.id, f.active)}
-                        className={`px-3 py-1 ${
-                          f.active ? "bg-green-600 text-white" : "bg-gray-300 text-gray-800"
-                        }`}
-                      >
-                        {f.active ? "Active" : "Activate"}
-                      </button>
-                      <button
-                        onClick={() => removeFundraiser(f.id)}
-                        className="px-3 py-1 bg-red-500 text-white"
-                      >
-                        Delete
-                      </button>
-                    </div>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-2xl shadow-2xl overflow-hidden bg-white">
+            <div className="relative px-8 py-6 bg-linear-to-r from-[#5E0009] via-[#7a1020] to-[#5E0009] overflow-hidden">
+              <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent animate-[shimmer_3s_ease-in-out_infinite] pointer-events-none" />
+              <style>{`@keyframes shimmer{0%,100%{transform:translateX(-100%)}50%{transform:translateX(100%)}}`}</style>
+              <div className="relative flex justify-between items-center">
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/60">
+                    Admin
                   </div>
-                ))}
+                  <h3 className="text-xl font-bold leading-tight">Fundraiser Manager</h3>
+                </div>
+                <button
+                  onClick={() => setShowManager(false)}
+                  className="rounded-full p-1.5 text-white hover:bg-white/15 transition"
+                  aria-label="Close"
+                >
+                  <X size={18} />
+                </button>
               </div>
-            )}
+            </div>
+
+            <div className="p-8">
+              <form onSubmit={addFundraiser} className="flex flex-col md:flex-row gap-3 mb-8">
+                <input
+                  placeholder="Title"
+                  value={form.title}
+                  onChange={(e) => setForm({ title: e.target.value })}
+                  className="flex-1 bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
+                />
+                <input
+                  placeholder="Link"
+                  value={form.link}
+                  onChange={(e) => setForm({ link: e.target.value })}
+                  className="flex-1 bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
+                />
+                <button
+                  type="submit"
+                  className="inline-flex items-center justify-center gap-1.5 bg-[#5E0009] text-white px-5 py-2.5 rounded-full font-semibold hover:bg-[#7a0012] transition whitespace-nowrap"
+                >
+                  <Plus size={16} />
+                  Add
+                </button>
+              </form>
+              {fundraiserError && (
+                <p className="text-sm text-red-600 mb-4">{fundraiserError}</p>
+              )}
+              {fundraisers.length === 0 ? (
+                <p className="text-gray-400 text-sm text-center py-8">No fundraisers yet.</p>
+              ) : (
+                <div className="flex flex-col divide-y divide-gray-100">
+                  {fundraisers.map((f) => (
+                    <div key={f.id} className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0">
+                      <div className="min-w-0 flex items-start gap-3">
+                        <span
+                          className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${
+                            f.active ? "bg-emerald-500" : "bg-gray-300"
+                          }`}
+                        />
+                        <div className="min-w-0">
+                          <p className="font-semibold text-gray-900 truncate">{f.title}</p>
+                          {f.link && (
+                            <a
+                              href={f.link}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-gray-400 hover:text-[#5E0009] text-xs truncate block transition"
+                            >
+                              {f.link}
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => toggleActive(f.id, f.active)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide transition ${
+                            f.active
+                              ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          }`}
+                        >
+                          {f.active ? "Active" : "Activate"}
+                        </button>
+                        <button
+                          onClick={() => removeFundraiser(f.id)}
+                          aria-label="Delete fundraiser"
+                          className="p-2 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 transition"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -358,8 +435,13 @@ export default function MainContent() {
         viewport={{ once: true }}
         className="bg-white py-20 text-center px-6"
       >
-        <h2 className="text-3xl md:text-4xl font-bold text-[#5E0009] mb-4">Work With Us</h2>
-        <p className="max-w-2xl mx-auto text-gray-700 mb-8 text-lg">
+        <div className="inline-flex items-center gap-3 text-[#5E0009] text-xs font-semibold uppercase tracking-[0.2em] mb-2">
+          <span className="h-px w-6 bg-[#5E0009]/40" />
+          Partner With Us
+          <span className="h-px w-6 bg-[#5E0009]/40" />
+        </div>
+        <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">Work With Us</h2>
+        <p className="max-w-2xl mx-auto text-gray-600 mb-8 text-lg">
           Partner with Missouri State Women's Lacrosse through various sponsorship opportunities.
           Your business can help support student-athletes and grow the game we love.
         </p>
@@ -370,7 +452,7 @@ export default function MainContent() {
         )}
         <a
           href="/women/sponsorships"
-          className="inline-block bg-[#5E0009] text-white px-8 py-3 font-semibold hover:bg-red-800 transition"
+          className="inline-block bg-[#5E0009] text-white px-8 py-3 rounded-full font-semibold hover:bg-[#7a0012] transition"
         >
           Become a Sponsor
         </a>

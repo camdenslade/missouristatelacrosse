@@ -452,7 +452,7 @@ export default function Payments() {
               )}
               <a
                 href="/"
-                className="inline-block bg-[#5E0009] text-white px-6 py-2 rounded-md font-semibold hover:bg-red-800 transition"
+                className="inline-block bg-[#5E0009] text-white px-6 py-2 rounded-md font-semibold hover:bg-[#7a0012] transition"
               >
                 Return Home
               </a>

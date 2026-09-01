@@ -170,7 +170,7 @@ export default function ProductCard({ product, onAddToCart, isAdmin: _isAdmin = 
           <button
             onClick={onAdd}
             disabled={!selectedVariant || !!isOutOfStock}
-            className="w-full bg-[#5E0009] text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-red-800 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full bg-[#5E0009] text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-[#7a0012] active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isOutOfStock ? "Out of Stock" : "Add to Cart"}
           </button>

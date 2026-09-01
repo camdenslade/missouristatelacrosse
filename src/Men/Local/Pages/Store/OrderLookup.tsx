@@ -124,7 +124,7 @@ export default function OrderLookup() {
           />
           <button
             type="submit"
-            className="px-6 py-2 bg-[#5E0009] text-white rounded hover:bg-red-800 disabled:opacity-50"
+            className="px-6 py-2 bg-[#5E0009] text-white rounded hover:bg-[#7a0012] disabled:opacity-50"
             disabled={loading}
           >
             {loading ? "Looking up…" : "Lookup Order"}

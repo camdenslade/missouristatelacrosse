@@ -1,4 +1,5 @@
 import { FaInstagram, FaFacebook } from "react-icons/fa";
+import { Link } from "react-router-dom";
 
 import { getProgramInfo } from "../../Services/programHelper";
 import { useSponsors } from "../Common/hooks/useSponsors";
@@ -22,17 +23,15 @@ export default function Footer() {
     : "https://www.facebook.com/MoStateLax/";
 
   return (
-    <footer className="no-print bg-[#5E0009] text-white/80 py-8 w-full border-t border-white/10">
-      <div className="flex flex-col items-center gap-4">
-        <img
-          src="/assets/msu.png"
-          alt={teamName}
-          className="h-8 opacity-70"
-        />
-
-        {/* Social icons (centered) + Sponsor logos (positioned to the right) */}
-        <div className="relative w-full flex justify-center items-center">
-          <div className="flex gap-5 text-xl">
+    <footer className="no-print bg-[#5E0009] text-white/80 w-full border-t border-white/10">
+      <div className="max-w-6xl mx-auto px-6 py-12 flex flex-col items-center gap-8">
+        <div className="flex flex-col items-center gap-3">
+          <img
+            src="/assets/msu.png"
+            alt={teamName}
+            className="h-8 opacity-80"
+          />
+          <div className="flex gap-6 text-2xl">
             <a
               href={instagramURL}
               target="_blank"
@@ -53,17 +52,30 @@ export default function Footer() {
               <FaFacebook />
             </a>
           </div>
-
-          {sponsors.length > 0 && (
-            <div className="absolute left-1/2 top-1/2 -translate-y-1/2 ml-20">
-              <SponsorLogos sponsors={sponsors} layout="row" maxHeight={64} />
-            </div>
-          )}
         </div>
 
-        {/* Copyright */}
-        <div className="text-center text-xs tracking-wide uppercase text-white/50">
-          &copy; {new Date().getFullYear()} {teamName}
+        {sponsors.length > 0 && (
+          <div className="w-full flex flex-col items-center gap-4">
+            <div className="flex items-center gap-3 text-white/50 text-xs font-semibold uppercase tracking-[0.2em]">
+              <span className="h-px w-8 bg-white/20" />
+              Our Sponsors
+              <span className="h-px w-8 bg-white/20" />
+            </div>
+            <SponsorLogos sponsors={sponsors} layout="grid" maxHeight={56} card />
+          </div>
+        )}
+
+        <div className="w-full pt-6 border-t border-white/10 flex flex-col items-center gap-3 text-center text-xs tracking-wide uppercase text-white/50">
+          <div className="flex items-center gap-4">
+            <Link to="/privacy-policy" className="hover:text-white transition-colors">
+              Privacy Policy
+            </Link>
+            <span className="text-white/20">|</span>
+            <Link to="/terms-of-service" className="hover:text-white transition-colors">
+              Terms of Service
+            </Link>
+          </div>
+          <div>&copy; {new Date().getFullYear()} {teamName}</div>
         </div>
       </div>
     </footer>

@@ -166,7 +166,7 @@ export default function ManageSponsors() {
           <button
             type="submit"
             disabled={saving}
-            className="bg-[#5E0009] text-white px-5 py-2 rounded font-semibold hover:bg-red-800 transition disabled:opacity-60"
+            className="bg-[#5E0009] text-white px-5 py-2 rounded font-semibold hover:bg-[#7a0012] transition disabled:opacity-60"
           >
             {saving ? "Saving..." : editing ? "Update" : "Add Sponsor"}
           </button>

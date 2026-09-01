@@ -1,9 +1,7 @@
 import { useEffect, useReducer, useCallback } from "react";
-import toast from "react-hot-toast";
 import { Pagination, A11y } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
-import { useAuth } from "../../../../Global/Context/AuthContext";
 import { apiRequest } from "../../../../Services/API";
 import type { ApiInstagramFeed } from "../../../../types/api";
 
@@ -14,8 +12,6 @@ type FeedState = {
   postUrls: string[];
   loading: boolean;
   error: string;
-  newUrl: string;
-  adding: boolean;
   isMobile: boolean;
 };
 
@@ -23,16 +19,12 @@ type FeedAction =
   | { type: "SET_POSTS"; payload: string[] }
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_ERROR"; payload: string }
-  | { type: "SET_NEW_URL"; payload: string }
-  | { type: "SET_ADDING"; payload: boolean }
   | { type: "SET_MOBILE"; payload: boolean };
 
 const initialState: FeedState = {
   postUrls: [],
   loading: true,
   error: "",
-  newUrl: "",
-  adding: false,
   isMobile: window.innerWidth < 768,
 };
 
@@ -44,10 +36,6 @@ function feedReducer(state: FeedState, action: FeedAction): FeedState {
       return { ...state, loading: action.payload };
     case "SET_ERROR":
       return { ...state, error: action.payload, loading: false };
-    case "SET_NEW_URL":
-      return { ...state, newUrl: action.payload };
-    case "SET_ADDING":
-      return { ...state, adding: action.payload };
     case "SET_MOBILE":
       return { ...state, isMobile: action.payload };
     default:
@@ -57,10 +45,7 @@ function feedReducer(state: FeedState, action: FeedAction): FeedState {
 
 export default function SocialFeeds(){
     const [state, dispatch] = useReducer(feedReducer, initialState);
-    const { postUrls, loading, error, newUrl, adding, isMobile } = state;
-
-    const { user, roles } = useAuth();
-    const canAddPost = (user && (roles?.men === "player" || roles?.men === "admin"))
+    const { postUrls, loading, error, isMobile } = state;
 
     const fetchPosts = useCallback(async (isBackground = false) => {
         try{
@@ -89,35 +74,6 @@ export default function SocialFeeds(){
         dispatch({ type: "SET_ERROR", payload: "Failed to load Instagram feed." });
         }
     }, []);
-
-    const handleAddPost = useCallback(async () => {
-        if (!newUrl.trim().startsWith("https://")){
-        toast.error("Please enter a valid Instagram post URL.");
-        return;
-        }
-
-        dispatch({ type: "SET_ADDING", payload: true });
-        try{
-        const snap = await apiRequest<ApiInstagramFeed>("/api/site-content/instagramFeed").catch(() => null);
-        const existing = snap?.data?.posts || [];
-
-        const updated = Array.isArray(existing)
-            ? [...existing, newUrl.trim()]
-            : [newUrl.trim()];
-        await apiRequest("/api/site-content/instagramFeed", {
-          method: "PUT",
-          json: { posts: updated },
-        });
-
-        dispatch({ type: "SET_NEW_URL", payload: "" });
-        await fetchPosts(true);
-        } catch (err){
-        console.error("Error adding post:", err);
-        toast.error("Failed to add post. Check console for details.");
-        } finally{
-        dispatch({ type: "SET_ADDING", payload: false });
-        }
-    }, [newUrl, fetchPosts]);
 
     useEffect(() => {
         const handleResize = () =>
@@ -154,29 +110,28 @@ export default function SocialFeeds(){
         document.body.appendChild(script);
     }, [postUrls]);
 
+const EmbedFrame = ({ url }: { url: string }) => (
+    <div className="instagram-embed-frame relative w-full max-w-[350px] h-[560px] mx-auto overflow-hidden rounded-2xl border border-gray-100 shadow-sm bg-white">
+        <div className="absolute inset-0 flex items-center justify-center z-0">
+            <div className="w-10 h-10 border-[3px] border-[#5E0009] border-t-transparent rounded-full animate-spin"></div>
+        </div>
+        <blockquote
+            className="instagram-media relative z-10"
+            data-instgrm-permalink={url}
+            data-instgrm-version="14"
+            style={{ background: "transparent", border: 0, margin: 0, width: "100%", height: "100%" }}
+        ></blockquote>
+    </div>
+);
+
 return (
-        <section className="py-10 bg-white text-center animate-fadeIn">
-        {/* Add Post */}
-        {canAddPost && (
-            <div className="mb-6 flex justify-center gap-2">
-            <input
-                type="text"
-                placeholder="Paste Instagram post URL..."
-                value={newUrl}
-                onChange={(e) =>
-                dispatch({ type: "SET_NEW_URL", payload: e.target.value })
-                }
-                className="border border-gray-300 rounded-md px-3 py-1 w-72 text-sm"
-            />
-            <button
-                onClick={handleAddPost}
-                disabled={adding}
-                className="bg-[#5E0009] text-white rounded-md px-4 py-1 text-sm hover:bg-[#7A0010] disabled:opacity-50"
-            >
-                {adding ? "Adding..." : "Add"}
-            </button>
-            </div>
-        )}
+        <section className="py-16 bg-gray-50 text-center animate-fadeIn">
+        <div className="inline-flex items-center gap-3 text-[#5E0009] text-xs font-semibold uppercase tracking-[0.2em] mb-2">
+            <span className="h-px w-6 bg-[#5E0009]/40" />
+            Follow Along
+            <span className="h-px w-6 bg-[#5E0009]/40" />
+        </div>
+        <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-8">From Instagram</h2>
 
         {loading && (
             <p className="text-gray-600 italic animate-pulse">Loading posts...</p>
@@ -204,49 +159,20 @@ return (
                     >
                     {postUrls.map((url, i) => (
                         <SwiperSlide key={i}>
-                        <blockquote
-                            className="instagram-media"
-                            data-instgrm-permalink={url}
-                            data-instgrm-version="14"
-                            style={{
-                            background: "#FFF",
-                            border: 0,
-                            margin: "auto",
-                            maxWidth: "350px",
-                            width: "100%",
-                            minWidth: "280px",
-                            borderRadius: "10px",
-                            }}
-                        ></blockquote>
+                        <EmbedFrame url={url} />
                         </SwiperSlide>
                     ))}
                     </Swiper>
                 )}
                 </div>
             ) : (
-                <div className="flex flex-wrap justify-center gap-4 px-6">
+                <div className="flex flex-wrap justify-center gap-6 px-6">
                 {postUrls.length === 0 ? (
                     <p className="text-gray-500 italic">
                     No Instagram posts to display yet.
                     </p>
                 ) : (
-                    postUrls.slice(0, 5).map((url, i) => (
-                    <blockquote
-                        key={i}
-                        className="instagram-media"
-                        data-instgrm-permalink={url}
-                        data-instgrm-version="14"
-                        style={{
-                        background: "#FFF",
-                        border: 0,
-                        margin: "0",
-                        maxWidth: "350px",
-                        width: "100%",
-                        minWidth: "280px",
-                        borderRadius: "10px",
-                        }}
-                    ></blockquote>
-                    ))
+                    postUrls.slice(0, 5).map((url, i) => <EmbedFrame key={i} url={url} />)
                 )}
                 </div>
             )}
@@ -255,4 +181,3 @@ return (
         </section>
     );
 }
-

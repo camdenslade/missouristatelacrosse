@@ -4,29 +4,22 @@ type Props = {
   sponsors: ApiSponsor[];
   layout?: "grid" | "row";
   maxHeight?: number;
+  /** Render each logo on its own white card so dark/transparent logos stay visible on a dark background. */
+  card?: boolean;
 };
-
-function getScaledSize(count: number, maxHeight: number) {
-  const scale =
-    count <= 1 ? 1 : count <= 3 ? 0.85 : count <= 6 ? 0.65 : count <= 10 ? 0.5 : 0.38;
-  const h = Math.round(maxHeight * scale);
-  const w = Math.round(h * 2.8);
-  return { height: h, maxWidth: w };
-}
 
 export default function SponsorLogos({
   sponsors,
   layout = "row",
   maxHeight = 80,
+  card = false,
 }: Props) {
   if (!sponsors.length) return null;
 
-  const { height, maxWidth } = getScaledSize(sponsors.length, maxHeight);
-
   const wrapperClass =
     layout === "grid"
-      ? "flex flex-wrap items-center justify-center gap-8"
-      : "flex flex-wrap items-center justify-center gap-6";
+      ? "flex flex-wrap items-center justify-center gap-6"
+      : "flex flex-wrap items-center justify-center gap-4";
 
   return (
     <div className={wrapperClass}>
@@ -37,14 +30,19 @@ export default function SponsorLogos({
             href={s.link || undefined}
             target={s.link ? "_blank" : undefined}
             rel={s.link ? "noopener noreferrer" : undefined}
-            className="transition-opacity hover:opacity-80"
             title={s.name || undefined}
+            className={
+              card
+                ? "flex items-center justify-center bg-white rounded-xl shadow-sm px-5 hover:shadow-md hover:-translate-y-0.5 transition-all"
+                : "transition-opacity hover:opacity-80"
+            }
+            style={card ? { height: maxHeight, width: maxHeight * 1.8 } : undefined}
           >
             <img
               src={s.logo}
               alt={s.name || "Sponsor"}
-              className="object-contain"
-              style={{ height, maxWidth }}
+              className="object-contain max-h-full max-w-full"
+              style={card ? { maxHeight: maxHeight * 0.7 } : { height: maxHeight }}
             />
           </a>
         ) : null

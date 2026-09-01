@@ -1,28 +1,49 @@
+import { ArrowUpRight } from "lucide-react";
+
+const links = [
+  { href: "/roster", title: "Roster", desc: "Meet the players who make up the Bears." },
+  { href: "/schedule", title: "Schedule", desc: "Upcoming games, results, and locations." },
+  { href: "/store", title: "Team Store", desc: "Shop official Bears Lacrosse merchandise." },
+  {
+    href: "https://mcla.us/teams/missouri-state/2026/schedule",
+    title: "MCLA Page",
+    desc: "The Bears' official MCLA team page.",
+    external: true,
+  },
+];
+
 export default function Quicklinks() {
   return (
-    <section className="bg-gray-100 py-12">
-      <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-6 text-center">
-        <a href="/roster" className="bg-white p-8 rounded-lg shadow hover:shadow-lg transition">
-          <h3 className="text-2xl font-semibold mb-4">Roster</h3>
-          <p>Meet the players who make up the Bears Lacrosse team.</p>
-        </a>
-        <a href="/schedule" className="bg-white p-8 rounded-lg shadow hover:shadow-lg transition">
-          <h3 className="text-2xl font-semibold mb-4">Schedule</h3>
-          <p>See upcoming games, results, and locations.</p>
-        </a>
-        <a href="/store" className="bg-white p-8 rounded-lg shadow hover:shadow-lg transition">
-          <h3 className="text-2xl font-semibold mb-4">Team Store</h3>
-          <p>Shop official Missouri State Lacrosse merchandise.</p>
-        </a>
-        <a
-          href="https://mcla.us/teams/missouri-state/2026/schedule"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-white p-8 rounded-lg shadow hover:shadow-lg transition"
-        >
-          <h3 className="text-2xl font-semibold mb-4">MCLA Page</h3>
-          <p>Visit the Bears MCLA page.</p>
-        </a>
+    <section className="bg-white py-20 md:py-28">
+      <div className="max-w-7xl mx-auto px-6 md:px-12">
+        <div className="flex items-baseline justify-between mb-10 md:mb-14 gap-6">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold uppercase text-gray-900">
+            Quick Links
+          </h2>
+          <span className="h-px flex-1 bg-gray-200" />
+        </div>
+        <div className="border-t border-gray-200">
+          {links.map(({ href, title, desc, external }, i) => (
+            <a
+              key={href}
+              href={href}
+              {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+              className="group flex items-center gap-8 py-8 md:py-10 border-b border-gray-200 hover:bg-[#5E0009]/5 transition-colors px-3 -mx-3"
+            >
+              <span className="text-base md:text-lg font-semibold text-gray-300 group-hover:text-[#5E0009]/50 transition-colors tabular-nums">
+                0{i + 1}
+              </span>
+              <span className="text-2xl md:text-4xl lg:text-5xl font-bold uppercase text-gray-900 group-hover:text-[#5E0009] transition-colors">
+                {title}
+              </span>
+              <span className="hidden md:block text-base text-gray-500 flex-1 truncate">{desc}</span>
+              <ArrowUpRight
+                size={28}
+                className="ml-auto shrink-0 text-gray-300 group-hover:text-[#5E0009] group-hover:translate-x-1 group-hover:-translate-y-1 transition-all"
+              />
+            </a>
+          ))}
+        </div>
       </div>
     </section>
   );

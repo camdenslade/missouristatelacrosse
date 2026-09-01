@@ -154,7 +154,7 @@ export default function WStore() {
 
           <button
             onClick={() => setShowCart(true)}
-            className="fixed bottom-6 right-6 w-16 h-16 bg-[#5E0009] text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-800 hover:shadow-xl hover:scale-105 transition-all"
+            className="fixed bottom-6 right-6 w-16 h-16 bg-[#5E0009] text-white rounded-full flex items-center justify-center shadow-lg hover:bg-[#7a0012] hover:shadow-xl hover:scale-105 transition-all"
           >
             <FaShoppingCart className="text-2xl" />
             {cart.length > 0 && (

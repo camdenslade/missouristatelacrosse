@@ -93,16 +93,26 @@ export interface ApiTeam {
   data?: Record<string, JsonValue>;
 }
 
+export interface ApiFundraiserExpense {
+  label: string;
+  amount: number;
+  detail?: string | null;
+}
+
 export interface ApiFundraiser {
   id: string;
   title?: string | null;
+  slug: string;
   description?: string | null;
   image?: string | null;
   link?: string | null;
-  goal?: number | null;
-  raised?: number | null;
-  published?: boolean | null;
+  goalAmount?: number | null;
+  expenses?: ApiFundraiserExpense[];
   active?: boolean | null;
+  published?: boolean | null;
+  program?: Program | string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ApiSponsor {

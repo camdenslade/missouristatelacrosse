@@ -539,7 +539,7 @@ export default function ScoreModal({
               <button
                 type="submit"
                 disabled={saving}
-                className="px-4 py-2 bg-[#5E0009] text-white hover:bg-red-800 rounded transition disabled:opacity-60"
+                className="px-4 py-2 bg-[#5E0009] text-white hover:bg-[#7a0012] rounded transition disabled:opacity-60"
               >
                 {saving ? "Saving..." : "Save"}
               </button>

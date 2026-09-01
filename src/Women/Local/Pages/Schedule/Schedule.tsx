@@ -256,7 +256,7 @@ export default function WSchedule({ userRole }: { userRole?: string | null }) {
         <div className="flex justify-center my-10">
           <button
             onClick={() => dispatch({ type: "EDIT_GAME", game: null })}
-            className="px-6 py-3 bg-[#5E0009] text-white hover:bg-red-800 text-lg"
+            className="px-6 py-3 bg-[#5E0009] text-white hover:bg-[#7a0012] text-lg"
           >
             Add Game
           </button>

@@ -204,7 +204,7 @@ export default function StreamPlayer({
           </p>
           <button
             onClick={triggerRetry}
-            className="px-4 py-2 bg-[#5E0009] text-white rounded hover:bg-red-800 text-sm"
+            className="px-4 py-2 bg-[#5E0009] text-white rounded hover:bg-[#7a0012] text-sm"
           >
             Retry Now
           </button>
