@@ -105,7 +105,7 @@ public class PaymentReceiptService {
     public PaymentReceipt recordPayPalReceipt(Map<String, Object> payload, String source) {
         String orderId = readString(payload.get("id"));
         if (orderId == null || orderId.isBlank()) {
-            throw new IllegalArgumentException("PayPal payload missing order id");
+            throw new IllegalArgumentException("Payment payload missing order id");
         }
 
         PaymentReceipt receipt = receiptRepository.findByOrderId(orderId)

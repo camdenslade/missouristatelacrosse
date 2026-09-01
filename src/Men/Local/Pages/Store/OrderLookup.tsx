@@ -111,7 +111,7 @@ export default function OrderLookup() {
       <div className="bg-white border border-gray-200 rounded p-6 shadow-sm space-y-3">
         <h1 className="text-2xl font-bold text-[#5E0009]">Order Lookup</h1>
         <p className="text-sm text-gray-600">
-          Enter the PayPal/Printify order ID (the same value that appears on your email receipt) to
+          Enter your order ID (the same value that appears on your email receipt) to
           view the items and shipping information. The link in your receipt pre-fills the order ID.
         </p>
         <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-3">

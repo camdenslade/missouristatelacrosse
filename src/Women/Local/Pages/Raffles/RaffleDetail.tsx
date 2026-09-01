@@ -179,7 +179,7 @@ export default function RaffleDetail() {
       }
       dispatch({
         type: "SUBMIT_ERROR",
-        msg: `Your payment was received but your entry couldn't be recorded. Please contact us and provide your PayPal order ID: ${captureData.id}`,
+        msg: `Your payment was received but your entry couldn't be recorded. Please contact us and provide your payment reference: ${captureData.id}`,
       });
     },
     [] // stable - reads fresh state via ref, never causes PayPal to reinitialize

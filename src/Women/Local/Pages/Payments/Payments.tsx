@@ -73,6 +73,8 @@ export default function Payments() {
   const programRole = (roles?.[program] || "") as Role | "";
   const canAccess = ["admin", "player", "parent", "alumni"].includes(programRole);
 
+  const paymentProvider = resolvePaymentProvider();
+
   const { players, setPlayers, loading: loadingPlayers } = usePlayers();
   const [selectedSeason, setSelectedSeason] = useState(currentSeason);
   useEffect(() => {
@@ -111,7 +113,7 @@ export default function Payments() {
         playerId: player.id,
         amount,
         type: "PAYMENT",
-        note: "PayPal payment",
+        note: paymentProvider === "stripe" ? "Stripe payment" : "PayPal payment",
         paidByUid: user?.uid ?? null,
         payPalOrderId: captureData.id,
       },
@@ -391,7 +393,7 @@ export default function Payments() {
           )}
 
           {state.selectedPlayer ? (
-            <div className={resolvePaymentProvider() === "stripe" ? "max-w-xl" : "max-w-lg"}>
+            <div className={paymentProvider === "stripe" ? "max-w-xl" : "max-w-lg"}>
               <PlayerPaymentDetails
                 userRole={programRole}
                 selectedPlayer={state.selectedPlayer}

@@ -195,7 +195,7 @@ export default function PlayerPaymentDetails({
                   <th className="text-left px-3 py-2">Date</th>
                   <th className="text-left px-3 py-2">Type</th>
                   <th className="text-left px-3 py-2">Note</th>
-                  {userRole === "admin" && <th className="text-left px-3 py-2">PayPal Order</th>}
+                  {userRole === "admin" && <th className="text-left px-3 py-2">Payment Ref</th>}
                   <th className="text-right px-3 py-2">Amount</th>
                   <th className="text-right px-3 py-2">Balance After</th>
                 </tr>
