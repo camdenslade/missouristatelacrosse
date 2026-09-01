@@ -409,7 +409,7 @@ export default function RosterFormModal({
         )}
 
         {/* Buttons */}
-        <div className="flex justify-between mt-2">
+        <div className="sticky bottom-0 -mx-6 -mb-6 mt-4 bg-white border-t border-gray-200 px-6 py-4 flex justify-between">
           <button
             type="submit"
             className="px-4 py-2 bg-[#5E0009] text-white text-lg hover:bg-[#7a0012]"

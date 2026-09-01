@@ -1,3 +1,4 @@
+import { ChevronDown, Printer, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -104,26 +105,33 @@ export default function WRoster({ userRole }){
       <style>{rosterPrintStyle}</style>
 
       <div className="no-print flex flex-col sm:flex-row justify-between items-center gap-3 mb-6">
-        <select
-          value={selectedSeason}
-          onChange={(e) => handleSeasonChange(e.target.value)}
-          className="border border-gray-400 px-3 py-1 rounded text-sm font-medium bg-white shadow-sm hover:border-gray-600 transition-colors"
-        >
-          {availableSeasons.map((s) => (
-            <option key={s} value={s}>{displaySeasonLabel(s)} Season</option>
-          ))}
-        </select>
-        <input
-          type="text"
-          placeholder="Search players..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="border border-gray-300 rounded-md px-3 py-1 text-sm w-full sm:w-48 focus:outline-none focus:ring-1 focus:ring-[#5E0009]"
-        />
+        <div className="relative">
+          <select
+            value={selectedSeason}
+            onChange={(e) => handleSeasonChange(e.target.value)}
+            className="appearance-none bg-white border border-gray-200 text-gray-800 text-sm font-semibold pl-4 pr-10 py-2.5 rounded-full shadow-sm hover:border-[#5E0009]/40 focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 transition cursor-pointer"
+          >
+            {availableSeasons.map((s) => (
+              <option key={s} value={s}>{displaySeasonLabel(s)} Season</option>
+            ))}
+          </select>
+          <ChevronDown size={16} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+        </div>
+        <div className="relative flex-1 sm:flex-none sm:w-56">
+          <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search players..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full border border-gray-200 rounded-full pl-10 pr-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
+          />
+        </div>
         <button
           onClick={handlePrint}
-          className="print-button mt-0 bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-md px-4 py-2 text-sm font-medium"
+          className="print-button inline-flex items-center justify-center gap-2 bg-[#5E0009] text-white rounded-full px-5 py-2.5 text-sm font-semibold hover:bg-[#7a0012] transition shadow-sm whitespace-nowrap"
         >
+          <Printer size={16} />
           Print Roster
         </button>
       </div>
