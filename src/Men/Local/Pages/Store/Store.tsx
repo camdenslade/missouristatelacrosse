@@ -108,43 +108,49 @@ export default function Store() {
   };
 
   return (
-    <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      {/* Header */}
-      <div className="mb-10">
-        <div className="flex items-end justify-between">
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight text-gray-900">Team Store</h1>
-            <p className="mt-1 text-gray-500">Official Missouri State Lacrosse gear</p>
-          </div>
-          <div className="flex items-center gap-2">
-            {isAdmin && (
-              <button
-                onClick={() => setShowOrderLogs(true)}
-                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:border-gray-400 transition"
-              >
-                View Orders
-              </button>
-            )}
-            <button
-              onClick={() => navigate(orderLookupPath)}
-              className="px-4 py-2 text-sm font-medium border border-[#5E0009] text-[#5E0009] rounded-lg hover:bg-[#5E0009] hover:text-white transition"
-            >
-              Lookup Order
-            </button>
-          </div>
+    <div className="relative min-h-screen bg-gray-50">
+      {/* Hero */}
+      <div className="bg-linear-to-r from-[#5E0009] via-[#7a1020] to-[#5E0009] text-white px-6 py-14 text-center">
+        <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/80 mb-3">
+          <span className="h-px w-6 bg-white/50" />
+          Missouri State Lacrosse
+          <span className="h-px w-6 bg-white/50" />
         </div>
-        <div className="mt-4 border-b border-gray-200" />
+        <h1 className="text-4xl md:text-5xl font-extrabold">Team Store</h1>
+        <p className="text-white/80 mt-3 max-w-lg mx-auto">Official Missouri State Lacrosse gear</p>
       </div>
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 pb-16">
+        <div className="flex flex-wrap justify-end gap-2 mb-6">
+          {isAdmin && (
+            <button
+              onClick={() => setShowOrderLogs(true)}
+              className="px-4 py-2 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-full shadow-sm hover:text-gray-900 hover:border-gray-300 transition"
+            >
+              View Orders
+            </button>
+          )}
+          <button
+            onClick={() => navigate(orderLookupPath)}
+            className="px-4 py-2 text-sm font-semibold bg-white border border-[#5E0009] text-[#5E0009] rounded-full shadow-sm hover:bg-[#5E0009] hover:text-white transition"
+          >
+            Lookup Order
+          </button>
+        </div>
 
       {isEnabled ? (
         <>
           {state.loading ? (
-            <div className="flex flex-col justify-center items-center h-64 gap-3">
+            <div className="flex flex-col justify-center items-center min-h-[40vh] gap-3">
               <div className="w-10 h-10 border-[3px] border-[#5E0009] border-t-transparent rounded-full animate-spin"></div>
               <p className="text-gray-500 text-sm">Loading products…</p>
             </div>
+          ) : state.products.length === 0 ? (
+            <div className="bg-white rounded-2xl shadow-lg text-center py-20 text-gray-400 text-lg">
+              No products are available right now.
+            </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               {state.products.map((p, idx) => (
                 <ProductCard
                   key={`${p.id}-${idx}`}
@@ -190,6 +196,7 @@ export default function Store() {
         />
       )}
 
+      </div>
     </div>
   );
 }

@@ -103,7 +103,7 @@ export default function ProductCard({ product, onAddToCart, isAdmin: _isAdmin = 
   };
 
   return (
-    <div className="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg hover:border-gray-300 transition-all duration-200 flex flex-col h-full">
+    <div className="group bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-200 flex flex-col h-full">
       {/* Product image */}
       <div className="bg-gray-50 p-6 relative">
         <img
@@ -115,7 +115,7 @@ export default function ProductCard({ product, onAddToCart, isAdmin: _isAdmin = 
 
       {/* Product details */}
       <div className="p-5 flex flex-col flex-1">
-        <h2 className="font-semibold text-gray-900 leading-snug mb-2 line-clamp-2">
+        <h2 className="font-bold text-gray-900 leading-snug mb-2 line-clamp-2">
           {product.title}
         </h2>
 
@@ -135,7 +135,7 @@ export default function ProductCard({ product, onAddToCart, isAdmin: _isAdmin = 
               <select
                 value={selections[key] ?? ""}
                 onChange={e => handleSelect(key, Number(e.target.value))}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:border-transparent transition"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
               >
                 {available.map(v => (
                   <option key={v.id} value={v.id}>{v.title}</option>
@@ -158,7 +158,7 @@ export default function ProductCard({ product, onAddToCart, isAdmin: _isAdmin = 
                 <select
                   value={selections[key] ?? ""}
                   onChange={e => handleSelect(key, Number(e.target.value))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:border-transparent transition"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
                 >
                   {available.map(v => (
                     <option key={v.id} value={v.id}>{v.title}</option>
@@ -170,7 +170,7 @@ export default function ProductCard({ product, onAddToCart, isAdmin: _isAdmin = 
           <button
             onClick={onAdd}
             disabled={!selectedVariant || !!isOutOfStock}
-            className="w-full bg-[#5E0009] text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-[#7a0012] active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full bg-[#5E0009] text-white py-2.5 rounded-full text-sm font-semibold hover:bg-[#7a0012] active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isOutOfStock ? "Out of Stock" : "Add to Cart"}
           </button>
