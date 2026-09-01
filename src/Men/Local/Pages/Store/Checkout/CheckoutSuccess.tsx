@@ -139,37 +139,41 @@ export default function CheckoutSuccess() {
 
   if (state.loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh]">
-        <div className="w-12 h-12 border-4 border-[#5E0009] border-t-transparent rounded-full animate-spin mb-4" />
-        <p>Loading order…</p>
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
+        <div className="w-12 h-12 border-4 border-[#5E0009] border-t-transparent rounded-full animate-spin" />
+        <p className="text-gray-500">Loading order…</p>
       </div>
     );
   }
 
   if (state.error) {
     return (
-      <div className="text-center p-8">
-        <p className="text-red-600">{state.error}</p>
-        <button
-          onClick={() => navigate("/store")}
-          className="mt-6 px-4 py-2 bg-[#5E0009] text-white rounded"
-        >
-          Back to Store
-        </button>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-md w-full">
+          <p className="text-red-600">{state.error}</p>
+          <button
+            onClick={() => navigate("/store")}
+            className="mt-6 px-6 py-2.5 bg-[#5E0009] text-white rounded-full font-semibold hover:bg-[#7a0012] transition-colors"
+          >
+            Back to Store
+          </button>
+        </div>
       </div>
     );
   }
 
   if (!state.shipping) {
     return (
-      <div className="text-center p-8">
-        <p className="text-red-600">Unable to load shipping details for this order.</p>
-        <button
-          onClick={() => navigate("/store")}
-          className="mt-6 px-4 py-2 bg-[#5E0009] text-white rounded"
-        >
-          Back to Store
-        </button>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-md w-full">
+          <p className="text-red-600">Unable to load shipping details for this order.</p>
+          <button
+            onClick={() => navigate("/store")}
+            className="mt-6 px-6 py-2.5 bg-[#5E0009] text-white rounded-full font-semibold hover:bg-[#7a0012] transition-colors"
+          >
+            Back to Store
+          </button>
+        </div>
       </div>
     );
   }
@@ -177,42 +181,51 @@ export default function CheckoutSuccess() {
   const s = state.shipping;
 
   return (
-    <div className="max-w-xl mx-auto p-8 bg-white rounded shadow">
-      <h1 className="text-3xl font-bold text-center text-[#5E0009] mb-6">
-        Order Confirmed
-      </h1>
-
-      <div className="bg-gray-50 border rounded p-4 mb-6">
-        <p><strong>Order ID:</strong> {state.orderId}</p>
-        <p><strong>Name:</strong> {s.first_name} {s.last_name}</p>
-        <p><strong>Email:</strong> {s.email}</p>
-        <p className="mt-2">
-          <strong>Shipping:</strong><br />
-          {s.address1}<br />
-          {s.city}, {s.region} {s.zip}<br />
-          {s.country}
-        </p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-linear-to-r from-[#5E0009] via-[#7a1020] to-[#5E0009] text-white px-6 py-14 text-center">
+        <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/80 mb-3">
+          <span className="h-px w-6 bg-white/50" />
+          Team Store
+          <span className="h-px w-6 bg-white/50" />
+        </div>
+        <h1 className="text-4xl md:text-5xl font-extrabold">Order Confirmed</h1>
       </div>
 
-      <div className="bg-gray-50 border rounded p-4">
-        <h2 className="font-semibold mb-2">Items</h2>
-        <ul className="space-y-1">
-          {state.items.map((i, idx) => (
-            <li key={idx}>
-              {i.title} - Qty {i.quantity}
-              {i.size && ` (Size: ${i.size})`}
-            </li>
-          ))}
-        </ul>
-      </div>
+      <div className="max-w-xl mx-auto px-4 sm:px-6 -mt-8 pb-16">
+        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 space-y-5">
+          <div className="bg-gray-50 rounded-xl p-4 text-sm space-y-1 wrap-break-word">
+            <p><strong>Order ID:</strong> {state.orderId}</p>
+            <p><strong>Name:</strong> {s.first_name} {s.last_name}</p>
+            <p><strong>Email:</strong> {s.email}</p>
+            <p className="pt-2">
+              <strong>Shipping:</strong><br />
+              {s.address1}<br />
+              {s.city}, {s.region} {s.zip}<br />
+              {s.country}
+            </p>
+          </div>
 
-      <div className="text-center mt-6">
-        <button
-          onClick={() => navigate("/store")}
-          className="px-6 py-2 bg-[#5E0009] text-white rounded hover:bg-[#7a0012]"
-        >
-          Back to Store
-        </button>
+          <div className="bg-gray-50 rounded-xl p-4">
+            <h2 className="font-semibold text-gray-900 mb-2">Items</h2>
+            <ul className="space-y-1 text-sm text-gray-700">
+              {state.items.map((i, idx) => (
+                <li key={idx}>
+                  {i.title} - Qty {i.quantity}
+                  {i.size && ` (Size: ${i.size})`}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="text-center">
+            <button
+              onClick={() => navigate("/store")}
+              className="px-6 py-2.5 bg-[#5E0009] text-white rounded-full font-semibold hover:bg-[#7a0012] transition-colors"
+            >
+              Back to Store
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
