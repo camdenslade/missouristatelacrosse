@@ -380,9 +380,9 @@ export default function MainContent() {
                 <div className="flex flex-col divide-y divide-gray-100">
                   {fundraisers.map((f) => (
                     <div key={f.id} className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0">
-                      <div className="min-w-0 flex items-start gap-3">
+                      <div className="min-w-0 flex items-center gap-3">
                         <span
-                          className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${
+                          className={`h-2 w-2 rounded-full shrink-0 ${
                             f.active ? "bg-emerald-500" : "bg-gray-300"
                           }`}
                         />
