@@ -35,12 +35,10 @@ function reducer(state: HeaderState, action: HeaderAction) {
 }
 
 type HeaderProps = {
-  onManageArticles?: () => void;
-  onManageArticlesWomen?: () => void;
   onAuthOpen?: () => void;
 };
 
-export default function Header({ onManageArticles, onManageArticlesWomen, onAuthOpen }: HeaderProps) {
+export default function Header({ onAuthOpen }: HeaderProps) {
   const { user, roles, userName, signOut } = useAuth();
   const [state, dispatch] = useReducer(reducer, initialState);
   const { showUserMenu, mobileMenuOpen } = state;
@@ -182,17 +180,6 @@ export default function Header({ onManageArticles, onManageArticlesWomen, onAuth
                     Admin Panel
                   </Link>
                 )}
-                {(isAdmin || isPlayer) && (
-                  <button
-                    className="block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors"
-                    onClick={() => {
-                      (isWomen ? onManageArticlesWomen : onManageArticles)?.();
-                      dispatch({ type: "CLOSE_USER_MENU" });
-                    }}
-                  >
-                    Manage Articles
-                  </button>
-                )}
                 <Link
                   to={programLink("/settings")}
                   className="block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors"
@@ -239,8 +226,6 @@ export default function Header({ onManageArticles, onManageArticlesWomen, onAuth
         roles={roles}
         userName={userName}
         signOut={signOut}
-        onManageArticles={onManageArticles}
-        onManageArticlesWomen={onManageArticlesWomen}
         onAuthOpen={onAuthOpen}
       />
     </header>

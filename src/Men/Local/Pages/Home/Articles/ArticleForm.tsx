@@ -93,7 +93,7 @@ export default function ArticleForm({ article, onSave, onCancel }: ArticleFormPr
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mb-6 flex flex-col gap-2">
+    <form onSubmit={handleSubmit} className="mb-8 flex flex-col gap-3 pb-8 border-b border-gray-100">
       <input
         type="text"
         placeholder="Title"
@@ -101,7 +101,7 @@ export default function ArticleForm({ article, onSave, onCancel }: ArticleFormPr
         onChange={(e) =>
           dispatch({ type: "SET_FIELD", field: "title", value: e.target.value })
         }
-        className="border p-2 rounded w-full"
+        className="bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 rounded-xl px-4 py-2.5 w-full focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
       />
       <input
         type="file"
@@ -112,11 +112,11 @@ export default function ArticleForm({ article, onSave, onCancel }: ArticleFormPr
             dispatch({ type: "SET_FIELD", field: "imageFile", value: file });
           }
         }}
-        className="border p-2 rounded w-full"
+        className="bg-gray-50 border border-gray-200 text-gray-700 rounded-xl px-4 py-2.5 w-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-[#5E0009] file:text-white file:px-3 file:py-1.5 file:text-xs file:font-semibold hover:file:bg-[#7a0012] file:transition"
       />
-      {uploading && <div className="text-gray-600">Uploading image…</div>}
+      {uploading && <div className="text-gray-500 text-sm">Uploading image…</div>}
       {imageURL && !imageFile && (
-        <div className="text-gray-600 text-sm">Current image is uploaded.</div>
+        <div className="text-gray-500 text-sm">Current image is uploaded.</div>
       )}
       <textarea
         placeholder="Content"
@@ -124,22 +124,23 @@ export default function ArticleForm({ article, onSave, onCancel }: ArticleFormPr
         onChange={(e) =>
           dispatch({ type: "SET_FIELD", field: "content", value: e.target.value })
         }
-        className="border p-2 rounded w-full h-32"
+        className="bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 rounded-xl px-4 py-2.5 w-full h-32 focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
       />
-      <label className="flex items-center gap-2">
+      <label className="flex items-center gap-2 text-sm text-gray-700">
         <input
           type="checkbox"
           checked={published}
           onChange={(e) =>
             dispatch({ type: "SET_FIELD", field: "published", value: e.target.checked })
           }
+          className="accent-[#5E0009]"
         />
         Published
       </label>
-      <div className="flex gap-2">
+      <div className="flex gap-2 pt-1">
         <button
           type="submit"
-          className="bg-[#5E0009] text-white px-4 py-2 rounded hover:bg-[#7a0012] transition"
+          className="bg-[#5E0009] text-white px-5 py-2.5 rounded-full font-semibold hover:bg-[#7a0012] transition"
         >
           {article ? "Update Article" : "Add Article"}
         </button>
@@ -147,7 +148,7 @@ export default function ArticleForm({ article, onSave, onCancel }: ArticleFormPr
           <button
             type="button"
             onClick={onCancel}
-            className="bg-gray-400 text-white px-4 py-2 rounded"
+            className="border border-gray-300 text-gray-600 px-5 py-2.5 rounded-full font-semibold hover:bg-gray-100 transition"
           >
             Cancel
           </button>

@@ -1,4 +1,5 @@
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { X } from "lucide-react";
 import { useReducer } from "react";
 import type { FormEvent } from "react";
 
@@ -149,120 +150,133 @@ export default function AuthModal({ onClose }: AuthModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-      <div className="relative pointer-events-auto bg-white rounded-lg shadow-2xl w-96 p-6 animate-fadeIn border border-gray-300">
-        <button
-          className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
-          onClick={handleClose}
-        >
-          X
-        </button>
-
-        <h2 className="text-xl font-bold mb-4 text-center text-[#5E0009]">
-          {isSignUp ? "Request Account" : "Sign In"}
-        </h2>
-
-        {submitted ? (
-          <div className="text-center text-green-600 font-medium">
-            Your request has been submitted. An admin will review it.
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="w-full max-w-sm shadow-2xl overflow-hidden bg-white">
+        <div className="relative px-8 py-6 bg-linear-to-r from-[#5E0009] via-[#7a1020] to-[#5E0009] overflow-hidden">
+          <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent animate-[shimmer_3s_ease-in-out_infinite] pointer-events-none" />
+          <style>{`@keyframes shimmer{0%,100%{transform:translateX(-100%)}50%{transform:translateX(100%)}}`}</style>
+          <div className="relative flex justify-between items-center">
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/60">
+                Account
+              </div>
+              <h3 className="text-xl font-bold leading-tight text-white">
+                {isSignUp ? "Request Account" : "Sign In"}
+              </h3>
+            </div>
+            <button
+              onClick={handleClose}
+              className="rounded-full p-1.5 text-white hover:bg-white/15 transition"
+              aria-label="Close"
+            >
+              <X size={18} />
+            </button>
           </div>
-        ) : (
-          <form
-            onSubmit={isSignUp ? handleRequestSignup : handleSignIn}
-            className="flex flex-col gap-3"
-          >
-            {isSignUp && (
-              <input
-                type="text"
-                placeholder="Full Name"
-                value={displayName}
-                onChange={(e) =>
-                  dispatch({ type: "SET_FIELD", field: "displayName", value: e.target.value })
-                }
-                className="border px-3 py-2 rounded"
-                required
-              />
-            )}
+        </div>
 
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) =>
-                dispatch({ type: "SET_FIELD", field: "email", value: e.target.value })
-              }
-              className="border px-3 py-2 rounded"
-              required
-            />
-
-            {!isSignUp && (
-              <>
+        <div className="p-8">
+          {submitted ? (
+            <div className="text-center text-emerald-600 font-medium text-sm">
+              Your request has been submitted. An admin will review it.
+            </div>
+          ) : (
+            <form
+              onSubmit={isSignUp ? handleRequestSignup : handleSignIn}
+              className="flex flex-col gap-3"
+            >
+              {isSignUp && (
                 <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
+                  type="text"
+                  placeholder="Full Name"
+                  value={displayName}
                   onChange={(e) =>
-                    dispatch({ type: "SET_FIELD", field: "password", value: e.target.value })
+                    dispatch({ type: "SET_FIELD", field: "displayName", value: e.target.value })
                   }
-                  className="border px-3 py-2 rounded"
+                  className="bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
                   required
                 />
-                <div className="text-right -mt-1">
-                  <a
-                    href="/reset-password"
-                    className="text-xs text-[#5E0009] hover:underline"
+              )}
+
+              <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) =>
+                  dispatch({ type: "SET_FIELD", field: "email", value: e.target.value })
+                }
+                className="bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
+                required
+              />
+
+              {!isSignUp && (
+                <>
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) =>
+                      dispatch({ type: "SET_FIELD", field: "password", value: e.target.value })
+                    }
+                    className="bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
+                    required
+                  />
+                  <div className="text-right -mt-1">
+                    <a
+                      href="/reset-password"
+                      className="text-xs text-[#5E0009] hover:underline"
+                    >
+                      Forgot password?
+                    </a>
+                  </div>
+                </>
+              )}
+
+              {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className={`bg-[#5E0009] text-white px-4 py-2.5 rounded-full font-semibold hover:bg-[#7a0012] transition ${
+                  submitting ? "opacity-60 cursor-not-allowed" : ""
+                }`}
+              >
+                {submitting
+                  ? isSignUp
+                    ? "Submitting..."
+                    : "Signing In..."
+                  : isSignUp
+                  ? "Request Account"
+                  : "Sign In"}
+              </button>
+            </form>
+          )}
+
+          {!submitted && (
+            <div className="mt-4 text-center text-sm text-gray-600">
+              {isSignUp ? (
+                <span>
+                  Already have an account?{" "}
+                  <button
+                    className="text-[#5E0009] font-semibold hover:underline"
+                    onClick={() => dispatch({ type: "TOGGLE_SIGNUP" })}
                   >
-                    Forgot password?
-                  </a>
-                </div>
-              </>
-            )}
-
-            {error && <div className="text-red-500 text-sm text-center">{error}</div>}
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className={`bg-[#5E0009] text-white px-4 py-2 rounded hover:opacity-80 transition ${
-                submitting ? "opacity-60 cursor-not-allowed" : ""
-              }`}
-            >
-              {submitting
-                ? isSignUp
-                  ? "Submitting..."
-                  : "Signing In..."
-                : isSignUp
-                ? "Request Account"
-                : "Sign In"}
-            </button>
-          </form>
-        )}
-
-        {!submitted && (
-          <div className="mt-3 text-center text-sm text-gray-600">
-            {isSignUp ? (
-              <span>
-                Already have an account?{" "}
-                <button
-                  className="text-[#5E0009] font-semibold hover:underline"
-                  onClick={() => dispatch({ type: "TOGGLE_SIGNUP" })}
-                >
-                  Sign In
-                </button>
-              </span>
-            ) : (
-              <span>
-                Don&#39;t have an account?{" "}
-                <button
-                  className="text-[#5E0009] font-semibold hover:underline"
-                  onClick={() => dispatch({ type: "TOGGLE_SIGNUP" })}
-                >
-                  Request Account
-                </button>
-              </span>
-            )}
-          </div>
-        )}
+                    Sign In
+                  </button>
+                </span>
+              ) : (
+                <span>
+                  Don&#39;t have an account?{" "}
+                  <button
+                    className="text-[#5E0009] font-semibold hover:underline"
+                    onClick={() => dispatch({ type: "TOGGLE_SIGNUP" })}
+                  >
+                    Request Account
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

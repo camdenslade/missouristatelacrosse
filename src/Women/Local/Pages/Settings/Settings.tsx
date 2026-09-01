@@ -76,76 +76,87 @@ export default function WSettings(){
   };
 
   return (
-    <div className="p-6 max-w-lg mx-auto bg-white rounded shadow animate-fadeIn text-left">
-      <h1 className="text-2xl font-bold mb-6">
-        Settings: <span className="text-[#5E0009] capitalize">{program}</span> Program
-      </h1>
-
-      {message && (
-        <p className="mb-4 text-sm text-gray-700 font-medium">{message}</p>
-      )}
-
-      {/* Display Name */}
-      <div className="mb-4">
-        <label className="block font-medium mb-1">Display Name</label>
-        <input
-          type="text"
-          value={displayName}
-          onChange={(e) =>
-            dispatch({ type: "SET_DISPLAY_NAME", payload: e.target.value })
-          }
-          className="border px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-[#5E0009]"
-        />
+    <div className="min-h-screen bg-gray-50">
+      <div className="relative bg-linear-to-r from-[#5E0009] via-[#7a1020] to-[#5E0009] text-white overflow-hidden">
+        <div className="max-w-lg mx-auto text-left px-6 py-14">
+          <div className="inline-flex items-center gap-3 text-white/70 text-xs font-semibold uppercase tracking-[0.2em] mb-3">
+            <span className="h-px w-6 bg-white/40" />
+            Account
+            <span className="h-px w-6 bg-white/40" />
+          </div>
+          <h1 className="text-3xl md:text-4xl font-extrabold">
+            Settings
+          </h1>
+          <p className="text-white/80 text-sm mt-2 capitalize">{program} Program</p>
+        </div>
       </div>
 
-      {/* Email */}
-      <div className="mb-4">
-        <label className="block font-medium mb-1">Email</label>
-        <input
-          type="text"
-          value={auth.currentUser?.email || ""}
-          disabled
-          className="border px-3 py-2 rounded w-full bg-gray-100 cursor-not-allowed"
-        />
-      </div>
+      <div className="max-w-lg mx-auto px-6 mt-8 pb-16">
+        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 text-left">
+          {message && (
+            <p className="mb-5 text-sm text-gray-700 font-medium">{message}</p>
+          )}
 
-      {/* Role */}
-      <div className="mb-6">
-        <label className="block font-medium mb-1">Role</label>
-        <input
-          type="text"
-          value={programRole}
-          disabled
-          className="border px-3 py-2 rounded w-full bg-gray-100 cursor-not-allowed capitalize"
-        />
-      </div>
+          <div className="mb-4">
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Display Name</label>
+            <input
+              type="text"
+              value={displayName}
+              onChange={(e) =>
+                dispatch({ type: "SET_DISPLAY_NAME", payload: e.target.value })
+              }
+              className="bg-gray-50 border border-gray-200 text-gray-900 rounded-xl px-4 py-2.5 w-full focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
+            />
+          </div>
 
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className={`px-4 py-2 rounded text-white ${
-            saving
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-[#5E0009] hover:bg-[#7a0012]"
-          }`}
-        >
-          {saving ? "Saving..." : "Save Changes"}
-        </button>
+          <div className="mb-4">
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email</label>
+            <input
+              type="text"
+              value={auth.currentUser?.email || ""}
+              disabled
+              className="bg-gray-100 border border-gray-200 text-gray-500 rounded-xl px-4 py-2.5 w-full cursor-not-allowed"
+            />
+          </div>
 
-        <button
-          onClick={handleResetPassword}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Reset Password
-        </button>
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Role</label>
+            <input
+              type="text"
+              value={programRole}
+              disabled
+              className="bg-gray-100 border border-gray-200 text-gray-500 rounded-xl px-4 py-2.5 w-full cursor-not-allowed capitalize"
+            />
+          </div>
 
-        <button
-          onClick={signOut}
-          className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 ml-auto"
-        >
-          Sign Out
-        </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className={`px-5 py-2.5 rounded-full font-semibold text-white transition ${
+                saving
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-[#5E0009] hover:bg-[#7a0012]"
+              }`}
+            >
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+
+            <button
+              onClick={handleResetPassword}
+              className="px-5 py-2.5 rounded-full font-semibold border border-[#5E0009] text-[#5E0009] hover:bg-[#5E0009]/5 transition"
+            >
+              Reset Password
+            </button>
+
+            <button
+              onClick={signOut}
+              className="px-5 py-2.5 rounded-full font-semibold border border-gray-300 text-gray-600 hover:bg-gray-100 transition ml-auto"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
