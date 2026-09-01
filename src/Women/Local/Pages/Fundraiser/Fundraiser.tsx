@@ -117,7 +117,7 @@ export default function Fundraiser() {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto w-full flex flex-col gap-6 px-4 -mt-8 pb-12">
+      <div className="max-w-2xl mx-auto w-full flex flex-col gap-6 px-4 mt-8 pb-12">
         {fundraiser.image && (
           <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
             <img src={fundraiser.image} alt="" className="w-full max-h-72 object-cover" />
