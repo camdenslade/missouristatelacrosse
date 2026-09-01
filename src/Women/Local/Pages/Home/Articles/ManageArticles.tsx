@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { useEffect, useReducer } from "react";
 import toast from "react-hot-toast";
 
@@ -133,36 +134,49 @@ export default function WManageArticlesModal({ isOpen, onClose }: ManageArticles
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/30 z-[9999] flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg w-full max-w-3xl p-6 relative overflow-y-auto max-h-[90vh]">
-        <button
-          className="absolute top-2 right-2 text-gray-700 font-bold text-xl"
-          onClick={onClose}
-        >
-          ×
-        </button>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+      <div className="w-full max-w-3xl shadow-2xl overflow-hidden bg-white max-h-[90vh] flex flex-col">
+        <div className="relative px-8 py-6 bg-linear-to-r from-[#5E0009] via-[#7a1020] to-[#5E0009] overflow-hidden shrink-0">
+          <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent animate-[shimmer_3s_ease-in-out_infinite] pointer-events-none" />
+          <style>{`@keyframes shimmer{0%,100%{transform:translateX(-100%)}50%{transform:translateX(100%)}}`}</style>
+          <div className="relative flex justify-between items-center">
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/60">
+                Admin
+              </div>
+              <h3 className="text-xl font-bold leading-tight text-white">Manage Women's Articles</h3>
+            </div>
+            <button
+              onClick={onClose}
+              className="rounded-full p-1.5 text-white hover:bg-white/15 transition"
+              aria-label="Close"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
 
-        <h2 className="text-2xl font-bold mb-4">Manage Women's Articles</h2>
+        <div className="p-8 overflow-y-auto">
+          {loadingRole ? (
+            <p className="text-gray-500 italic mb-4">Checking permissions...</p>
+          ) : !hasPermission ? (
+            <p className="text-red-600 font-medium mb-4">
+              You don’t have permission to add or edit these articles.
+            </p>
+          ) : (
+            <ArticleForm
+              article={editingArticle}
+              onSave={handleSave}
+              onCancel={() => dispatch({ type: "SET_EDITING", article: null })}
+            />
+          )}
 
-        {loadingRole ? (
-          <p className="text-gray-500 italic mb-4">Checking permissions...</p>
-        ) : !hasPermission ? (
-          <p className="text-red-600 font-medium mb-4">
-            You don’t have permission to add or edit these articles.
-          </p>
-        ) : (
-          <ArticleForm
-            article={editingArticle}
-            onSave={handleSave}
-            onCancel={() => dispatch({ type: "SET_EDITING", article: null })}
+          <ArticleList
+            articles={articles}
+            onEdit={hasPermission ? (a) => dispatch({ type: "SET_EDITING", article: a }) : null}
+            onDelete={hasPermission ? handleDelete : null}
           />
-        )}
-
-        <ArticleList
-          articles={articles}
-          onEdit={hasPermission ? (a) => dispatch({ type: "SET_EDITING", article: a }) : null}
-          onDelete={hasPermission ? handleDelete : null}
-        />
+        </div>
       </div>
     </div>
   );

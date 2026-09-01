@@ -6,14 +6,14 @@ export default function ArticleList({ articles, onEdit, onDelete }) {
 
   if (!articles.length) {
     return (
-      <div className="text-center text-gray-500 py-4">
+      <div className="text-center text-gray-400 text-sm py-8">
         No {program === "women" ? "women’s" : "men’s"} articles found.
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col divide-y divide-gray-100">
       {articles.map((article) => (
         <ArticleRow
           key={article.id}

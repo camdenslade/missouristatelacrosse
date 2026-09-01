@@ -12,8 +12,6 @@ type MobileMenuProps = {
   roles?: Partial<Record<Program, Role>>;
   userName: string;
   signOut: () => Promise<void> | void;
-  onManageArticles?: () => void;
-  onManageArticlesWomen?: () => void;
   onAuthOpen?: () => void;
 };
 
@@ -24,8 +22,6 @@ export default function MobileMenu({
   roles,
   userName,
   signOut,
-  onManageArticles,
-  onManageArticlesWomen,
   onAuthOpen,
 }: MobileMenuProps) {
   if (!open) return null;
@@ -115,19 +111,6 @@ export default function MobileMenu({
             >
               Admin Panel
             </Link>
-          )}
-
-          {/* Manage Articles */}
-          {(isAdmin || isPlayer) && (
-            <button
-              className="text-left px-2 py-1 hover:text-white/70 transition-colors"
-              onClick={() => {
-                (program === "women" ? onManageArticlesWomen : onManageArticles)?.();
-                setOpen(false);
-              }}
-            >
-              Manage Articles
-            </button>
           )}
 
           <Link

@@ -1,9 +1,10 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronRight, HandCoins, Instagram, Plus, Settings, Trash2, X } from "lucide-react";
+import { ChevronRight, HandCoins, Instagram, Newspaper, Plus, Settings, Trash2, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useReducer, useState } from "react";
 import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
 
+import WManageArticlesModal from "./Articles/ManageArticles";
 import { useSponsors } from "../../../../Global/Common/hooks/useSponsors";
 import InstagramManagerModal from "../../../../Global/Common/InstagramManagerModal";
 import SponsorLogos from "../../../../Global/Common/SponsorLogos";
@@ -57,6 +58,7 @@ export default function MainContent() {
   const [activeFundraiser, setActiveFundraiser] = useState<ApiFundraiser | null>(null);
   const [showManager, setShowManager] = useState(false);
   const [showInstagramManager, setShowInstagramManager] = useState(false);
+  const [showManageArticles, setShowManageArticles] = useState(false);
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const [fundraiserError, setFundraiserError] = useState("");
   type FundraiserFormState = {
@@ -227,6 +229,16 @@ export default function MainContent() {
                   <Instagram size={16} />
                   Manage Instagram Feed
                 </button>
+                <button
+                  onClick={() => {
+                    setShowManageArticles(true);
+                    setAdminMenuOpen(false);
+                  }}
+                  className="inline-flex items-center gap-2 bg-white text-[#5E0009] px-5 py-2.5 rounded-full font-semibold shadow-lg hover:bg-gray-100 transition whitespace-nowrap"
+                >
+                  <Newspaper size={16} />
+                  Manage Articles
+                </button>
               </motion.div>
             )}
           </AnimatePresence>
@@ -248,6 +260,11 @@ export default function MainContent() {
         open={showInstagramManager}
         onClose={() => setShowInstagramManager(false)}
         contentKey="instagramFeedw"
+      />
+
+      <WManageArticlesModal
+        isOpen={showManageArticles}
+        onClose={() => setShowManageArticles(false)}
       />
 
       <section
