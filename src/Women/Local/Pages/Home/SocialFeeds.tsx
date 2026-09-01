@@ -175,7 +175,7 @@ return (
                     resistanceRatio={0.75}
                     className="max-w-[380px] mx-auto"
                     >
-                    {postUrls.map((url, i) => (
+                    {[...postUrls].reverse().map((url, i) => (
                         <SwiperSlide key={i}>
                         <EmbedFrame url={url} />
                         </SwiperSlide>
@@ -190,7 +190,7 @@ return (
                     No Instagram posts to display yet.
                     </p>
                 ) : (
-                    postUrls.slice(0, 5).map((url, i) => <EmbedFrame key={i} url={url} />)
+                    [...postUrls].reverse().slice(0, 5).map((url, i) => <EmbedFrame key={i} url={url} />)
                 )}
                 </div>
             )}
