@@ -205,7 +205,11 @@ export default function KeyGate({
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6 max-w-md mx-auto">
+    <div
+      className={`bg-white border border-gray-200 rounded-xl p-6 mx-auto ${
+        provider === "stripe" ? "max-w-xl" : "max-w-md"
+      }`}
+    >
       {/* Tab bar */}
       <div className="flex gap-2 mb-5">
         {(["key", "purchase"] as const).map((v) => (
@@ -308,7 +312,7 @@ export default function KeyGate({
           {error && <p className="text-red-600 text-sm">{error}</p>}
 
           {formComplete && provider === "stripe" && (
-            <div id="stream-stripe-checkout" />
+            <div id="stream-stripe-checkout" className="mt-4 w-full" />
           )}
 
           {formComplete && provider === "paypal" && (

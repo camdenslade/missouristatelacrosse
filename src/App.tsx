@@ -18,6 +18,7 @@ import NotFound from "./Global/NotFound";
 import AdminDashboard from "./Men/Local/Admin/AdminDash";
 import AlumniBudget from "./Men/Local/Pages/AlumniBudget/AlumniBudget";
 import Donate from "./Men/Local/Pages/Donate/Donate";
+import DonateSuccess from "./Men/Local/Pages/Donate/DonateSuccess";
 import Dues from "./Men/Local/Pages/Dues/Dues";
 import EventDetail from "./Men/Local/Pages/EventSignup/EventDetail";
 import EventSignup from "./Men/Local/Pages/EventSignup/EventSignup";
@@ -43,6 +44,7 @@ import Store from "./Men/Local/Pages/Store/Store";
 import WAdminDashboard from "./Women/Local/Admin/AdminDash";
 import WAlumniBudget from "./Women/Local/Pages/AlumniBudget/AlumniBudget";
 import WDonate from "./Women/Local/Pages/Donate/Donate";
+import WDonateSuccess from "./Women/Local/Pages/Donate/DonateSuccess";
 import WDues from "./Women/Local/Pages/Dues/Dues";
 import WEventDetail from "./Women/Local/Pages/EventSignup/EventDetail";
 import WEventSignup from "./Women/Local/Pages/EventSignup/EventSignup";
@@ -132,6 +134,7 @@ export default function App() {
             <Route path="/store" element={<Store />} />
             <Route path="/order-lookup" element={<OrderLookup />} />
             <Route path="/donate" element={<Donate />} />
+            <Route path="/donate/success" element={<DonateSuccess />} />
             <Route path="/fundraiser" element={<Fundraiser />} />
             <Route path="/fundraiser/success" element={<FundraiserSuccess />} />
             <Route path="/gallery" element={<Gallery />} />
@@ -222,6 +225,7 @@ export default function App() {
             <Route path="/women/store" element={<WStore />} />
             <Route path="/women/order-lookup" element={<OrderLookup />} />
             <Route path="/women/donate" element={<WDonate />} />
+            <Route path="/women/donate/success" element={<WDonateSuccess />} />
             <Route path="/women/gallery" element={<WGallery />} />
             <Route path="/women/sponsorships" element={<WSponsorMain />} />
             <Route

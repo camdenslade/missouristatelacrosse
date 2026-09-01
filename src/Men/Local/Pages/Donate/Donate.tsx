@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
 import usePaymentButtons from "../../../../Global/Common/hooks/usePaymentButtons";
+import { resolvePaymentProvider } from "../../../../Global/Common/hooks/usePaymentProvider";
 import { useSponsors } from "../../../../Global/Common/hooks/useSponsors";
 import SponsorLogos from "../../../../Global/Common/SponsorLogos";
 import UnavailableOverlay from "../../../../Global/Common/UnavailableOverlay";
@@ -14,6 +15,8 @@ export default function Donate() {
 
   const { sponsors } = useSponsors();
   const isEnabled = import.meta.env.VITE_DONATE_ENABLED === "true";
+  const provider = resolvePaymentProvider();
+  const providerLabel = provider === "stripe" ? "Stripe" : "PayPal";
 
   const handleConfirm = () => {
     const val = parseFloat(donationAmount);
@@ -35,8 +38,12 @@ export default function Donate() {
   usePaymentButtons(confirmedAmount, "paypal-donate-buttons", handleSuccess);
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center bg-gray-50 p-6">
-      <div className="max-w-md w-full bg-white shadow-lg rounded-xl p-8 flex flex-col items-center gap-6 text-center">
+    <div className="relative min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4 sm:p-6">
+      <div
+        className={`w-full bg-white shadow-lg rounded-xl flex flex-col items-center gap-6 text-center ${
+          provider === "stripe" ? "max-w-xl p-5 sm:p-8" : "max-w-md p-8"
+        }`}
+      >
         <h1 className="text-3xl font-bold text-[#5E0009]">
           Support Missouri State Lacrosse
         </h1>
@@ -68,11 +75,11 @@ export default function Donate() {
             </button>
 
             {confirmedAmount && (
-              <div id="paypal-donate-buttons" className="mt-4 w-full flex justify-center" />
+              <div id="paypal-donate-buttons" className="mt-4 w-full" />
             )}
 
             <p className="text-sm text-gray-500 mt-4">
-              Donations are securely processed via PayPal.
+              Donations are securely processed via {providerLabel}.
             </p>
           </>
         ) : (
