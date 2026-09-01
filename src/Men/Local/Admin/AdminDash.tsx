@@ -74,8 +74,15 @@ export default function AdminDashboard(){
   }, [activeTab]);
 
   return (
-    <div className="max-w-6xl mx-auto mt-8 bg-white shadow rounded p-6">
-      <h1 className="text-3xl font-bold mb-6 text-center">Admin Dashboard</h1>
+    <div className="max-w-6xl mx-auto mt-8 px-4 pb-16">
+      <div className="mb-8">
+        <div className="inline-flex items-center gap-3 text-[#5E0009] text-xs font-semibold uppercase tracking-[0.2em] mb-2">
+          <span className="h-px w-6 bg-[#5E0009]/40" />
+          Team Management
+          <span className="h-px w-6 bg-[#5E0009]/40" />
+        </div>
+        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6 items-start">
         {/* Tab controls: stacked sidebar */}
@@ -84,10 +91,10 @@ export default function AdminDashboard(){
             <button
               key={tab.id}
               onClick={() => dispatch({ type: "SET_TAB", tab: tab.id })}
-              className={`px-4 py-2 rounded text-left transition-all ${
+              className={`px-4 py-2 rounded-full text-sm font-semibold text-left transition-all ${
                 activeTab === tab.id
-                  ? "bg-gray-900 text-white"
-                  : "bg-gray-200 hover:bg-gray-300"
+                  ? "bg-[#5E0009] text-white shadow-sm"
+                  : "bg-white text-gray-600 border border-gray-200 hover:border-[#5E0009]/40 hover:text-[#5E0009]"
               }`}
             >
               {tab.label}
@@ -96,7 +103,9 @@ export default function AdminDashboard(){
         </nav>
 
         {/* Tab content */}
-        <div className="animate-fadeIn min-w-0">{renderActiveTab}</div>
+        <div className="animate-fadeIn min-w-0 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          {renderActiveTab}
+        </div>
       </div>
     </div>
   );

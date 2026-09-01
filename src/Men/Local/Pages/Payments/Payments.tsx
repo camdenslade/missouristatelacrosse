@@ -1,3 +1,4 @@
+import { ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useReducer, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -352,39 +353,49 @@ export default function Payments() {
     return Array.from(new Set([...managedSeasons, ...fromPlayers])).sort((a, b) => b.localeCompare(a));
   }, [players, managedSeasons]);
 
-  if (loading) return <p className="text-gray-600 animate-pulse">Checking permissions...</p>;
+  if (loading) return <p className="text-gray-600 animate-pulse px-4 py-8">Checking permissions...</p>;
 
   if (!user || !canAccess)
     return (
-      <div className="max-w-3xl mx-auto text-center py-20">
+      <div className="max-w-3xl mx-auto text-center py-20 px-4">
         <h2 className="text-3xl font-bold text-[#5E0009] mb-4">Access Restricted</h2>
         <p className="text-gray-700">Payments are available to team players and administrators only.</p>
       </div>
     );
 
   return (
-    <div className="max-w-6xl mx-auto p-6 bg-white shadow rounded animate-fadeIn text-left">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h1 className="text-2xl font-bold">
-          Payments - <span className="text-[#5E0009]">{displaySeasonLabel(programRole === "admin" ? selectedSeason : currentSeason)}</span> Season
-        </h1>
+    <div className="max-w-6xl mx-auto px-4 py-8 text-left">
+      <div className="flex flex-wrap items-end justify-between gap-3 mb-8">
+        <div>
+          <div className="inline-flex items-center gap-3 text-[#5E0009] text-xs font-semibold uppercase tracking-[0.2em] mb-2">
+            <span className="h-px w-6 bg-[#5E0009]/40" />
+            Team Dues
+            <span className="h-px w-6 bg-[#5E0009]/40" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Payments <span className="text-[#5E0009]">{displaySeasonLabel(programRole === "admin" ? selectedSeason : currentSeason)}</span>
+          </h1>
+        </div>
         {programRole === "admin" && (
-          <select
-            value={selectedSeason}
-            onChange={(e) => setSelectedSeason(e.target.value)}
-            className="border border-gray-400 px-3 py-1 rounded text-sm font-medium bg-white shadow-sm hover:border-gray-600 transition-colors"
-          >
-            {availableSeasons.map((s) => (
-              <option key={s} value={s}>{displaySeasonLabel(s)}</option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={selectedSeason}
+              onChange={(e) => setSelectedSeason(e.target.value)}
+              className="appearance-none bg-white border border-gray-200 text-gray-800 text-sm font-semibold pl-4 pr-10 py-2.5 rounded-full shadow-sm hover:border-[#5E0009]/40 focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 transition cursor-pointer"
+            >
+              {availableSeasons.map((s) => (
+                <option key={s} value={s}>{displaySeasonLabel(s)}</option>
+              ))}
+            </select>
+            <ChevronDown size={16} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          </div>
         )}
       </div>
 
       {loadingPlayers ? (
         <p className="text-gray-600 animate-pulse">Loading payment data...</p>
       ) : (
-        <>
+        <div className="space-y-8">
           {programRole === "admin" && seasonPlayers.length > 0 && (
             <PlayerTable
               players={seasonPlayers}
@@ -423,10 +434,10 @@ export default function Payments() {
                 onAdminAdjust={handleAdminAdjust}
               />
 
-              <div className="mt-4 flex flex-col items-center">
+              <div className="mt-6 flex flex-col items-center">
                 <button
                   onClick={handleConfirm}
-                  className="px-4 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] transition"
+                  className="inline-flex items-center justify-center bg-[#5E0009] text-white rounded-full px-6 py-2.5 text-sm font-semibold hover:bg-[#7a0012] transition shadow-sm"
                 >
                   {state.confirmedAmount ? "Update Amount" : "Confirm Amount"}
                 </button>
@@ -437,7 +448,7 @@ export default function Payments() {
               </div>
             </div>
           ) : (
-            <div className="text-center mt-10 bg-gray-50 border border-gray-200 rounded-lg p-6">
+            <div className="text-center bg-white border border-gray-100 rounded-2xl shadow-sm p-8">
               <h3 className="text-xl font-semibold text-gray-800 mb-2">No Player Linked</h3>
               <p className="text-gray-600 mb-4">
                 We couldn't find any player data connected to your account for the{" "}
@@ -454,13 +465,13 @@ export default function Payments() {
               )}
               <a
                 href="/"
-                className="inline-block bg-[#5E0009] text-white px-6 py-2 rounded-md font-semibold hover:bg-[#7a0012] transition"
+                className="inline-block bg-[#5E0009] text-white px-6 py-2.5 rounded-full font-semibold hover:bg-[#7a0012] transition"
               >
                 Return Home
               </a>
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

@@ -1,3 +1,4 @@
+import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
 import AddParentForm from "./AddParentForm";
@@ -81,8 +82,8 @@ export default function PlayerPaymentDetails({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="border-b pb-3">
+    <div className="space-y-6">
+      <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5">
         <h2 className="text-xl font-semibold text-[#5E0009]">
           {selectedPlayer?.name || "Player"}
         </h2>
@@ -94,17 +95,20 @@ export default function PlayerPaymentDetails({
 
       {/* Admin balance adjustment */}
       {userRole === "admin" && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+        <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4">
           <h3 className="font-medium text-gray-800 mb-3 text-sm">Adjust Balance</h3>
           <div className="flex flex-wrap gap-2">
-            <select
-              value={adjustType}
-              onChange={(e) => setAdjustType(e.target.value as "CHARGE" | "CREDIT")}
-              className="border border-gray-300 rounded px-2 py-1.5 text-sm bg-white"
-            >
-              <option value="CHARGE">Charge (increases balance)</option>
-              <option value="CREDIT">Credit (reduces balance)</option>
-            </select>
+            <div className="relative">
+              <select
+                value={adjustType}
+                onChange={(e) => setAdjustType(e.target.value as "CHARGE" | "CREDIT")}
+                className="appearance-none border border-gray-200 rounded-full pl-3 pr-8 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition cursor-pointer"
+              >
+                <option value="CHARGE">Charge (increases balance)</option>
+                <option value="CREDIT">Credit (reduces balance)</option>
+              </select>
+              <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            </div>
             <input
               type="number"
               step="0.01"
@@ -112,19 +116,19 @@ export default function PlayerPaymentDetails({
               placeholder="Amount"
               value={adjustAmount}
               onChange={(e) => setAdjustAmount(e.target.value)}
-              className="border border-gray-300 rounded px-2 py-1.5 text-sm w-28"
+              className="border border-gray-200 rounded-full px-3 py-1.5 text-sm w-28 focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
             />
             <input
               type="text"
               placeholder="Note (optional)"
               value={adjustNote}
               onChange={(e) => setAdjustNote(e.target.value)}
-              className="border border-gray-300 rounded px-2 py-1.5 text-sm flex-1 min-w-32"
+              className="border border-gray-200 rounded-full px-3 py-1.5 text-sm flex-1 min-w-32 focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
             />
             <button
               onClick={handleAdjust}
               disabled={adjusting || !adjustAmount}
-              className="px-3 py-1.5 bg-gray-800 text-white rounded text-sm hover:bg-gray-900 disabled:opacity-50 transition"
+              className="px-4 py-1.5 bg-[#5E0009] text-white rounded-full text-sm font-semibold hover:bg-[#7a0012] disabled:opacity-50 transition"
             >
               {adjusting ? "Saving…" : "Apply"}
             </button>
@@ -134,32 +138,34 @@ export default function PlayerPaymentDetails({
 
       {/* Parent management */}
       {(userRole === "admin" || userRole === "player") && (
-        <AddParentForm
-          addParentEmail={addParentEmail}
-          setAddParentEmail={setAddParentEmail}
-          addParentName={addParentName}
-          setAddParentName={setAddParentName}
-          handleAddParent={handleAddParent}
-          handleLinkExistingParent={handleLinkExistingParent}
-          isAdmin={userRole === "admin"}
-          playerName={selectedPlayer?.name}
-          excludeUid={selectedPlayer?.userUid}
-          message={message}
-        />
+        <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4">
+          <AddParentForm
+            addParentEmail={addParentEmail}
+            setAddParentEmail={setAddParentEmail}
+            addParentName={addParentName}
+            setAddParentName={setAddParentName}
+            handleAddParent={handleAddParent}
+            handleLinkExistingParent={handleLinkExistingParent}
+            isAdmin={userRole === "admin"}
+            playerName={selectedPlayer?.name}
+            excludeUid={selectedPlayer?.userUid}
+            message={message}
+          />
+        </div>
       )}
 
       {parents.length > 0 && (
         <div>
-          <h3 className="font-medium mb-2 text-sm">Linked Parents</h3>
-          <div className="space-y-1">
+          <h3 className="font-medium mb-2 text-sm text-gray-800">Linked Parents</h3>
+          <div className="space-y-1.5">
             {parents.map((parent, idx) => (
-              <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
+              <div key={idx} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl shadow-sm text-sm">
                 <span>{parent.email || "Unknown"}</span>
                 {userRole === "admin" && (
                   <button
                     onClick={() => { if (parent.email) handleRemoveParent(parent.email); }}
                     disabled={!parent.email}
-                    className="text-red-600 hover:text-red-800 text-xs"
+                    className="text-red-600 hover:text-red-800 text-xs font-semibold"
                   >
                     Remove
                   </button>
@@ -172,7 +178,7 @@ export default function PlayerPaymentDetails({
 
       {/* Payment amount input */}
       <div>
-        <label className="block font-medium mb-1 text-sm">Payment Amount</label>
+        <label className="block font-medium mb-1 text-sm text-gray-800">Payment Amount</label>
         <input
           type="number"
           step="0.01"
@@ -180,15 +186,15 @@ export default function PlayerPaymentDetails({
           placeholder="Enter amount"
           value={customAmount}
           onChange={(e) => setCustomAmount(e.target.value)}
-          className="border px-3 py-2 rounded w-full"
+          className="border border-gray-200 px-3 py-2 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
         />
       </div>
 
       {/* Payment ledger */}
       {ledger.length > 0 && (
         <div>
-          <h3 className="font-medium text-sm mb-2">Payment History</h3>
-          <div className="border border-gray-200 rounded-lg overflow-x-auto">
+          <h3 className="font-medium text-sm mb-2 text-gray-800">Payment History</h3>
+          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-x-auto">
             <table className="w-full text-xs">
               <thead className="bg-gray-50 text-gray-600">
                 <tr>
