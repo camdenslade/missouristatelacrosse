@@ -291,7 +291,7 @@ export default function EventDetail() {
         <p className="text-gray-500 text-lg mb-4">Event not found.</p>
         <button
           onClick={() => navigate(`${base}/event-signup`)}
-          className="text-[#5E0009] underline"
+          className="text-[#5E0009] hover:underline"
         >
           Back to events
         </button>
@@ -308,167 +308,169 @@ export default function EventDetail() {
   const matchingTeamCheck = state.teamChecks.find((check) => check?.found);
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10">
-      {/* Back link */}
-      <button
-        onClick={() => navigate(`${base}/event-signup`)}
-        className="text-sm text-[#5E0009] hover:underline mb-6 flex items-center gap-1"
-      >
-        Back to events
-      </button>
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-linear-to-r from-[#5E0009] via-[#7a1020] to-[#5E0009] text-white px-6 py-14">
+        <div className="max-w-2xl mx-auto">
+          <button
+            onClick={() => navigate(`${base}/event-signup`)}
+            className="text-sm text-white/80 hover:text-white hover:underline mb-6 flex items-center gap-1"
+          >
+            Back to events
+          </button>
 
-      {/* Event header */}
-      <div className="mb-6 pb-4 border-b border-gray-200">
-        <div className="flex flex-wrap items-center gap-2 mb-1">
-          <h1 className="text-2xl font-bold text-gray-900">{event.name}</h1>
-          {isTeam && (
-            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
-              {event.teamSize}-Person Team Event
-            </span>
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <h1 className="text-3xl md:text-4xl font-extrabold">{event.name}</h1>
+            {isTeam && (
+              <span className="text-xs bg-white/15 text-white px-2 py-0.5 rounded-full font-medium">
+                {event.teamSize}-Person Team Event
+              </span>
+            )}
+          </div>
+          {event.description && (
+            <p className="text-white/80 text-sm mb-2">{event.description}</p>
           )}
-        </div>
-        {event.description && (
-          <p className="text-gray-500 text-sm mb-2">{event.description}</p>
-        )}
-        <div className="text-sm text-gray-600 space-y-0.5">
-          <div><span className="font-medium">Start:</span> {formatDate(event.startTime)}</div>
-          {event.endTime && <div><span className="font-medium">End:</span> {formatDate(event.endTime)}</div>}
-          {event.address && (
+          <div className="text-sm text-white/80 space-y-0.5">
+            <div><span className="font-medium text-white">Start:</span> {formatDate(event.startTime)}</div>
+            {event.endTime && <div><span className="font-medium text-white">End:</span> {formatDate(event.endTime)}</div>}
+            {event.address && (
+              <div>
+                <span className="font-medium text-white">Location:</span>{" "}
+                {event.address}
+              </div>
+            )}
             <div>
-              <span className="font-medium">Location:</span>{" "}
-              {event.address}
+              <span className="font-medium text-white">Entry:</span>{" "}
+              {isFree ? "Free" : `$${Number(event.price).toFixed(2)} per person`}
             </div>
-          )}
-          <div>
-            <span className="font-medium">Entry:</span>{" "}
-            {isFree ? "Free" : `$${Number(event.price).toFixed(2)} per person`}
           </div>
         </div>
       </div>
 
-      <div className="space-y-5">
-        {/* Team pre-fill banner */}
-        {isTeam && matchingTeamCheck?.found && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800">
-            <strong>{matchingTeamCheck?.registrantName}</strong> ({matchingTeamCheck?.registrantEmail}) has
-            already registered and listed you as a teammate. You will be added to their team upon
-            completing registration.
-          </div>
-        )}
+      <div className="max-w-2xl mx-auto px-4 -mt-8 pb-16">
+        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-7 space-y-5">
+          {/* Team pre-fill banner */}
+          {isTeam && matchingTeamCheck?.found && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-800">
+              <strong>{matchingTeamCheck?.registrantName}</strong> ({matchingTeamCheck?.registrantEmail}) has
+              already registered and listed you as a teammate. You will be added to their team upon
+              completing registration.
+            </div>
+          )}
 
-        {/* Your info */}
-        <fieldset className="space-y-3">
-          <legend className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-            Your Info
-          </legend>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-            <input
-              type="text"
-              value={state.payerName}
-              onChange={(e) => dispatch({ type: "SET_PAYER_NAME", value: e.target.value })}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]"
-              placeholder="Jane Doe"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
-            <input
-              type="email"
-              value={state.payerEmail}
-              onChange={(e) => dispatch({ type: "SET_PAYER_EMAIL", value: e.target.value })}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]"
-              placeholder="you@example.com"
-            />
-          </div>
-        </fieldset>
-
-        {/* Teammate emails (team events only) */}
-        {isTeam && !matchingTeamCheck?.found && (
-          <div className="space-y-3">
-            {Array.from({ length: event.teamSize - 1 }, (_, i) => (
-              <div key={i}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {event.teamSize > 2 ? `Teammate ${i + 1} Email` : "Teammate Email"}
-                  <span className="ml-1 text-xs text-gray-400 font-normal"> - optional</span>
-                </label>
-                <input
-                  type="email"
-                  value={state.teammateEmails[i] ?? ""}
-                  onChange={(e) => handleTeammateEmailChange(i, e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]"
-                  placeholder="teammate@example.com"
-                />
-                {state.teamCheckLoading[i] && (
-                  <p className="text-xs text-gray-400 mt-1">Checking for existing registration...</p>
-                )}
-                {!state.teamCheckLoading[i] && state.teamChecks[i] && !state.teamChecks[i]?.found && state.teammateEmails[i] && (
-                  <p className="text-xs text-gray-400 mt-1">
-                    No existing registration found - your teammate will be notified when they sign up.
-                  </p>
-                )}
-                {state.teamChecks[i]?.found && (
-                  <p className="text-xs text-blue-700 mt-1">
-                    <strong>{state.teamChecks[i]?.registrantName}</strong> ({state.teamChecks[i]?.registrantEmail}) has
-                    already registered and listed you as a teammate. You will be added to their team once you finish
-                    registering.
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Dynamic form fields */}
-        {event.fields.length > 0 && (
+          {/* Your info */}
           <fieldset className="space-y-3">
             <legend className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-              Additional Info
+              Your Info
             </legend>
-            {event.fields.map((field) => (
-              <DynamicField
-                key={field.id}
-                field={field}
-                value={state.formValues[field.id]}
-                onChange={(val) => dispatch({ type: "SET_FIELD", key: field.id, value: val })}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+              <input
+                type="text"
+                value={state.payerName}
+                onChange={(e) => dispatch({ type: "SET_PAYER_NAME", value: e.target.value })}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
+                placeholder="Jane Doe"
               />
-            ))}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
+              <input
+                type="email"
+                value={state.payerEmail}
+                onChange={(e) => dispatch({ type: "SET_PAYER_EMAIL", value: e.target.value })}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
+                placeholder="you@example.com"
+              />
+            </div>
           </fieldset>
-        )}
 
-        {/* Error */}
-        {state.errorMsg && (
-          <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-md px-3 py-2">
-            {state.errorMsg}
-          </div>
-        )}
-
-        {/* Payment / Submit */}
-        <div className="pt-2">
-          {isFree ? (
-            <button
-              onClick={handleFreeSubmit}
-              disabled={!canPay || state.submitting}
-              className="w-full py-3 bg-[#5E0009] text-white rounded-lg font-semibold text-sm hover:bg-[#7a0010] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {state.submitting ? "Submitting..." : "Complete Registration (Free)"}
-            </button>
-          ) : (
-            <>
-              {!canPay && (
-                <p className="text-xs text-gray-400 text-center mb-2">
-                  Fill in all required fields to enable payment.
-                </p>
-              )}
-              <div
-                id="event-paypal-buttons"
-                className={canPay ? "" : "opacity-30 pointer-events-none"}
-              />
-              {canPay && !paymentReady && (
-                <p className="text-xs text-gray-400 text-center mt-2">Loading payment options...</p>
-              )}
-            </>
+          {/* Teammate emails (team events only) */}
+          {isTeam && !matchingTeamCheck?.found && (
+            <div className="space-y-3">
+              {Array.from({ length: event.teamSize - 1 }, (_, i) => (
+                <div key={i}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {event.teamSize > 2 ? `Teammate ${i + 1} Email` : "Teammate Email"}
+                    <span className="ml-1 text-xs text-gray-400 font-normal"> - optional</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={state.teammateEmails[i] ?? ""}
+                    onChange={(e) => handleTeammateEmailChange(i, e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
+                    placeholder="teammate@example.com"
+                  />
+                  {state.teamCheckLoading[i] && (
+                    <p className="text-xs text-gray-400 mt-1">Checking for existing registration...</p>
+                  )}
+                  {!state.teamCheckLoading[i] && state.teamChecks[i] && !state.teamChecks[i]?.found && state.teammateEmails[i] && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      No existing registration found - your teammate will be notified when they sign up.
+                    </p>
+                  )}
+                  {state.teamChecks[i]?.found && (
+                    <p className="text-xs text-blue-700 mt-1">
+                      <strong>{state.teamChecks[i]?.registrantName}</strong> ({state.teamChecks[i]?.registrantEmail}) has
+                      already registered and listed you as a teammate. You will be added to their team once you finish
+                      registering.
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
+
+          {/* Dynamic form fields */}
+          {event.fields.length > 0 && (
+            <fieldset className="space-y-3">
+              <legend className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                Additional Info
+              </legend>
+              {event.fields.map((field) => (
+                <DynamicField
+                  key={field.id}
+                  field={field}
+                  value={state.formValues[field.id]}
+                  onChange={(val) => dispatch({ type: "SET_FIELD", key: field.id, value: val })}
+                />
+              ))}
+            </fieldset>
+          )}
+
+          {/* Error */}
+          {state.errorMsg && (
+            <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+              {state.errorMsg}
+            </div>
+          )}
+
+          {/* Payment / Submit */}
+          <div className="pt-2">
+            {isFree ? (
+              <button
+                onClick={handleFreeSubmit}
+                disabled={!canPay || state.submitting}
+                className="w-full py-3 bg-[#5E0009] text-white rounded-full font-semibold text-sm hover:bg-[#7a0012] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {state.submitting ? "Submitting..." : "Complete Registration (Free)"}
+              </button>
+            ) : (
+              <>
+                {!canPay && (
+                  <p className="text-xs text-gray-400 text-center mb-2">
+                    Fill in all required fields to enable payment.
+                  </p>
+                )}
+                <div
+                  id="event-paypal-buttons"
+                  className={canPay ? "" : "opacity-30 pointer-events-none"}
+                />
+                {canPay && !paymentReady && (
+                  <p className="text-xs text-gray-400 text-center mt-2">Loading payment options...</p>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -487,7 +489,7 @@ function DynamicField({
   onChange: (val: string | boolean) => void;
 }) {
   const labelText = `${field.label}${field.required ? " *" : ""}`;
-  const baseInput = "w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]";
+  const baseInput = "w-full border border-gray-200 rounded-xl px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition";
 
   if (field.type === "checkbox") {
     return (
@@ -552,7 +554,7 @@ function SuccessScreen({ event, onBack }: { event: ApiEvent; onBack: () => void 
       )}
       <button
         onClick={onBack}
-        className="mt-6 px-6 py-2 bg-[#5E0009] text-white rounded-lg font-semibold hover:bg-[#7a0010] transition-colors"
+        className="mt-6 px-6 py-2.5 bg-[#5E0009] text-white rounded-full font-semibold hover:bg-[#7a0012] transition-colors"
       >
         Back to Events
       </button>

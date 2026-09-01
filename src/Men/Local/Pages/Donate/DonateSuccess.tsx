@@ -62,13 +62,13 @@ export default function DonateSuccess() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4 sm:p-6">
-      <div className="max-w-md w-full bg-white shadow-lg rounded-xl p-6 sm:p-8 text-center">
+      <div className="max-w-md w-full bg-white shadow-lg rounded-2xl p-6 sm:p-8 text-center">
         <h1 className="text-3xl font-bold text-[#5E0009] mb-4">Thank You!</h1>
         <p className="text-gray-700 mb-4">
           Your generous donation of{" "}
           <span className="font-semibold">${amount?.toFixed(2)}</span> has been received.
         </p>
-        <div className="bg-gray-100 rounded-lg p-4 text-left mb-6 text-sm space-y-1 wrap-break-word">
+        <div className="bg-gray-50 rounded-xl p-4 text-left mb-6 text-sm space-y-1 wrap-break-word">
           <p><strong>Donor Name:</strong> {name || "—"}</p>
           <p><strong>Email:</strong> {email || "—"}</p>
           <p className="min-w-0">
@@ -78,7 +78,7 @@ export default function DonateSuccess() {
         </div>
         <button
           onClick={() => navigate("/")}
-          className="px-6 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] transition"
+          className="px-6 py-2.5 bg-[#5E0009] text-white rounded-full font-semibold hover:bg-[#7a0012] transition"
         >
           Back to Home
         </button>

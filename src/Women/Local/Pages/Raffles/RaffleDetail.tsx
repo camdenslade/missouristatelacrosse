@@ -221,7 +221,7 @@ export default function RaffleDetail() {
     return (
       <div className="max-w-xl mx-auto mt-16 text-center">
         <p className="text-gray-500 text-lg mb-4">Raffle not found.</p>
-        <button onClick={() => navigate(`${base}/raffles`)} className="text-[#5E0009] underline">
+        <button onClick={() => navigate(`${base}/raffles`)} className="text-[#5E0009] hover:underline">
           Back to raffles
         </button>
       </div>
@@ -238,7 +238,7 @@ export default function RaffleDetail() {
         </p>
         <button
           onClick={() => navigate(`${base}/raffles`)}
-          className="mt-6 px-6 py-2 bg-[#5E0009] text-white rounded-lg font-semibold hover:bg-[#7a0010] transition-colors"
+          className="mt-6 px-6 py-2.5 bg-[#5E0009] text-white rounded-full font-semibold hover:bg-[#7a0012] transition-colors"
         >
           Back to Raffles
         </button>
@@ -248,200 +248,204 @@ export default function RaffleDetail() {
 
   const raffle = state.raffle;
   const isClosed = raffle.status !== "active";
-  const inputCls = "w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]";
+  const inputCls = "w-full border border-gray-200 rounded-xl px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition";
   const maxPer = raffle.maxTicketsPerPerson;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10">
-      <button
-        onClick={() => navigate(`${base}/raffles`)}
-        className="text-sm text-[#5E0009] hover:underline mb-6 flex items-center gap-1"
-      >
-        Back to raffles
-      </button>
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-linear-to-r from-[#5E0009] via-[#7a1020] to-[#5E0009] text-white px-6 py-14">
+        <div className="max-w-2xl mx-auto">
+          <button
+            onClick={() => navigate(`${base}/raffles`)}
+            className="text-sm text-white/80 hover:text-white hover:underline mb-6 flex items-center gap-1"
+          >
+            Back to raffles
+          </button>
 
-      {/* Live drawing stream */}
-      {raffle.isLive && raffle.hlsUrl ? (
-        <div className="mb-8 border border-red-200 rounded-xl overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border-b border-red-200">
-            <span className="text-xs px-2 py-0.5 rounded-full bg-red-600 text-white font-semibold animate-pulse">LIVE</span>
-            <span className="text-sm font-semibold text-gray-800">Live Drawing</span>
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <h1 className="text-3xl md:text-4xl font-extrabold">{raffle.name}</h1>
+            {raffle.allowBids && (
+              <span className="text-xs bg-white/15 text-white px-2 py-0.5 rounded-full font-medium">Bid</span>
+            )}
+            {isClosed && (
+              <span className="text-xs bg-white/15 text-white px-2 py-0.5 rounded-full font-medium">
+                {raffle.status === "drawn" ? "Winner Drawn" : "Closed"}
+              </span>
+            )}
           </div>
-          <StreamPlayer
-            signedUrl={raffle.hlsUrl}
-            sessionToken={null}
-            gameId={raffle.id}
-            program={program}
-            onSessionExpired={() => {}}
-          />
-          <div className="border-t border-gray-200">
-            <LiveChat
-              gameId={raffle.id}
-              program={program}
-              sessionToken={null}
-              displayName=""
-            />
-          </div>
-        </div>
-      ) : (
-        <div className="mb-6 flex items-center justify-between text-sm text-gray-400 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
-          <span>Live drawing will appear here when it begins.</span>
-          <button onClick={handleRefresh} className="text-[#5E0009] hover:underline font-medium">Refresh</button>
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="mb-6 pb-4 border-b border-gray-200">
-        <RaffleGallery raffle={raffle} />
-        <div className="flex flex-wrap items-center gap-2 mb-1">
-          <h1 className="text-2xl font-bold text-gray-900">{raffle.name}</h1>
-          {raffle.allowBids && (
-            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">Bid</span>
+          {raffle.description && <p className="text-white/80 text-sm mb-2">{raffle.description}</p>}
+          {raffle.winnerName && (
+            <p className="text-sm text-white font-medium">Winner: {raffle.winnerName}</p>
           )}
-          {isClosed && (
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-              raffle.status === "drawn" ? "bg-gray-100 text-gray-600" : "bg-gray-100 text-gray-600"
-            }`}>
-              {raffle.status === "drawn" ? "Winner Drawn" : "Closed"}
-            </span>
-          )}
-        </div>
-        {raffle.description && <p className="text-gray-500 text-sm mb-2">{raffle.description}</p>}
-        {raffle.winnerName && (
-          <p className="text-sm text-purple-700 font-medium">Winner: {raffle.winnerName}</p>
-        )}
-        <div className="text-sm text-gray-600 space-y-0.5 mt-2">
-          {raffle.endTime && (
-            <div><span className="font-medium">{isClosed ? "Ended:" : "Ends:"}</span> {fmtDate(raffle.endTime)}</div>
-          )}
-          <div>
-            <span className="font-medium">Entry:</span>{" "}
-            {isFree ? "Free" : raffle.allowBids
-              ? `Bid - minimum $${Number(raffle.ticketPrice).toFixed(2)}`
-              : `$${Number(raffle.ticketPrice).toFixed(2)} per ticket${maxPer ? ` (max ${maxPer})` : ""}`
-            }
+          <div className="text-sm text-white/80 space-y-0.5 mt-2">
+            {raffle.endTime && (
+              <div><span className="font-medium text-white">{isClosed ? "Ended:" : "Ends:"}</span> {fmtDate(raffle.endTime)}</div>
+            )}
+            <div>
+              <span className="font-medium text-white">Entry:</span>{" "}
+              {isFree ? "Free" : raffle.allowBids
+                ? `Bid - minimum $${Number(raffle.ticketPrice).toFixed(2)}`
+                : `$${Number(raffle.ticketPrice).toFixed(2)} per ticket${maxPer ? ` (max ${maxPer})` : ""}`
+              }
+            </div>
           </div>
         </div>
       </div>
 
-      {isClosed ? (
-        <p className="text-gray-500 text-center py-8">This raffle is no longer accepting entries.</p>
-      ) : (
-        <div className="space-y-5">
-          {/* Your info */}
-          <fieldset className="space-y-3">
-            <legend className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Your Info</legend>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-              <input
-                type="text"
-                value={state.payerName}
-                onChange={(e) => dispatch({ type: "SET", key: "payerName", value: e.target.value })}
-                className={inputCls}
-                placeholder="John Doe"
+      <div className="max-w-2xl mx-auto px-4 -mt-8 pb-16">
+        {/* Live drawing stream */}
+        {raffle.isLive && raffle.hlsUrl ? (
+          <div className="mb-6 bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border-b border-red-200">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-red-600 text-white font-semibold animate-pulse">LIVE</span>
+              <span className="text-sm font-semibold text-gray-800">Live Drawing</span>
+            </div>
+            <StreamPlayer
+              signedUrl={raffle.hlsUrl}
+              sessionToken={null}
+              gameId={raffle.id}
+              program={program}
+              onSessionExpired={() => {}}
+            />
+            <div className="border-t border-gray-200">
+              <LiveChat
+                gameId={raffle.id}
+                program={program}
+                sessionToken={null}
+                displayName=""
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
-              <input
-                type="email"
-                value={state.payerEmail}
-                onChange={(e) => dispatch({ type: "SET", key: "payerEmail", value: e.target.value })}
-                className={inputCls}
-                placeholder="you@example.com"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number <span className="text-gray-400 font-normal">(optional)</span></label>
-              <input
-                type="tel"
-                value={state.payerPhone}
-                onChange={(e) => dispatch({ type: "SET", key: "payerPhone", value: e.target.value })}
-                className={inputCls}
-                placeholder="(555) 000-0000"
-              />
-            </div>
-          </fieldset>
+          </div>
+        ) : (
+          <div className="mb-6 flex items-center justify-between text-sm text-gray-400 bg-white shadow-lg rounded-2xl px-5 py-4">
+            <span>Live drawing will appear here when it begins.</span>
+            <button onClick={handleRefresh} className="text-[#5E0009] hover:underline font-medium">Refresh</button>
+          </div>
+        )}
 
-          {/* Ticket / Bid selection */}
-          {!isFree && (
-            <div>
-              {raffle.allowBids ? (
+        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-7">
+          <RaffleGallery raffle={raffle} />
+
+          {isClosed ? (
+            <p className="text-gray-500 text-center py-8">This raffle is no longer accepting entries.</p>
+          ) : (
+            <div className="space-y-5">
+              {/* Your info */}
+              <fieldset className="space-y-3">
+                <legend className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Your Info</legend>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Bid ($){Number(raffle.ticketPrice) > 0 ? ` - minimum $${Number(raffle.ticketPrice).toFixed(2)}` : ""}
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
                   <input
-                    type="number"
-                    min={Number(raffle.ticketPrice) || 0.01}
-                    step="0.01"
-                    value={state.bidAmount}
-                    onChange={(e) => dispatch({ type: "SET", key: "bidAmount", value: e.target.value })}
+                    type="text"
+                    value={state.payerName}
+                    onChange={(e) => dispatch({ type: "SET", key: "payerName", value: e.target.value })}
                     className={inputCls}
-                    placeholder="Enter your bid"
+                    placeholder="John Doe"
                   />
-                  {amount !== null && (
-                    <p className="text-sm text-gray-600 mt-1">
-                      Your bid: <strong>${amount.toFixed(2)}</strong>
-                    </p>
-                  )}
                 </div>
-              ) : (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Number of Tickets{maxPer ? ` (max ${maxPer})` : ""}
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
                   <input
-                    type="number"
-                    min={1}
-                    max={maxPer ?? undefined}
-                    value={state.ticketCount}
-                    onChange={(e) => dispatch({ type: "SET", key: "ticketCount", value: e.target.value })}
+                    type="email"
+                    value={state.payerEmail}
+                    onChange={(e) => dispatch({ type: "SET", key: "payerEmail", value: e.target.value })}
                     className={inputCls}
+                    placeholder="you@example.com"
                   />
-                  {amount !== null && (
-                    <p className="text-sm text-gray-600 mt-1">
-                      Total: <strong>${amount.toFixed(2)}</strong>
-                    </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <input
+                    type="tel"
+                    value={state.payerPhone}
+                    onChange={(e) => dispatch({ type: "SET", key: "payerPhone", value: e.target.value })}
+                    className={inputCls}
+                    placeholder="(555) 000-0000"
+                  />
+                </div>
+              </fieldset>
+
+              {/* Ticket / Bid selection */}
+              {!isFree && (
+                <div>
+                  {raffle.allowBids ? (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Your Bid ($){Number(raffle.ticketPrice) > 0 ? ` - minimum $${Number(raffle.ticketPrice).toFixed(2)}` : ""}
+                      </label>
+                      <input
+                        type="number"
+                        min={Number(raffle.ticketPrice) || 0.01}
+                        step="0.01"
+                        value={state.bidAmount}
+                        onChange={(e) => dispatch({ type: "SET", key: "bidAmount", value: e.target.value })}
+                        className={inputCls}
+                        placeholder="Enter your bid"
+                      />
+                      {amount !== null && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          Your bid: <strong>${amount.toFixed(2)}</strong>
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Number of Tickets{maxPer ? ` (max ${maxPer})` : ""}
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={maxPer ?? undefined}
+                        value={state.ticketCount}
+                        onChange={(e) => dispatch({ type: "SET", key: "ticketCount", value: e.target.value })}
+                        className={inputCls}
+                      />
+                      {amount !== null && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          Total: <strong>${amount.toFixed(2)}</strong>
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
+
+              {/* Error */}
+              {state.errorMsg && (
+                <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+                  {state.errorMsg}
+                </div>
+              )}
+
+              {/* Payment / Submit */}
+              <div className="pt-2">
+                {isFree ? (
+                  <button
+                    onClick={handleFreeSubmit}
+                    disabled={!canPay || state.submitting}
+                    className="w-full py-3 bg-[#5E0009] text-white rounded-full font-semibold text-sm hover:bg-[#7a0012] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {state.submitting ? "Submitting..." : "Enter Raffle (Free)"}
+                  </button>
+                ) : (
+                  <>
+                    {!canPay && (
+                      <p className="text-xs text-gray-400 text-center mb-2">
+                        Fill in your info and {raffle.allowBids ? "a bid amount" : "ticket count"} to enable payment.
+                      </p>
+                    )}
+                    <div id="raffle-paypal-buttons" className={canPay ? "" : "opacity-30 pointer-events-none"} />
+                    {canPay && !paymentReady && (
+                      <p className="text-xs text-gray-400 text-center mt-2">Loading payment options...</p>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           )}
-
-          {/* Error */}
-          {state.errorMsg && (
-            <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-md px-3 py-2">
-              {state.errorMsg}
-            </div>
-          )}
-
-          {/* Payment / Submit */}
-          <div className="pt-2">
-            {isFree ? (
-              <button
-                onClick={handleFreeSubmit}
-                disabled={!canPay || state.submitting}
-                className="w-full py-3 bg-[#5E0009] text-white rounded-lg font-semibold text-sm hover:bg-[#7a0010] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {state.submitting ? "Submitting..." : "Enter Raffle (Free)"}
-              </button>
-            ) : (
-              <>
-                {!canPay && (
-                  <p className="text-xs text-gray-400 text-center mb-2">
-                    Fill in your info and {raffle.allowBids ? "a bid amount" : "ticket count"} to enable payment.
-                  </p>
-                )}
-                <div id="raffle-paypal-buttons" className={canPay ? "" : "opacity-30 pointer-events-none"} />
-                {canPay && !paymentReady && (
-                  <p className="text-xs text-gray-400 text-center mt-2">Loading payment options...</p>
-                )}
-              </>
-            )}
-          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

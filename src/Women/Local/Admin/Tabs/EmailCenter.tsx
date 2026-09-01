@@ -98,7 +98,7 @@ function ToolbarBtn({
         onAction();
       }}
       title={title}
-      className="p-1.5 rounded hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition-colors"
+      className="p-1.5 rounded-lg hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition-colors"
     >
       {children}
     </button>
@@ -277,12 +277,9 @@ export default function EmailCenter() {
 
   // Render
   return (
-    <div
-      className="flex bg-gray-50 rounded-lg shadow-lg overflow-hidden border border-gray-200"
-      style={{ minHeight: "640px" }}
-    >
+    <div className="flex flex-col md:flex-row bg-gray-50 rounded-xl shadow-sm overflow-hidden border border-gray-200 md:min-h-[640px]">
       {/* LEFT PANEL: Group Management */}
-      <div className="w-72 bg-white border-r border-gray-200 flex flex-col shrink-0">
+      <div className="w-full md:w-72 bg-white border-b md:border-b-0 md:border-r border-gray-200 flex flex-col shrink-0 max-h-[70vh] md:max-h-none">
         {/* Header */}
         <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -294,7 +291,7 @@ export default function EmailCenter() {
           <button
             onClick={() => set("addingGroup", !addingGroup)}
             title="New Group"
-            className="p-1 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition-colors"
+            className="p-1 rounded-lg hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition-colors"
           >
             <Plus size={15} />
           </button>
@@ -311,11 +308,11 @@ export default function EmailCenter() {
                 value={newGroupName}
                 onChange={(e) => set("newGroupName", e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddGroup()}
-                className="flex-1 text-xs border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                className="flex-1 text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
               />
               <button
                 onClick={handleAddGroup}
-                className="text-xs bg-blue-600 text-white px-2.5 py-1 rounded hover:bg-blue-700"
+                className="text-xs bg-blue-600 text-white px-2.5 py-1 rounded-lg hover:bg-blue-700"
               >
                 Add
               </button>
@@ -403,11 +400,11 @@ export default function EmailCenter() {
                         value={newEmail}
                         onChange={(e) => set("newEmail", e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleAddEmail()}
-                        className="flex-1 text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-400"
+                        className="flex-1 text-xs border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-400"
                       />
                       <button
                         onClick={handleAddEmail}
-                        className="text-xs bg-green-600 text-white px-2.5 py-1 rounded hover:bg-green-700 font-medium"
+                        className="text-xs bg-green-600 text-white px-2.5 py-1 rounded-lg hover:bg-green-700 font-medium"
                       >
                         Add
                       </button>
@@ -418,7 +415,7 @@ export default function EmailCenter() {
                       <select
                         value={importRole}
                         onChange={(e) => set("importRole", e.target.value)}
-                        className="flex-1 text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none"
+                        className="flex-1 text-xs border border-gray-300 rounded-lg px-2 py-1 bg-white focus:outline-none"
                       >
                         <option value="alumni">Alumni</option>
                         <option value="player">Players</option>
@@ -429,7 +426,7 @@ export default function EmailCenter() {
                       <button
                         onClick={handleImportFromRole}
                         disabled={importing}
-                        className="text-xs bg-[#5E0009] text-white px-2.5 py-1 rounded hover:bg-[#7a0012] disabled:opacity-50 whitespace-nowrap font-medium"
+                        className="text-xs bg-[#5E0009] text-white px-2.5 py-1 rounded-lg hover:bg-[#7a0012] disabled:opacity-50 whitespace-nowrap font-medium"
                       >
                         {importing ? "…" : "Import"}
                       </button>
@@ -447,7 +444,7 @@ export default function EmailCenter() {
                           placeholder="Search members..."
                           value={searchTerm}
                           onChange={(e) => set("searchTerm", e.target.value)}
-                          className="w-full text-xs border border-gray-300 rounded pl-6 pr-2 py-1 focus:outline-none"
+                          className="w-full text-xs border border-gray-300 rounded-lg pl-6 pr-2 py-1 focus:outline-none"
                         />
                       </div>
                     )}
@@ -458,7 +455,7 @@ export default function EmailCenter() {
                         filteredMembers.map((email, idx) => (
                           <label
                             key={idx}
-                            className="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-white cursor-pointer"
+                            className="flex items-center gap-2 px-1 py-0.5 rounded-lg hover:bg-white cursor-pointer"
                           >
                             <input
                               type="checkbox"
@@ -490,7 +487,7 @@ export default function EmailCenter() {
                       {selectedEmails.length > 0 ? (
                         <button
                           onClick={handleDeleteSelected}
-                          className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50"
+                          className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700 px-2 py-1 rounded-lg hover:bg-red-50"
                         >
                           <UserMinus size={11} />
                           Remove {selectedEmails.length}
@@ -500,7 +497,7 @@ export default function EmailCenter() {
                       )}
                       <button
                         onClick={() => handleDeleteGroup(group.id)}
-                        className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 ml-auto"
+                        className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded-lg hover:bg-red-50 ml-auto"
                       >
                         <Trash2 size={11} />
                         Delete Group
@@ -517,7 +514,7 @@ export default function EmailCenter() {
       {/* RIGHT PANEL: Compose */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Compose header */}
-        <div className="px-6 py-3 bg-white border-b border-gray-200 flex items-center gap-3">
+        <div className="px-4 sm:px-6 py-3 bg-white border-b border-gray-200 flex items-center gap-3">
           <Mail size={18} className="text-[#5E0009] shrink-0" />
           <h2 className="text-base font-semibold text-gray-800">
             Email Center - Women's Program
@@ -527,12 +524,12 @@ export default function EmailCenter() {
         {/* To / Subject */}
         <div className="bg-white border-b border-gray-200">
           {/* To field */}
-          <div className="flex items-center px-6 py-2.5 border-b border-gray-100 min-h-[42px]">
+          <div className="flex flex-wrap items-center gap-2 px-4 sm:px-6 py-2.5 border-b border-gray-100 min-h-[42px]">
             <span className="w-16 text-sm font-medium text-gray-400 shrink-0">
               To:
             </span>
             {selectedGroup ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="inline-flex items-center gap-1.5 bg-[#5E0009]/10 text-[#5E0009] text-sm px-2.5 py-0.5 rounded-full font-medium">
                   <Users size={12} />
                   {selectedGroup.name}
@@ -555,7 +552,7 @@ export default function EmailCenter() {
           </div>
 
           {/* Subject field */}
-          <div className="flex items-center px-6 py-2.5">
+          <div className="flex items-center px-4 sm:px-6 py-2.5">
             <span className="w-16 text-sm font-medium text-gray-400 shrink-0">
               Subject:
             </span>
@@ -564,7 +561,7 @@ export default function EmailCenter() {
               placeholder="Enter email subject..."
               value={subject}
               onChange={(e) => set("subject", e.target.value)}
-              className="flex-1 text-sm focus:outline-none text-gray-800 placeholder-gray-300 bg-transparent"
+              className="flex-1 min-w-0 text-sm focus:outline-none text-gray-800 placeholder-gray-300 bg-transparent"
             />
           </div>
         </div>
@@ -621,7 +618,7 @@ export default function EmailCenter() {
               e.target.value = "p";
             }}
             defaultValue="p"
-            className="text-xs border border-gray-300 rounded px-1.5 py-0.5 bg-white focus:outline-none cursor-pointer text-gray-600"
+            className="text-xs border border-gray-300 rounded-lg px-1.5 py-0.5 bg-white focus:outline-none cursor-pointer text-gray-600"
           >
             <option value="p">Normal</option>
             <option value="h1">Heading 1</option>
@@ -642,7 +639,11 @@ export default function EmailCenter() {
             ref={editorRef}
             contentEditable
             suppressContentEditableWarning
-            className="h-full min-h-[280px] px-8 py-5 text-sm text-gray-800 leading-relaxed focus:outline-none"
+            className="h-full min-h-[220px] px-4 sm:px-8 py-5 text-sm text-gray-800 leading-relaxed focus:outline-none"
+            style={{
+              // Placeholder via CSS trick
+              "--placeholder": '"Write your email here..."',
+            } as React.CSSProperties}
             onFocus={(e) => {
               if (
                 e.currentTarget.innerHTML === "" ||
@@ -655,7 +656,7 @@ export default function EmailCenter() {
         </div>
 
         {/* Footer */}
-        <div className="bg-white border-t border-gray-200 px-6 py-3 flex items-center justify-between">
+        <div className="bg-white border-t border-gray-200 px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <span className="text-xs text-gray-400">
             {selectedGroup
               ? `${selectedGroup.members.length} recipient(s) in "${selectedGroup.name}"`
@@ -664,10 +665,10 @@ export default function EmailCenter() {
           <button
             onClick={() => set("showConfirm", true)}
             disabled={sending || !selectedGroup}
-            className={`flex items-center gap-2 px-5 py-2 rounded text-sm font-medium text-white transition-colors shadow-sm ${
+            className={`flex items-center justify-center gap-2 px-5 py-2.5 sm:py-2 rounded-lg text-sm font-medium text-white transition-colors shadow-sm w-full sm:w-auto ${
               sending || !selectedGroup
                 ? "bg-gray-300 cursor-not-allowed shadow-none"
-                : "bg-[#5E0009] hover:bg-[#7a0010]"
+                : "bg-[#5E0009] hover:bg-[#7a0012]"
             }`}
           >
             <Send size={13} />
@@ -701,13 +702,13 @@ export default function EmailCenter() {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => set("showConfirm", false)}
-                className="px-4 py-2 text-sm rounded border border-gray-300 hover:bg-gray-50 text-gray-700"
+                className="px-4 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSend}
-                className="flex items-center gap-2 px-4 py-2 text-sm rounded bg-[#5E0009] text-white hover:bg-[#7a0010]"
+                className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-[#5E0009] text-white hover:bg-[#7a0012]"
               >
                 <Send size={13} />
                 Send Now

@@ -94,6 +94,8 @@ function reducer(state: State, action: Action): State {
 
 const BASE_URL = "/api/stream";
 
+const input = "border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30";
+
 export default function StreamSetup() {
   const [state, dispatch] = useReducer(reducer, {
     games: [],
@@ -209,16 +211,16 @@ export default function StreamSetup() {
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold">Stream Setup</h2>
+    <div className="max-w-4xl mx-auto animate-fadeIn space-y-6">
+      <h2 className="text-lg font-bold text-gray-900">Stream Setup</h2>
 
       {/* Game selector */}
-      <div>
-        <label className="block text-sm font-semibold mb-1">Select Game</label>
+      <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 shadow-sm">
+        <label className="block text-sm font-medium text-gray-700 mb-1">Select Game</label>
         <select
           value={selectedGameId}
           onChange={(e) => dispatch({ type: "SET_GAME", gameId: e.target.value })}
-          className="border border-gray-300 rounded px-3 py-2 w-full max-w-sm text-sm"
+          className={`${input} w-full sm:max-w-sm bg-white`}
         >
           <option value=""> - Choose a game - </option>
           {games.map((g) => (
@@ -229,13 +231,13 @@ export default function StreamSetup() {
         </select>
       </div>
 
-      {loading && selectedGameId && <p className="text-sm text-gray-500">Loading…</p>}
+      {loading && selectedGameId && <p className="text-sm text-gray-500 animate-pulse">Loading…</p>}
 
       {selectedGameId && !loading && (
         <>
           {/* Stream credentials */}
-          <div className="border border-gray-200 rounded-lg p-4 space-y-3">
-            <h3 className="font-semibold text-sm">OBS Credentials</h3>
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 shadow-sm space-y-3">
+            <h3 className="text-base font-bold text-gray-900">OBS Credentials</h3>
             {streamConfig?.rtmpsUrl ? (
               <>
                 <CredRow label="RTMPS URL" value={streamConfig.rtmpsUrl!} onCopy={copy} copied={copyMsg === streamConfig.rtmpsUrl} />
@@ -247,52 +249,54 @@ export default function StreamSetup() {
           </div>
 
           {/* Paywall config */}
-          <div className="border border-gray-200 rounded-lg p-4 space-y-3">
-            <h3 className="font-semibold text-sm">Paywall Settings</h3>
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 shadow-sm space-y-3">
+            <h3 className="text-base font-bold text-gray-900">Paywall Settings</h3>
+            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
               <input
                 type="checkbox"
                 checked={isPaywalled}
                 onChange={(e) =>
                   dispatch({ type: "SET_FIELD", field: "isPaywalled", value: e.target.checked })
                 }
+                className="w-4 h-4 accent-[#5E0009]"
               />
               Require paid access
             </label>
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
               <input
                 type="checkbox"
                 checked={saveAsVideo}
                 onChange={(e) =>
                   dispatch({ type: "SET_FIELD", field: "saveAsVideo", value: e.target.checked })
                 }
+                className="w-4 h-4 accent-[#5E0009]"
               />
               Save stream as recording
             </label>
             {isPaywalled && (
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-4">
                 <div>
-                  <label className="text-xs text-gray-600">1-Screen price ($)</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">1-Screen price ($)</label>
                   <input
                     type="number"
                     value={priceOneScreen}
                     onChange={(e) =>
                       dispatch({ type: "SET_FIELD", field: "priceOneScreen", value: e.target.value })
                     }
-                    className="border border-gray-300 rounded px-2 py-1 text-sm w-24 block mt-1"
+                    className={`${input} w-28`}
                     min="0"
                     step="0.01"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-600">2-Screen price ($)</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">2-Screen price ($)</label>
                   <input
                     type="number"
                     value={priceTwoScreen}
                     onChange={(e) =>
                       dispatch({ type: "SET_FIELD", field: "priceTwoScreen", value: e.target.value })
                     }
-                    className="border border-gray-300 rounded px-2 py-1 text-sm w-24 block mt-1"
+                    className={`${input} w-28`}
                     min="0"
                     step="0.01"
                   />
@@ -301,8 +305,8 @@ export default function StreamSetup() {
             )}
           </div>
 
-          {error && <p className="text-red-600 text-sm">{error}</p>}
-          {success && <p className="text-green-600 text-sm">{success}</p>}
+          {error && <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+          {success && <p className="text-green-700 text-sm bg-green-50 border border-green-200 rounded-lg px-3 py-2">{success}</p>}
 
           {/* Action buttons */}
           <div className="flex flex-wrap gap-3">
@@ -310,7 +314,7 @@ export default function StreamSetup() {
               <button
                 onClick={handleSetup}
                 disabled={saving}
-                className="bg-[#5E0009] text-white px-4 py-2 rounded text-sm font-semibold disabled:opacity-50"
+                className="px-5 py-2 bg-[#5E0009] text-white rounded-lg text-sm font-medium hover:bg-[#7a0012] transition disabled:opacity-60"
               >
                 {saving ? "Setting up…" : "Setup Stream"}
               </button>
@@ -318,7 +322,7 @@ export default function StreamSetup() {
               <button
                 onClick={handleUpdatePaywall}
                 disabled={saving}
-                className="bg-gray-800 text-white px-4 py-2 rounded text-sm font-semibold disabled:opacity-50"
+                className="px-5 py-2 bg-gray-800 text-white rounded-lg text-sm font-medium hover:bg-gray-900 transition disabled:opacity-60"
               >
                 {saving ? "Saving…" : "Update Paywall"}
               </button>
@@ -327,8 +331,8 @@ export default function StreamSetup() {
             {streamConfig?.rtmpsUrl && (
               <button
                 onClick={handleToggleLive}
-                className={`px-4 py-2 rounded text-sm font-semibold text-white ${
-                  isLive ? "bg-red-700 hover:bg-red-800" : "bg-green-700 hover:bg-green-800"
+                className={`px-5 py-2 rounded-lg text-sm font-medium text-white transition ${
+                  isLive ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"
                 }`}
               >
                 {isLive ? "End Stream" : "Go Live"}
@@ -338,12 +342,12 @@ export default function StreamSetup() {
 
           {/* Recordings */}
           {streamConfig?.rtmpsUrl && (streamConfig as any).saveAsVideo && (
-            <div className="border border-gray-200 rounded-lg p-4 space-y-2">
-              <h3 className="font-semibold text-sm">Recording</h3>
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 shadow-sm space-y-2">
+              <h3 className="text-base font-bold text-gray-900">Recording</h3>
               <p className="text-xs text-gray-500">
                 Recording is enabled for this stream. After the stream ends, the file will be available at:
               </p>
-              <code className="block bg-gray-50 border border-gray-200 rounded px-3 py-2 text-xs font-mono break-all">
+              <code className="block bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono break-all text-gray-700">
                 {"https://api.missouristatelacrosse.com/recordings/live/" + (streamConfig as any).streamKey + ".mp4"}
               </code>
               <a
@@ -359,38 +363,31 @@ export default function StreamSetup() {
 
           {/* Key management */}
           {streamConfig?.rtmpsUrl && (
-            <div className="border border-gray-200 rounded-lg p-4 space-y-4">
-              <h3 className="font-semibold text-sm">Access Keys</h3>
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
+              <h3 className="text-base font-bold text-gray-900">Access Keys</h3>
 
               {/* Multi-row generate form */}
               <div className="space-y-2">
-                {/* Column headers */}
-                <div className="flex gap-2 text-xs text-gray-500 font-medium pl-1">
-                  <span className="w-36">Name</span>
-                  <span className="w-44">Email</span>
-                  <span className="w-28">Tier</span>
-                </div>
-
                 {genEntries.map((entry, i) => (
-                  <div key={i} className="flex gap-2 items-center">
+                  <div key={i} className="flex flex-col sm:flex-row gap-2 sm:items-center">
                     <input
                       type="text"
                       value={entry.name}
                       onChange={(e) => dispatch({ type: "UPDATE_ENTRY", index: i, field: "name", value: e.target.value })}
                       placeholder="Display name"
-                      className="border border-gray-300 rounded px-2 py-1 text-sm w-36"
+                      className={`${input} bg-white sm:w-36`}
                     />
                     <input
                       type="email"
                       value={entry.email}
                       onChange={(e) => dispatch({ type: "UPDATE_ENTRY", index: i, field: "email", value: e.target.value })}
                       placeholder="email@example.com"
-                      className="border border-gray-300 rounded px-2 py-1 text-sm w-44"
+                      className={`${input} bg-white sm:w-48`}
                     />
                     <select
                       value={entry.tier}
                       onChange={(e) => dispatch({ type: "UPDATE_ENTRY", index: i, field: "tier", value: e.target.value })}
-                      className="border border-gray-300 rounded px-2 py-1 text-sm w-28"
+                      className={`${input} bg-white sm:w-28`}
                     >
                       <option value="ONE_SCREEN">1-Screen</option>
                       <option value="TWO_SCREEN">2-Screen</option>
@@ -398,7 +395,7 @@ export default function StreamSetup() {
                     {genEntries.length > 1 && (
                       <button
                         onClick={() => dispatch({ type: "REMOVE_ENTRY", index: i })}
-                        className="text-gray-400 hover:text-red-600 text-lg leading-none px-1"
+                        className="self-start sm:self-auto text-gray-400 hover:text-red-600 text-lg leading-none px-1"
                         title="Remove row"
                       >
                         ×
@@ -407,7 +404,7 @@ export default function StreamSetup() {
                   </div>
                 ))}
 
-                <div className="flex gap-2 pt-1">
+                <div className="flex flex-wrap items-center gap-3 pt-1">
                   <button
                     onClick={() => dispatch({ type: "ADD_ENTRY" })}
                     className="text-sm text-[#5E0009] hover:underline"
@@ -417,66 +414,50 @@ export default function StreamSetup() {
                   <button
                     onClick={handleGenerateKeys}
                     disabled={saving}
-                    className="bg-[#5E0009] text-white px-3 py-1 rounded text-sm font-semibold disabled:opacity-50"
+                    className="px-4 py-2 bg-[#5E0009] text-white rounded-lg text-sm font-medium hover:bg-[#7a0012] transition disabled:opacity-60"
                   >
                     {saving ? "Generating…" : `Generate Key${genEntries.length > 1 ? "s" : ""}`}
                   </button>
                 </div>
               </div>
 
-              {/* Keys table */}
+              {/* Keys list */}
               {keys.length > 0 && (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-gray-100 border-b">
-                        <th className="p-2 text-left">Key Code</th>
-                        <th className="p-2 text-left">Name</th>
-                        <th className="p-2 text-left">Email</th>
-                        <th className="p-2 text-center">Tier</th>
-                        <th className="p-2 text-center">Active</th>
-                        <th className="p-2 text-center">Activated</th>
-                        <th className="p-2 text-center">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {keys.map((k) => (
-                        <tr key={k.id} className="border-b hover:bg-gray-50">
-                          <td className="p-2 font-mono">
-                            <button
-                              onClick={() => copy(k.keyCode)}
-                              className="hover:text-[#5E0009] transition-colors"
-                              title="Copy key"
-                            >
-                              {copyMsg === k.keyCode ? "Copied" : k.keyCode}
-                            </button>
-                          </td>
-                          <td className="p-2">{k.displayName}</td>
-                          <td className="p-2">{k.email}</td>
-                          <td className="p-2 text-center">
+                <ul className="divide-y divide-gray-100">
+                  {keys.map((k) => (
+                    <li key={k.id} className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 hover:bg-white rounded-lg px-2 transition">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            onClick={() => copy(k.keyCode)}
+                            className="font-mono text-sm text-gray-900 hover:text-[#5E0009] transition-colors"
+                            title="Copy key"
+                          >
+                            {copyMsg === k.keyCode ? "Copied" : k.keyCode}
+                          </button>
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600">
                             {k.tier === "TWO_SCREEN" ? "2-SCR" : "1-SCR"}
-                          </td>
-                          <td className="p-2 text-center">
-                            <span className={k.activeSessions > 0 ? "text-green-700 font-semibold" : "text-gray-400"}>
-                              {k.activeSessions}/{k.tier === "TWO_SCREEN" ? 2 : 1}
-                            </span>
-                          </td>
-                          <td className="p-2 text-center text-gray-500">
-                            {k.activatedAt ? new Date(k.activatedAt).toLocaleTimeString() : " - "}
-                          </td>
-                          <td className="p-2 text-center">
-                            <button
-                              onClick={() => handleRevokeKey(k.id)}
-                              className="text-red-600 hover:underline text-xs"
-                            >
-                              Revoke
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500 truncate">{k.displayName} · {k.email}</p>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className={`text-xs ${k.activeSessions > 0 ? "text-green-700 font-semibold" : "text-gray-400"}`}>
+                          {k.activeSessions}/{k.tier === "TWO_SCREEN" ? 2 : 1} active
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {k.activatedAt ? new Date(k.activatedAt).toLocaleTimeString() : "Not activated"}
+                        </span>
+                        <button
+                          onClick={() => handleRevokeKey(k.id)}
+                          className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-xs font-medium transition"
+                        >
+                          Revoke
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               )}
               {keys.length === 0 && (
                 <p className="text-xs text-gray-400">No keys generated yet.</p>
@@ -499,9 +480,9 @@ function CredRow({
   secret?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-2 text-sm">
+    <div className="flex flex-wrap items-center gap-2 text-sm">
       <span className="w-28 text-gray-500 shrink-0">{label}:</span>
-      <span className="font-mono text-xs break-all flex-1">
+      <span className="font-mono text-xs break-all flex-1 min-w-0 text-gray-700">
         {secret ? "••••••••••••" : value}
       </span>
       <button

@@ -48,25 +48,36 @@ export default function EventSignup() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10">
-      <h1 className="text-3xl font-bold text-[#5E0009] mb-2">Event Signup</h1>
-      <p className="text-gray-500 mb-8">Browse upcoming events and register below.</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-linear-to-r from-[#5E0009] via-[#7a1020] to-[#5E0009] text-white px-6 py-14 text-center">
+        <div className="inline-flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/70 mb-3">
+          <span className="h-px w-6 bg-white/40" />
+          Get Involved
+          <span className="h-px w-6 bg-white/40" />
+        </div>
+        <h1 className="text-4xl md:text-5xl font-extrabold">Event Signup</h1>
+        <p className="text-white/80 mt-3 max-w-lg mx-auto">
+          Browse upcoming events and register below.
+        </p>
+      </div>
 
-      {events.length === 0 ? (
-        <div className="text-center py-20 text-gray-400 text-lg">
-          No events are currently available.
-        </div>
-      ) : (
-        <div className="grid gap-5">
-          {events.map((event) => (
-            <EventCard
-              key={event.id}
-              event={event}
-              onRegister={() => navigate(`${base}/event-signup/${event.slug}`)}
-            />
-          ))}
-        </div>
-      )}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 pb-16">
+        {events.length === 0 ? (
+          <div className="bg-white rounded-2xl shadow-lg text-center py-20 text-gray-400 text-lg">
+            No events are currently available.
+          </div>
+        ) : (
+          <div className="grid gap-5">
+            {events.map((event) => (
+              <EventCard
+                key={event.id}
+                event={event}
+                onRegister={() => navigate(`${base}/event-signup/${event.slug}`)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -82,12 +93,12 @@ function EventCard({
   const isTeamEvent = event.teamSize > 1;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+    <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col sm:flex-row sm:items-center gap-4">
       {event.image && (
         <img
           src={event.image}
           alt={event.name}
-          className="w-full sm:w-36 object-contain bg-gray-50 rounded-md shrink-0"
+          className="w-full sm:w-36 object-contain bg-gray-50 rounded-xl shrink-0"
         />
       )}
       <div className="flex-1 min-w-0">
@@ -146,7 +157,7 @@ function EventCard({
         </div>
         <button
           onClick={onRegister}
-          className="px-5 py-2 bg-[#5E0009] text-white rounded-lg font-semibold hover:bg-[#7a0010] transition-colors text-sm"
+          className="px-5 py-2 bg-[#5E0009] text-white rounded-full font-semibold hover:bg-[#7a0012] transition-colors text-sm"
         >
           Register
         </button>

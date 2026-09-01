@@ -9,6 +9,7 @@ type PlayerTableProps = {
   setPlayers: Dispatch<SetStateAction<ApiPlayer[]>>;
   userEmails: Record<string, string>;
   onSelectedPlayer?: (player: ApiPlayer) => void;
+  selectedPlayerId?: string;
 };
 
 export default function PlayerTable({
@@ -16,6 +17,7 @@ export default function PlayerTable({
   setPlayers,
   userEmails,
   onSelectedPlayer,
+  selectedPlayerId,
 }: PlayerTableProps) {
   const [saving, setSaving] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -54,6 +56,22 @@ export default function PlayerTable({
     setPlayers((prev) => prev.map((pl) => (pl.id === id ? { ...pl, [field]: value } : pl)));
   };
 
+  const updateBalance = (id: string, raw: string) => {
+    const value = raw === "" ? "" : Number(raw);
+    setPlayers((prev) =>
+      prev.map((pl) =>
+        pl.id === id
+          ? { ...pl, balance: typeof value === "number" && Number.isFinite(value) ? value : "" }
+          : pl
+      )
+    );
+  };
+
+  const saveButtonClass = (id: string) =>
+    `px-4 py-1.5 rounded-full text-sm font-semibold text-white transition ${
+      saving === id ? "bg-gray-400 cursor-not-allowed" : "bg-[#5E0009] hover:bg-[#7a0012]"
+    }`;
+
   return (
     <div className="animate-fadeIn">
       <div className="inline-flex items-center gap-3 text-[#5E0009] text-xs font-semibold uppercase tracking-[0.2em] mb-3">
@@ -70,7 +88,7 @@ export default function PlayerTable({
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
+          <table className="w-full border-collapse hidden md:table">
             <thead>
               <tr className="bg-gray-50 text-gray-600 text-sm">
                 <th className="px-4 py-3 text-left font-semibold">Name</th>
@@ -83,7 +101,9 @@ export default function PlayerTable({
               {players.map((p) => (
                 <tr
                   key={p.id}
-                  className="hover:bg-gray-50 transition cursor-pointer"
+                  className={`transition cursor-pointer ${
+                    p.id === selectedPlayerId ? "bg-gray-100" : "hover:bg-gray-50"
+                  }`}
                   onClick={() => onSelectedPlayer?.(p)}
                 >
                   <td className="px-4 py-3 font-medium text-gray-800">{p.name || "N/A"}</td>
@@ -100,23 +120,7 @@ export default function PlayerTable({
                     <input
                       type="number"
                       value={p.balance ?? ""}
-                      onChange={(e) => {
-                        const raw = e.target.value;
-                        const value = raw === "" ? "" : Number(raw);
-                        setPlayers((prev) =>
-                          prev.map((pl) =>
-                            pl.id === p.id
-                              ? {
-                                  ...pl,
-                                  balance:
-                                    typeof value === "number" && Number.isFinite(value)
-                                      ? value
-                                      : "",
-                                }
-                              : pl
-                          )
-                        );
-                      }}
+                      onChange={(e) => updateBalance(p.id, e.target.value)}
                       className="border border-gray-200 px-3 py-1.5 w-24 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
                     />
                   </td>
@@ -124,11 +128,7 @@ export default function PlayerTable({
                     <button
                       onClick={() => handleSave(p)}
                       disabled={saving === p.id}
-                      className={`px-4 py-1.5 rounded-full text-sm font-semibold text-white transition ${
-                        saving === p.id
-                          ? "bg-gray-400 cursor-not-allowed"
-                          : "bg-[#5E0009] hover:bg-[#7a0012]"
-                      }`}
+                      className={saveButtonClass(p.id)}
                     >
                       {saving === p.id ? "Saving..." : "Save"}
                     </button>
@@ -137,6 +137,50 @@ export default function PlayerTable({
               ))}
             </tbody>
           </table>
+
+          <div className="md:hidden divide-y divide-gray-100">
+            {players.map((p) => (
+              <div
+                key={p.id}
+                className={`p-4 cursor-pointer transition ${
+                  p.id === selectedPlayerId ? "bg-gray-100" : "hover:bg-gray-50"
+                }`}
+                onClick={() => onSelectedPlayer?.(p)}
+              >
+                <div className="font-semibold text-gray-800 mb-3">{p.name || "N/A"}</div>
+                <div className="grid grid-cols-1 gap-3" onClick={(e) => e.stopPropagation()}>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Email</label>
+                    <input
+                      type="email"
+                      placeholder="No email on file"
+                      value={p.email ?? userEmails[p.id] ?? ""}
+                      onChange={(e) => updateField(p.id, "email", e.target.value)}
+                      className="border border-gray-200 px-3 py-2 w-full rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
+                    />
+                  </div>
+                  <div className="flex items-end gap-3">
+                    <div className="flex-1">
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Balance</label>
+                      <input
+                        type="number"
+                        value={p.balance ?? ""}
+                        onChange={(e) => updateBalance(p.id, e.target.value)}
+                        className="border border-gray-200 px-3 py-2 w-full rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
+                      />
+                    </div>
+                    <button
+                      onClick={() => handleSave(p)}
+                      disabled={saving === p.id}
+                      className={`${saveButtonClass(p.id)} py-2`}
+                    >
+                      {saving === p.id ? "Saving..." : "Save"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

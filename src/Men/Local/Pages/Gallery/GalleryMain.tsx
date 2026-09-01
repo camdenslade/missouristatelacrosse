@@ -94,7 +94,7 @@ export default function Gallery() {
           return (
             <div
               key={folderName}
-              className="cursor-pointer bg-gray-50 shadow-md hover:shadow-lg overflow-hidden transition-all flex flex-col"
+              className="cursor-pointer bg-white rounded-2xl shadow-sm hover:shadow-lg overflow-hidden transition-all flex flex-col"
               onClick={() => openLightbox(images)}
             >
               <div className="relative aspect-4/3 overflow-hidden bg-gray-200">
@@ -130,7 +130,7 @@ export default function Gallery() {
         <p className="italic">{error}</p>
         <button
           onClick={loadGallery}
-          className="mt-4 bg-[#5E0009] text-white px-4 py-2 rounded hover:bg-[#7a0012]"
+          className="mt-4 bg-[#5E0009] text-white px-5 py-2 rounded-full font-semibold hover:bg-[#7a0012] transition"
         >
           Retry
         </button>
@@ -138,61 +138,69 @@ export default function Gallery() {
     );
 
   return (
-    <section className="py-12 bg-white text-center animate-fadeIn relative">
-      <h2 className="text-3xl font-bold text-[#5E0009] mb-8">
-        {program === "women"
-          ? "Women's Lacrosse Photo Gallery"
-          : "Men's Lacrosse Photo Gallery"}
-      </h2>
-
-      {canUpload && (
-        <div className="absolute top-4 right-4">
-          <button
-            onClick={() => setState((p) => ({ ...p, showUploadModal: true }))}
-            className="bg-[#5E0009] text-white px-4 py-2 rounded hover:bg-[#7a0012]"
-          >
-            Upload Photo
-          </button>
+    <div className="min-h-screen bg-gray-50">
+      <div className="relative bg-linear-to-r from-[#5E0009] via-[#7a1020] to-[#5E0009] text-white px-6 py-14 text-center">
+        <div className="inline-flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/70 mb-3">
+          <span className="h-px w-6 bg-white/40" />
+          Photo Gallery
+          <span className="h-px w-6 bg-white/40" />
         </div>
-      )}
+        <h1 className="text-4xl md:text-5xl font-extrabold">
+          {program === "women"
+            ? "Women's Lacrosse Photo Gallery"
+            : "Men's Lacrosse Photo Gallery"}
+        </h1>
 
-      {isAdmin && (
-        <div className="absolute top-4 right-36">
-          <button
-            onClick={() => setState((p) => ({ ...p, showEditModal: true }))}
-            className="bg-[#7a7979] text-white px-4 py-2 rounded hover:bg-[#5E0009]"
-          >
-            Edit Gallery
-          </button>
-        </div>
-      )}
+        {(canUpload || isAdmin) && (
+          <div className="flex justify-center gap-3 flex-wrap mt-6">
+            {canUpload && (
+              <button
+                onClick={() => setState((p) => ({ ...p, showUploadModal: true }))}
+                className="bg-white text-[#5E0009] px-5 py-2.5 rounded-full font-semibold hover:bg-gray-200 transition"
+              >
+                Upload Photo
+              </button>
+            )}
+            {isAdmin && (
+              <button
+                onClick={() => setState((p) => ({ ...p, showEditModal: true }))}
+                className="bg-white/10 text-white border border-white/30 px-5 py-2.5 rounded-full font-semibold hover:bg-white/20 transition"
+              >
+                Edit Gallery
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
-      {galleryGrid}
+      <section className="py-12 bg-gray-50 text-center animate-fadeIn">
+        {galleryGrid}
 
-      {lightbox.open && (
-        <Lightbox
-          open={lightbox.open}
-          close={closeLightbox}
-          index={lightbox.index}
-          slides={lightbox.images.map((src) => ({ src }))}
-        />
-      )}
+        {lightbox.open && (
+          <Lightbox
+            open={lightbox.open}
+            close={closeLightbox}
+            index={lightbox.index}
+            slides={lightbox.images.map((src) => ({ src }))}
+          />
+        )}
 
-      {showEditModal && (
-        <GalleryEditModal
-          galleries={galleries}
-          onClose={() => setState((p) => ({ ...p, showEditModal: false }))}
-          onRefresh={loadGallery}
-        />
-      )}
+        {showEditModal && (
+          <GalleryEditModal
+            galleries={galleries}
+            onClose={() => setState((p) => ({ ...p, showEditModal: false }))}
+            onRefresh={loadGallery}
+          />
+        )}
 
-      {showUploadModal && (
-        <GalleryUploadModal
-          onClose={() => setState((p) => ({ ...p, showUploadModal: false }))}
-          onUpload={loadGallery}
-        />
-      )}
-    </section>
+        {showUploadModal && (
+          <GalleryUploadModal
+            onClose={() => setState((p) => ({ ...p, showUploadModal: false }))}
+            onUpload={loadGallery}
+          />
+        )}
+      </section>
+    </div>
   );
 }
 

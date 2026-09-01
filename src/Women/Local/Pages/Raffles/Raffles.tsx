@@ -88,25 +88,34 @@ export default function Raffles() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10">
-      <h1 className="text-3xl font-bold text-[#5E0009] mb-2">Raffles</h1>
-      <p className="text-gray-500 mb-8">Enter for a chance to win - good luck!</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-linear-to-r from-[#5E0009] via-[#7a1020] to-[#5E0009] text-white px-6 py-14 text-center">
+        <div className="inline-flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/70 mb-3">
+          <span className="h-px w-6 bg-white/40" />
+          Win Big
+          <span className="h-px w-6 bg-white/40" />
+        </div>
+        <h1 className="text-4xl md:text-5xl font-extrabold">Raffles</h1>
+        <p className="text-white/80 mt-3 max-w-lg mx-auto">Enter for a chance to win - good luck!</p>
+      </div>
 
-      {raffles.length === 0 ? (
-        <div className="text-center py-20 text-gray-400 text-lg">
-          No raffles are currently available.
-        </div>
-      ) : (
-        <div className="grid gap-5">
-          {raffles.map((raffle) => (
-            <RaffleCard
-              key={raffle.id}
-              raffle={raffle}
-              onEnter={() => navigate(`${base}/raffles/${raffle.slug}`)}
-            />
-          ))}
-        </div>
-      )}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 pb-16">
+        {raffles.length === 0 ? (
+          <div className="bg-white rounded-2xl shadow-lg text-center py-20 text-gray-400 text-lg">
+            No raffles are currently available.
+          </div>
+        ) : (
+          <div className="grid gap-5">
+            {raffles.map((raffle) => (
+              <RaffleCard
+                key={raffle.id}
+                raffle={raffle}
+                onEnter={() => navigate(`${base}/raffles/${raffle.slug}`)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -116,7 +125,7 @@ function RaffleCard({ raffle, onEnter }: { raffle: ApiRaffle; onEnter: () => voi
   const isClosed = raffle.status !== "active";
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col sm:flex-row">
+    <div className="bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col sm:flex-row">
       {raffle.image && (
         <img
           src={raffle.image}
@@ -178,7 +187,7 @@ function RaffleCard({ raffle, onEnter }: { raffle: ApiRaffle; onEnter: () => voi
           {raffle.isLive && (
             <button
               onClick={onEnter}
-              className="px-5 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors text-sm"
+              className="px-5 py-2 bg-red-600 text-white rounded-full font-semibold hover:bg-red-700 transition-colors text-sm"
             >
               Watch Live
             </button>
@@ -186,7 +195,7 @@ function RaffleCard({ raffle, onEnter }: { raffle: ApiRaffle; onEnter: () => voi
           {!isClosed && !raffle.isLive && (
             <button
               onClick={onEnter}
-              className="px-5 py-2 bg-[#5E0009] text-white rounded-lg font-semibold hover:bg-[#7a0010] transition-colors text-sm"
+              className="px-5 py-2 bg-[#5E0009] text-white rounded-full font-semibold hover:bg-[#7a0012] transition-colors text-sm"
             >
               {raffle.allowBids ? "Place Bid" : "Enter Raffle"}
             </button>

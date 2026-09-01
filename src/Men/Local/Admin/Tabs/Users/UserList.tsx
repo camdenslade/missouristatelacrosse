@@ -58,17 +58,20 @@ export default function UserList({ users, handleRoleChange, handleDisplayNameCha
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <ul className="divide-y divide-gray-100">
       {users.map(user => (
-        <div key={user.id} className="flex justify-between items-center border p-2 rounded">
-          <div className="flex flex-col">
+        <li
+          key={user.id}
+          className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:bg-gray-50 rounded-lg px-2 transition"
+        >
+          <div className="min-w-0">
             {editingNameFor === user.id ? (
-              <div className="flex items-center gap-1">
+              <div className="flex flex-wrap items-center gap-2">
                 <input
                   aria-label="User display name"
                   value={nameDraft}
                   onChange={(event) => setNameDraft(event.target.value)}
-                  className="border rounded px-2 py-1 text-sm"
+                  className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30"
                   autoFocus
                 />
                 <button
@@ -83,14 +86,14 @@ export default function UserList({ users, handleRoleChange, handleDisplayNameCha
                   type="button"
                   onClick={() => setEditingNameFor(null)}
                   disabled={savingName}
-                  className="text-sm text-gray-600 hover:underline disabled:opacity-50"
+                  className="text-sm text-gray-500 hover:underline disabled:opacity-50"
                 >
                   Cancel
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <span>{user.displayName || user.email || user.id}</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold text-gray-900">{user.displayName || user.email || user.id}</span>
                 {handleDisplayNameChange && (
                   <button
                     type="button"
@@ -103,20 +106,20 @@ export default function UserList({ users, handleRoleChange, handleDisplayNameCha
               </div>
             )}
             {editingNameFor === user.id && nameError && (
-              <span className="text-xs text-red-600">{nameError}</span>
+              <p className="text-xs text-red-600 mt-1">{nameError}</p>
             )}
             {user.displayName && user.email && (
-              <span className="text-xs text-gray-500">{user.email}</span>
+              <p className="text-gray-500 text-sm truncate">{user.email}</p>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {handleResendInvite && (
               <button
                 type="button"
                 onClick={() => onResend(user.id)}
                 disabled={resendState[user.id] === "sending"}
                 title="Send this user a new 'set your password' link"
-                className="px-2 py-1 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 text-sm disabled:opacity-50"
+                className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 text-sm transition disabled:opacity-50"
               >
                 {resendState[user.id] === "sending"
                   ? "Sending..."
@@ -130,7 +133,7 @@ export default function UserList({ users, handleRoleChange, handleDisplayNameCha
             <select
               value={user.role}
               onChange={(e) => handleRoleChange(user.id, e.target.value)}
-              className="border rounded px-2 py-1"
+              className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30"
             >
               <option value="user">User</option>
               <option value="player">Player</option>
@@ -148,14 +151,14 @@ export default function UserList({ users, handleRoleChange, handleDisplayNameCha
                     handleDelete(user.id);
                   }
                 }}
-                className="px-2 py-1 border border-red-600 text-red-600 rounded hover:bg-red-50"
+                className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm transition"
               >
                 Delete
               </button>
             )}
           </div>
-        </div>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
