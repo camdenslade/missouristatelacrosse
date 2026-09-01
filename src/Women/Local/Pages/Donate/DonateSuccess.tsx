@@ -12,7 +12,7 @@ export default function DonateSuccess() {
 
   useEffect(() => {
     if (!order) {
-      navigate("/donate");
+      navigate("/women/donate");
       return;
     }
 

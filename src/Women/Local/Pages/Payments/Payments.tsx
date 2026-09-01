@@ -6,6 +6,7 @@ import PlayerPaymentDetails from "./components/PlayerPaymentDetails";
 import PlayerTable from "./components/PlayerTable";
 import usePlayers from "./hooks/findPlayers";
 import usePaymentButtons from "../../../../Global/Common/hooks/usePaymentButtons";
+import { resolvePaymentProvider } from "../../../../Global/Common/hooks/usePaymentProvider";
 import { useAuth } from "../../../../Global/Context/AuthContext";
 import { apiRequest } from "../../../../Services/API";
 import type { ApiParentRecord, ApiPlayer, ApiUser, DuesPayment, ParentLink, Program, Role } from "../../../../types/api";
@@ -390,7 +391,7 @@ export default function Payments() {
           )}
 
           {state.selectedPlayer ? (
-            <div className="max-w-lg">
+            <div className={resolvePaymentProvider() === "stripe" ? "max-w-xl" : "max-w-lg"}>
               <PlayerPaymentDetails
                 userRole={programRole}
                 selectedPlayer={state.selectedPlayer}
@@ -417,7 +418,7 @@ export default function Payments() {
                 </button>
 
                 {state.confirmedAmount && (
-                  <div id="paypal-payment-buttons" className="mt-4 w-full max-w-xs flex justify-start" />
+                  <div id="paypal-payment-buttons" className="mt-4 w-full" />
                 )}
               </div>
             </div>
