@@ -119,7 +119,7 @@ public class DuesPaymentController {
                 // for exactly this amount.
                 String orderId = body.payPalOrderId();
                 if (orderId == null || orderId.isBlank()) {
-                    return ResponseEntity.badRequest().body(new ErrorResponse("payPalOrderId is required for a payment"));
+                    return ResponseEntity.badRequest().body(new ErrorResponse("A payment reference is required for a payment"));
                 }
                 if (repo.existsByPayPalOrderId(orderId)) {
                     DuesPayment existing = repo.findByPayPalOrderId(orderId).orElse(null);
@@ -131,18 +131,18 @@ public class DuesPaymentController {
                 }
                 PaymentReceipt receipt = receiptService.findReceipt(orderId).orElse(null);
                 if (receipt == null) {
-                    return ResponseEntity.badRequest().body(new ErrorResponse("No captured PayPal order found for payPalOrderId"));
+                    return ResponseEntity.badRequest().body(new ErrorResponse("No matching payment was found for that reference"));
                 }
                 if (!"COMPLETED".equalsIgnoreCase(receipt.getStatus())) {
-                    return ResponseEntity.badRequest().body(new ErrorResponse("PayPal order was not completed"));
+                    return ResponseEntity.badRequest().body(new ErrorResponse("Payment was not completed"));
                 }
                 if (receipt.getAmount() == null || receipt.getAmount().compareTo(amount) != 0) {
-                    return ResponseEntity.badRequest().body(new ErrorResponse("Payment amount does not match the captured PayPal order"));
+                    return ResponseEntity.badRequest().body(new ErrorResponse("Payment amount does not match the recorded payment"));
                 }
                 if (!"dues".equalsIgnoreCase(receipt.getSource())) {
                     // Prevents replaying a completed donation/raffle/event-signup capture
                     // (same amount, same COMPLETED status) as if it were a dues payment.
-                    return ResponseEntity.badRequest().body(new ErrorResponse("PayPal order was not captured as a dues payment"));
+                    return ResponseEntity.badRequest().body(new ErrorResponse("Payment was not recorded as a dues payment"));
                 }
             }
 
@@ -258,7 +258,7 @@ public class DuesPaymentController {
                         <table width="100%%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#333;border-top:1px solid #eee;border-bottom:1px solid #eee;padding:8px 0;margin:0 0 16px;">
                           <tr><td style="padding:6px 0;color:#777;">Player</td><td style="padding:6px 0;text-align:right;">%s</td></tr>
                           <tr><td style="padding:6px 0;color:#777;">Date</td><td style="padding:6px 0;text-align:right;">%s</td></tr>
-                          <tr><td style="padding:6px 0;color:#777;">PayPal Order ID</td><td style="padding:6px 0;text-align:right;font-family:monospace;font-size:12px;">%s</td></tr>
+                          <tr><td style="padding:6px 0;color:#777;">Payment Reference</td><td style="padding:6px 0;text-align:right;font-family:monospace;font-size:12px;">%s</td></tr>
                           <tr><td style="padding:10px 0 6px;color:#333;font-weight:bold;border-top:1px solid #eee;">Amount Paid</td><td style="padding:10px 0 6px;text-align:right;font-weight:bold;border-top:1px solid #eee;">$%s</td></tr>
                           %s
                         </table>

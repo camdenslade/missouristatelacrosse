@@ -104,10 +104,28 @@ export default function SocialFeeds(){
         );
         if (oldScript) oldScript.remove();
 
+        // Instagram's own embed request for a given post can silently fail (rate
+        // limit, transient network blip) with nothing for us to catch, leaving that
+        // one blockquote stuck un-rendered while its neighbors load fine. process()
+        // only touches blockquotes that haven't rendered yet, so retrying it a few
+        // times catches posts that failed on the first pass without re-processing
+        // ones that already succeeded.
+        const retryTimers: ReturnType<typeof setTimeout>[] = [];
+        const scheduleRetries = () => {
+        [2000, 5000, 10000].forEach((delay) => {
+            retryTimers.push(
+            setTimeout(() => window.instgrm?.Embeds?.process?.(), delay)
+            );
+        });
+        };
+
         const script = document.createElement("script");
         script.src = "https://www.instagram.com/embed.js";
         script.async = true;
+        script.onload = scheduleRetries;
         document.body.appendChild(script);
+
+        return () => retryTimers.forEach(clearTimeout);
     }, [postUrls]);
 
 const EmbedFrame = ({ url }: { url: string }) => (

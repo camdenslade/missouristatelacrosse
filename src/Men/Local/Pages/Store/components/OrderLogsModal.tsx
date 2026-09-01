@@ -105,7 +105,7 @@ export default function OrderLogsModal({ isOpen, onClose }) {
 
         {/* Direct order lookup */}
         <div className="border border-gray-200 rounded p-3 bg-gray-50">
-          <p className="font-semibold mb-2">Lookup by Order ID (PayPal)</p>
+          <p className="font-semibold mb-2">Lookup by Order ID</p>
           <div className="flex flex-col md:flex-row md:items-center gap-2">
             <input
               type="text"
@@ -192,7 +192,7 @@ export default function OrderLogsModal({ isOpen, onClose }) {
 
               {lookupResult.paymentReceipt ? (
                 <div className="text-sm space-y-1">
-                  <p className="font-medium">PayPal Receipt</p>
+                  <p className="font-medium">Payment Receipt</p>
                   {lookupResult.paymentReceipt.payerEmail && (
                     <p>Email: {lookupResult.paymentReceipt.payerEmail}</p>
                   )}
@@ -210,7 +210,7 @@ export default function OrderLogsModal({ isOpen, onClose }) {
                   )}
                   {lookupResult.paymentReceipt.payload && (
                     <details className="bg-gray-50 border rounded p-2">
-                      <summary className="cursor-pointer">Raw PayPal payload</summary>
+                      <summary className="cursor-pointer">Raw payment payload</summary>
                       <pre className="text-xs overflow-x-auto">
                         {formatJson(lookupResult.paymentReceipt.payload)}
                       </pre>
@@ -218,7 +218,7 @@ export default function OrderLogsModal({ isOpen, onClose }) {
                   )}
                 </div>
               ) : (
-                <p className="text-sm text-gray-600">No PayPal receipt stored for this order.</p>
+                <p className="text-sm text-gray-600">No payment receipt stored for this order.</p>
               )}
             </div>
           )}
