@@ -55,8 +55,12 @@ export default function PlayerTable({
   };
 
   return (
-    <div className="mb-6 animate-fadeIn">
-      <h2 className="text-xl font-semibold mb-3">All Players</h2>
+    <div className="animate-fadeIn">
+      <div className="inline-flex items-center gap-3 text-[#5E0009] text-xs font-semibold uppercase tracking-[0.2em] mb-3">
+        <span className="h-px w-6 bg-[#5E0009]/40" />
+        Roster
+        <span className="h-px w-6 bg-[#5E0009]/40" />
+      </div>
 
       {message && (
         <div className="mb-3 text-center text-sm font-medium text-gray-700">
@@ -64,74 +68,76 @@ export default function PlayerTable({
         </div>
       )}
 
-      <div className="overflow-x-auto border rounded-lg">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border px-2 py-2 text-left">Name</th>
-              <th className="border px-2 py-2 text-left">Email</th>
-              <th className="border px-2 py-2 text-left">Balance</th>
-              <th className="border px-2 py-2 text-left">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {players.map((p) => (
-              <tr
-                key={p.id}
-                className="hover:bg-gray-50 transition"
-                onClick={() => onSelectedPlayer?.(p)}
-              >
-                <td className="border px-2 py-2">{p.name || "N/A"}</td>
-                <td className="border px-2 py-2" onClick={(e) => e.stopPropagation()}>
-                  <input
-                    type="email"
-                    placeholder="No email on file"
-                    value={p.email ?? userEmails[p.id] ?? ""}
-                    onChange={(e) => updateField(p.id, "email", e.target.value)}
-                    className="border px-2 py-1 w-full rounded text-sm focus:ring-2 focus:ring-[#5E0009] focus:outline-none"
-                  />
-                </td>
-                <td className="border px-2 py-2">
-                  <input
-                    type="number"
-                    value={p.balance ?? ""}
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      const value = raw === "" ? "" : Number(raw);
-                      setPlayers((prev) =>
-                        prev.map((pl) =>
-                          pl.id === p.id
-                            ? {
-                                ...pl,
-                                balance:
-                                  typeof value === "number" && Number.isFinite(value)
-                                    ? value
-                                    : "",
-                              }
-                            : pl
-                        )
-                      );
-                    }}
-                    className="border px-2 py-1 w-24 rounded text-center focus:ring-2 focus:ring-[#5E0009] focus:outline-none"
-                  />
-                </td>
-                <td className="border px-2 py-2">
-                  <button
-                    onClick={() => handleSave(p)}
-                    disabled={saving === p.id}
-                    className={`px-3 py-1 rounded text-white transition ${
-                      saving === p.id
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-green-600 hover:bg-green-700"
-                    }`}
-                  >
-                    {saving === p.id ? "Saving..." : "Save"}
-                  </button>
-                </td>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-50 text-gray-600 text-sm">
+                <th className="px-4 py-3 text-left font-semibold">Name</th>
+                <th className="px-4 py-3 text-left font-semibold">Email</th>
+                <th className="px-4 py-3 text-left font-semibold">Balance</th>
+                <th className="px-4 py-3 text-left font-semibold">Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {players.map((p) => (
+                <tr
+                  key={p.id}
+                  className="hover:bg-gray-50 transition cursor-pointer"
+                  onClick={() => onSelectedPlayer?.(p)}
+                >
+                  <td className="px-4 py-3 font-medium text-gray-800">{p.name || "N/A"}</td>
+                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="email"
+                      placeholder="No email on file"
+                      value={p.email ?? userEmails[p.id] ?? ""}
+                      onChange={(e) => updateField(p.id, "email", e.target.value)}
+                      className="border border-gray-200 px-3 py-1.5 w-full rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    <input
+                      type="number"
+                      value={p.balance ?? ""}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        const value = raw === "" ? "" : Number(raw);
+                        setPlayers((prev) =>
+                          prev.map((pl) =>
+                            pl.id === p.id
+                              ? {
+                                  ...pl,
+                                  balance:
+                                    typeof value === "number" && Number.isFinite(value)
+                                      ? value
+                                      : "",
+                                }
+                              : pl
+                          )
+                        );
+                      }}
+                      className="border border-gray-200 px-3 py-1.5 w-24 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => handleSave(p)}
+                      disabled={saving === p.id}
+                      className={`px-4 py-1.5 rounded-full text-sm font-semibold text-white transition ${
+                        saving === p.id
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-[#5E0009] hover:bg-[#7a0012]"
+                      }`}
+                    >
+                      {saving === p.id ? "Saving..." : "Save"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

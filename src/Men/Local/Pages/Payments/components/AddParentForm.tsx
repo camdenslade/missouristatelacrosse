@@ -51,18 +51,18 @@ export default function AddParentForm({
   };
 
   return (
-    <div className="mt-4">
-      <div className="flex items-center justify-between mt-3">
-        <h3 className="font-medium">
+    <div>
+      <div className="flex items-center justify-between">
+        <h3 className="font-medium text-gray-800">
           {mode === "invite" ? "Add Parent" : "Link Existing Account"}
         </h3>
         {isAdmin && (
-          <div className="flex text-xs rounded-lg border border-gray-300 overflow-hidden">
+          <div className="flex text-xs rounded-full border border-gray-200 overflow-hidden">
             <button
               type="button"
               onClick={() => setMode("invite")}
-              className={`px-2.5 py-1 font-medium transition ${
-                mode === "invite" ? "bg-gray-800 text-white" : "bg-white text-gray-600 hover:bg-gray-50"
+              className={`px-3 py-1 font-semibold transition ${
+                mode === "invite" ? "bg-[#5E0009] text-white" : "bg-white text-gray-600 hover:bg-gray-50"
               }`}
             >
               Invite New
@@ -70,8 +70,8 @@ export default function AddParentForm({
             <button
               type="button"
               onClick={() => setMode("link")}
-              className={`px-2.5 py-1 font-medium transition ${
-                mode === "link" ? "bg-gray-800 text-white" : "bg-white text-gray-600 hover:bg-gray-50"
+              className={`px-3 py-1 font-semibold transition ${
+                mode === "link" ? "bg-[#5E0009] text-white" : "bg-white text-gray-600 hover:bg-gray-50"
               }`}
             >
               Link Existing
@@ -94,7 +94,7 @@ export default function AddParentForm({
             placeholder="Parent name"
             value={addParentName}
             onChange={(e) => setAddParentName(e.target.value)}
-            className="border px-3 py-2 rounded w-full"
+            className="border border-gray-200 px-3 py-2 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
           />
         )}
         <input
@@ -102,12 +102,12 @@ export default function AddParentForm({
           placeholder="Parent email"
           value={addParentEmail}
           onChange={(e) => setAddParentEmail(e.target.value)}
-          className="border px-3 py-2 rounded w-full"
+          className="border border-gray-200 px-3 py-2 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
         />
         <button
           type="button"
           onClick={mode === "invite" ? handleAddParent : handleLinkExistingParent}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 whitespace-nowrap"
+          className="px-4 py-2 bg-[#5E0009] text-white rounded-full font-semibold hover:bg-[#7a0012] transition whitespace-nowrap"
         >
           {mode === "invite" ? "Add" : "Link"}
         </button>
