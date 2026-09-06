@@ -124,7 +124,8 @@ public class FirebaseAdminFilter extends OncePerRequestFilter {
         "/api/events",
         "/api/email",
         "/api/recruitment",
-        "/api/onboard"
+        "/api/onboard",
+        "/api/fundraisers"
     );
 
     @Override
