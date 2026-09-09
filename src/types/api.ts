@@ -147,6 +147,34 @@ export interface DuesPayment {
   createdAt?: string;
 }
 
+export interface ApiPaymentCard {
+  id: string;
+  season: string;
+  title: string;
+  description?: string | null;
+  link?: string | null;
+  amount?: number | null;
+  active: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ApiPaymentCardStatus {
+  id?: string;
+  cardId: string;
+  playerId: string;
+  done: boolean;
+  doneAt?: string | null;
+  markedByUid?: string | null;
+}
+
+export interface ApiPaymentCardCompletion {
+  playerId: string;
+  playerName?: string | null;
+  done: boolean;
+  doneAt?: string | null;
+}
+
 export interface ApiParentRecord {
   uid?: string | null;
   email?: string | null;

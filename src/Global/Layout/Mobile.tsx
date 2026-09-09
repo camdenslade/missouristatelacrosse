@@ -65,11 +65,11 @@ export default function MobileMenu({
       <Link to={programLink("/event-signup")} className={linkHover} onClick={() => setOpen(false)}>
         Events
       </Link>
-      <Link to={programLink("/donate")} className={linkHover} onClick={() => setOpen(false)}>
-        Donate
-      </Link>
       <Link to={programLink("/raffles")} className={`${linkHover} pl-3 text-white/70`} onClick={() => setOpen(false)}>
         Raffles
+      </Link>
+      <Link to={programLink("/donate")} className={linkHover} onClick={() => setOpen(false)}>
+        Donate
       </Link>
       <Link to={programLink("/sponsorships")} className={`${linkHover} pl-3 text-white/70`} onClick={() => setOpen(false)}>
         Sponsorships
@@ -78,14 +78,14 @@ export default function MobileMenu({
         Gallery
       </Link>
 
-      {/* Payments */}
+      {/* Manage / Portal */}
       {canSeePayments && (
         <Link
-          to={programLink("/payments")}
+          to={programLink(isAdmin ? "/manage" : "/portal")}
           className={linkHover}
           onClick={() => setOpen(false)}
         >
-          Payments
+          {isAdmin ? "Manage" : "Portal"}
         </Link>
       )}
 

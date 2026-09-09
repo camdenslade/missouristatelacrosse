@@ -141,7 +141,9 @@ export default function Header({ onAuthOpen }: HeaderProps) {
             </div>
             <Link to={programLink("/gallery")} className={linkHover}>Gallery</Link>
             {canSeePayments && (
-              <Link to={programLink("/payments")} className={linkHover}>Payments</Link>
+              <Link to={programLink(isAdmin ? "/manage" : "/portal")} className={linkHover}>
+                {isAdmin ? "Manage" : "Portal"}
+              </Link>
             )}
             {canSeeAlumni && (
               <Link to={programLink("/alumni-budget")} className={linkHover}>Alumni</Link>
