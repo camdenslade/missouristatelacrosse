@@ -80,7 +80,7 @@ public class FirebaseAdminFilter extends OncePerRequestFilter {
      */
     private static final Set<String> AUTH_REQUIRED_PREFIXES = Set.of(
         "/api/dues-payments",
-        "/api/payment-cards",
+        "/api/todos",
         "/api/users",
         "/api/parents",
         "/api/groups"

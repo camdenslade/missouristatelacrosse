@@ -20,33 +20,33 @@ import com.google.firebase.auth.FirebaseToken;
 import com.mostate.lacrosse.Config.FirebaseAdminFilter;
 import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Model.Player;
-import com.mostate.lacrosse.Model.PaymentCard;
-import com.mostate.lacrosse.Model.PaymentCardStatus;
-import com.mostate.lacrosse.Repository.PaymentCardRepository;
-import com.mostate.lacrosse.Repository.PaymentCardStatusRepository;
+import com.mostate.lacrosse.Model.Todo;
+import com.mostate.lacrosse.Model.TodoStatus;
 import com.mostate.lacrosse.Repository.PlayerRepository;
+import com.mostate.lacrosse.Repository.TodoRepository;
+import com.mostate.lacrosse.Repository.TodoStatusRepository;
 import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Service.PlayerProfileService;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
-@RequestMapping("/api/payment-cards")
-public class PaymentCardController {
+@RequestMapping("/api/todos")
+public class TodoController {
 
-    private final PaymentCardRepository cardRepo;
-    private final PaymentCardStatusRepository statusRepo;
+    private final TodoRepository todoRepo;
+    private final TodoStatusRepository statusRepo;
     private final PlayerRepository playerRepo;
     private final AuthorizationService authorizationService;
     private final PlayerProfileService profileService;
 
-    public PaymentCardController(
-        PaymentCardRepository cardRepo,
-        PaymentCardStatusRepository statusRepo,
+    public TodoController(
+        TodoRepository todoRepo,
+        TodoStatusRepository statusRepo,
         PlayerRepository playerRepo,
         AuthorizationService authorizationService,
         PlayerProfileService profileService
     ) {
-        this.cardRepo = cardRepo;
+        this.todoRepo = todoRepo;
         this.statusRepo = statusRepo;
         this.playerRepo = playerRepo;
         this.authorizationService = authorizationService;
@@ -60,17 +60,17 @@ public class PaymentCardController {
         @RequestParam(defaultValue = "men") String program
     ) {
         boolean admin = isAdmin(request, program);
-        List<PaymentCard> cards = admin
-            ? cardRepo.findBySeason(season)
-            : cardRepo.findBySeasonAndActiveTrue(season);
-        return ResponseEntity.ok(cards);
+        List<Todo> todos = admin
+            ? todoRepo.findBySeason(season)
+            : todoRepo.findBySeasonAndActiveTrue(season);
+        return ResponseEntity.ok(todos);
     }
 
     @PostMapping
     public ResponseEntity<?> create(
         HttpServletRequest request,
         @RequestParam(defaultValue = "men") String program,
-        @RequestBody PaymentCardRequest body
+        @RequestBody TodoRequest body
     ) {
         if (!isAdmin(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
@@ -78,14 +78,13 @@ public class PaymentCardController {
         if (body.title() == null || body.title().isBlank() || body.season() == null || body.season().isBlank()) {
             return ResponseEntity.badRequest().body(new ErrorResponse("Season and title are required"));
         }
-        PaymentCard card = new PaymentCard();
-        card.setSeason(body.season());
-        card.setTitle(body.title());
-        card.setDescription(body.description());
-        card.setLink(body.link());
-        card.setAmount(body.amount());
-        card.setActive(body.active() == null || body.active());
-        return ResponseEntity.ok(cardRepo.save(card));
+        Todo todo = new Todo();
+        todo.setSeason(body.season());
+        todo.setTitle(body.title());
+        todo.setDescription(body.description());
+        todo.setLink(body.link());
+        todo.setActive(body.active() == null || body.active());
+        return ResponseEntity.ok(todoRepo.save(todo));
     }
 
     @PutMapping("/{id}")
@@ -93,22 +92,21 @@ public class PaymentCardController {
         HttpServletRequest request,
         @PathVariable UUID id,
         @RequestParam(defaultValue = "men") String program,
-        @RequestBody PaymentCardRequest body
+        @RequestBody TodoRequest body
     ) {
         if (!isAdmin(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
-        PaymentCard card = cardRepo.findById(id).orElse(null);
-        if (card == null) {
-            return ResponseEntity.badRequest().body(new ErrorResponse("Card not found"));
+        Todo todo = todoRepo.findById(id).orElse(null);
+        if (todo == null) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("To-do not found"));
         }
-        if (body.season() != null) card.setSeason(body.season());
-        if (body.title() != null) card.setTitle(body.title());
-        if (body.description() != null) card.setDescription(body.description());
-        if (body.link() != null) card.setLink(body.link());
-        if (body.amount() != null) card.setAmount(body.amount());
-        if (body.active() != null) card.setActive(body.active());
-        return ResponseEntity.ok(cardRepo.save(card));
+        if (body.season() != null) todo.setSeason(body.season());
+        if (body.title() != null) todo.setTitle(body.title());
+        if (body.description() != null) todo.setDescription(body.description());
+        if (body.link() != null) todo.setLink(body.link());
+        if (body.active() != null) todo.setActive(body.active());
+        return ResponseEntity.ok(todoRepo.save(todo));
     }
 
     @DeleteMapping("/{id}")
@@ -121,8 +119,8 @@ public class PaymentCardController {
         if (!isAdmin(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
-        statusRepo.deleteByCardId(id);
-        cardRepo.deleteById(id);
+        statusRepo.deleteByTodoId(id);
+        todoRepo.deleteById(id);
         return ResponseEntity.ok(Map.of("deleted", true));
     }
 
@@ -155,14 +153,14 @@ public class PaymentCardController {
         if (!isSelfOrAdmin(request, player, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Not authorized for this player"));
         }
-        if (cardRepo.findById(body.cardId()).isEmpty()) {
-            return ResponseEntity.badRequest().body(new ErrorResponse("Card not found"));
+        if (todoRepo.findById(body.todoId()).isEmpty()) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("To-do not found"));
         }
 
-        PaymentCardStatus status = statusRepo
-            .findByCardIdAndPlayerId(body.cardId(), body.playerId())
-            .orElseGet(PaymentCardStatus::new);
-        status.setCardId(body.cardId());
+        TodoStatus status = statusRepo
+            .findByTodoIdAndPlayerId(body.todoId(), body.playerId())
+            .orElseGet(TodoStatus::new);
+        status.setTodoId(body.todoId());
         status.setPlayerId(body.playerId());
         status.setDone(body.done());
         status.setDoneAt(body.done() ? Instant.now() : null);
@@ -179,17 +177,17 @@ public class PaymentCardController {
         if (!isAdmin(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
-        PaymentCard card = cardRepo.findById(id).orElse(null);
-        if (card == null) {
-            return ResponseEntity.badRequest().body(new ErrorResponse("Card not found"));
+        Todo todo = todoRepo.findById(id).orElse(null);
+        if (todo == null) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("To-do not found"));
         }
-        List<Player> seasonPlayers = playerRepo.findAllBySeason(card.getSeason());
-        Map<UUID, PaymentCardStatus> statusByPlayer = statusRepo.findByCardId(id).stream()
-            .collect(Collectors.toMap(PaymentCardStatus::getPlayerId, s -> s));
+        List<Player> seasonPlayers = playerRepo.findAllBySeason(todo.getSeason());
+        Map<UUID, TodoStatus> statusByPlayer = statusRepo.findByTodoId(id).stream()
+            .collect(Collectors.toMap(TodoStatus::getPlayerId, s -> s));
 
         List<CompletionEntry> entries = seasonPlayers.stream()
             .map(p -> {
-                PaymentCardStatus s = statusByPlayer.get(p.getId());
+                TodoStatus s = statusByPlayer.get(p.getId());
                 return new CompletionEntry(
                     p.getId(),
                     p.getName(),
@@ -215,17 +213,16 @@ public class PaymentCardController {
         return profileService.isSelf(player, uid);
     }
 
-    public record PaymentCardRequest(
+    public record TodoRequest(
         String season,
         String title,
         String description,
         String link,
-        java.math.BigDecimal amount,
         Boolean active
     ) {}
 
     public record StatusRequest(
-        UUID cardId,
+        UUID todoId,
         UUID playerId,
         boolean done
     ) {}
