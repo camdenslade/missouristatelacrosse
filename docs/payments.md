@@ -84,7 +84,7 @@ src/Global/Common/hooks/usePaymentButtons.ts
 
 `usePaymentButtons(amount, containerId, onSuccess, label, source)` — same signature the
 old `usePayPalButtons` had. The inactive rail is invoked with a `null` amount so it
-stays inert. Consumers: `Payments.tsx`, `Donate.tsx`, `Fundraiser.tsx`,
+stays inert. Consumers: `Manage.tsx`/`Portal.tsx`, `Donate.tsx`, `Fundraiser.tsx`,
 `RaffleDetail.tsx`, `EventDetail.tsx` (Men + Women), `Store/hooks/useStore.ts`, and
 `components/KeyGate.tsx` (stream — still uses `@paypal/react-paypal-js` directly for the
 PayPal branch, `useStripeCheckout` for the Stripe branch).
