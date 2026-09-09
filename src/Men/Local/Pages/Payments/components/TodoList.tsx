@@ -2,17 +2,17 @@ import { CheckCircle2, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
-import { fetchPaymentCards, fetchPlayerCardStatuses, setPlayerCardStatus } from "../hooks/usePaymentCards";
-import type { ApiPaymentCard, ApiPaymentCardStatus } from "../../../../../types/api";
+import { fetchPlayerTodoStatuses, fetchTodos, setPlayerTodoStatus } from "../hooks/useTodos";
+import type { ApiTodo, ApiTodoStatus } from "../../../../../types/api";
 
-type PaymentCardsProps = {
+type TodoListProps = {
   playerId: string;
   season: string;
 };
 
-export default function PaymentCards({ playerId, season }: PaymentCardsProps) {
-  const [cards, setCards] = useState<ApiPaymentCard[]>([]);
-  const [statuses, setStatuses] = useState<Record<string, ApiPaymentCardStatus>>({});
+export default function TodoList({ playerId, season }: TodoListProps) {
+  const [todos, setTodos] = useState<ApiTodo[]>([]);
+  const [statuses, setStatuses] = useState<Record<string, ApiTodoStatus>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
 
@@ -20,20 +20,20 @@ export default function PaymentCards({ playerId, season }: PaymentCardsProps) {
     if (!playerId || !season) return;
     let cancelled = false;
     setLoading(true);
-    Promise.all([fetchPaymentCards(season), fetchPlayerCardStatuses(playerId)])
-      .then(([cardList, statusList]) => {
+    Promise.all([fetchTodos(season), fetchPlayerTodoStatuses(playerId)])
+      .then(([todoList, statusList]) => {
         if (cancelled) return;
-        setCards(cardList.filter((c) => c.active));
+        setTodos(todoList.filter((t) => t.active));
         setStatuses(
-          statusList.reduce<Record<string, ApiPaymentCardStatus>>((acc, s) => {
-            acc[s.cardId] = s;
+          statusList.reduce<Record<string, ApiTodoStatus>>((acc, s) => {
+            acc[s.todoId] = s;
             return acc;
           }, {})
         );
       })
       .catch(() => {
         if (!cancelled) {
-          setCards([]);
+          setTodos([]);
           setStatuses({});
         }
       })
@@ -45,14 +45,14 @@ export default function PaymentCards({ playerId, season }: PaymentCardsProps) {
     };
   }, [playerId, season]);
 
-  if (loading || cards.length === 0) return null;
+  if (loading || todos.length === 0) return null;
 
-  const handleToggle = async (card: ApiPaymentCard, done: boolean) => {
-    setSaving(card.id);
+  const handleToggle = async (todo: ApiTodo, done: boolean) => {
+    setSaving(todo.id);
     try {
-      const updated = await setPlayerCardStatus(card.id, playerId, done);
-      setStatuses((prev) => ({ ...prev, [card.id]: updated }));
-      if (done) toast.success(`${card.title} marked as done!`);
+      const updated = await setPlayerTodoStatus(todo.id, playerId, done);
+      setStatuses((prev) => ({ ...prev, [todo.id]: updated }));
+      if (done) toast.success(`${todo.title} marked as done!`);
     } catch {
       toast.error("Failed to update status.");
     } finally {
@@ -62,29 +62,26 @@ export default function PaymentCards({ playerId, season }: PaymentCardsProps) {
 
   return (
     <div>
-      <h3 className="font-medium text-sm mb-2 text-gray-800">To Do</h3>
+      <h3 className="font-medium text-sm mb-2 text-gray-800">To-Dos</h3>
       <div className="space-y-3">
-        {cards.map((card) => {
-          const done = statuses[card.id]?.done ?? false;
+        {todos.map((todo) => {
+          const done = statuses[todo.id]?.done ?? false;
           return (
             <div
-              key={card.id}
+              key={todo.id}
               className={`bg-white border rounded-2xl shadow-sm p-4 transition ${
                 done ? "border-green-200" : "border-gray-100"
               }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h4 className="font-semibold text-gray-900">{card.title}</h4>
-                  {card.description && (
-                    <p className="text-sm text-gray-600 mt-1">{card.description}</p>
+                  <h4 className="font-semibold text-gray-900">{todo.title}</h4>
+                  {todo.description && (
+                    <p className="text-sm text-gray-600 mt-1">{todo.description}</p>
                   )}
-                  {card.amount != null && (
-                    <p className="text-sm font-semibold text-[#5E0009] mt-1">${Number(card.amount).toFixed(2)}</p>
-                  )}
-                  {card.link && (
+                  {todo.link && (
                     <a
-                      href={card.link}
+                      href={todo.link}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-sm text-[#5E0009] font-semibold mt-2 hover:underline"
@@ -94,8 +91,8 @@ export default function PaymentCards({ playerId, season }: PaymentCardsProps) {
                   )}
                 </div>
                 <button
-                  onClick={() => handleToggle(card, !done)}
-                  disabled={saving === card.id}
+                  onClick={() => handleToggle(todo, !done)}
+                  disabled={saving === todo.id}
                   className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition ${
                     done
                       ? "bg-green-50 text-green-700 hover:bg-green-100"
