@@ -147,27 +147,28 @@ export interface DuesPayment {
   createdAt?: string;
 }
 
-export interface ApiTodo {
+export interface ApiPaymentCard {
   id: string;
   season: string;
   title: string;
   description?: string | null;
   link?: string | null;
+  amount?: number | null;
   active: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
 
-export interface ApiTodoStatus {
+export interface ApiPaymentCardStatus {
   id?: string;
-  todoId: string;
+  cardId: string;
   playerId: string;
   done: boolean;
   doneAt?: string | null;
   markedByUid?: string | null;
 }
 
-export interface ApiTodoCompletion {
+export interface ApiPaymentCardCompletion {
   playerId: string;
   playerName?: string | null;
   done: boolean;

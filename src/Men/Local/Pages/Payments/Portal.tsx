@@ -2,8 +2,8 @@ import { useEffect, useMemo, useReducer, useState } from "react";
 import toast from "react-hot-toast";
 
 import ParentPlayerSelect from "./components/ParentPlayerSelect";
+import PaymentCards from "./components/PaymentCards";
 import PlayerPaymentDetails from "./components/PlayerPaymentDetails";
-import TodoList from "./components/TodoList";
 import usePlayers from "./hooks/findPlayers";
 import usePaymentButtons from "../../../../Global/Common/hooks/usePaymentButtons";
 import { resolvePaymentProvider } from "../../../../Global/Common/hooks/usePaymentProvider";
@@ -354,7 +354,7 @@ export default function Portal() {
 
               {programRole === "player" && (
                 <div className="mt-8">
-                  <TodoList playerId={state.selectedPlayer.id} season={currentSeason} />
+                  <PaymentCards playerId={state.selectedPlayer.id} season={currentSeason} />
                 </div>
               )}
             </div>

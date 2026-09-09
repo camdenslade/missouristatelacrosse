@@ -1,5 +1,6 @@
 package com.mostate.lacrosse.Model;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 import jakarta.persistence.Column;
@@ -11,8 +12,8 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "todos")
-public class Todo {
+@Table(name = "payment_cards")
+public class PaymentCard {
 
     @Id
     @GeneratedValue
@@ -27,6 +28,9 @@ public class Todo {
     private String description;
 
     private String link;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal amount;
 
     @Column(nullable = false)
     private boolean active;
@@ -62,6 +66,9 @@ public class Todo {
 
     public String getLink() { return link; }
     public void setLink(String link) { this.link = link; }
+
+    public BigDecimal getAmount() { return amount; }
+    public void setAmount(BigDecimal amount) { this.amount = amount; }
 
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }

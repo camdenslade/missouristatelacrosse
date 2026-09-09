@@ -11,15 +11,15 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "todo_status")
-public class TodoStatus {
+@Table(name = "payment_card_status")
+public class PaymentCardStatus {
 
     @Id
     @GeneratedValue
     private UUID id;
 
-    @Column(name = "todo_id", nullable = false)
-    private UUID todoId;
+    @Column(name = "card_id", nullable = false)
+    private UUID cardId;
 
     @Column(name = "player_id", nullable = false)
     private UUID playerId;
@@ -53,8 +53,8 @@ public class TodoStatus {
 
     public UUID getId() { return id; }
 
-    public UUID getTodoId() { return todoId; }
-    public void setTodoId(UUID todoId) { this.todoId = todoId; }
+    public UUID getCardId() { return cardId; }
+    public void setCardId(UUID cardId) { this.cardId = cardId; }
 
     public UUID getPlayerId() { return playerId; }
     public void setPlayerId(UUID playerId) { this.playerId = playerId; }

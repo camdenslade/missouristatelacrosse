@@ -2,7 +2,7 @@ import { ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useReducer, useState } from "react";
 import toast from "react-hot-toast";
 
-import ManageTodos from "./components/ManageTodos";
+import ManagePaymentCards from "./components/ManagePaymentCards";
 import PlayerPaymentDetails from "./components/PlayerPaymentDetails";
 import PlayerTable from "./components/PlayerTable";
 import usePlayers from "./hooks/findPlayers";
@@ -351,7 +351,7 @@ export default function Manage() {
           )}
 
           <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
-            <ManageTodos season={selectedSeason} availableSeasons={availableSeasons} />
+            <ManagePaymentCards season={selectedSeason} availableSeasons={availableSeasons} />
           </div>
         </div>
       )}
