@@ -399,7 +399,7 @@ export default function ManageTodos({ season, availableSeasons = [] }: ManageTod
                     <img
                       src={cardThumb(todo) as string}
                       alt=""
-                      className="h-8 w-8 rounded object-cover border border-gray-200 grayscale shrink-0"
+                      className="h-8 w-8 rounded object-cover border border-gray-200 shrink-0"
                     />
                   )}
                   <p className="font-semibold text-gray-900 truncate">{todo.title}</p>
