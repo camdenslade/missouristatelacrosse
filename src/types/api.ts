@@ -153,6 +153,7 @@ export interface ApiTodo {
   title: string;
   description?: string | null;
   link?: string | null;
+  image?: string | null;
   active: boolean;
   createdAt?: string;
   updatedAt?: string;

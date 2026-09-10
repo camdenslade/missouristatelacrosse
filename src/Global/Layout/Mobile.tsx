@@ -11,6 +11,7 @@ type MobileMenuProps = {
   user: FirebaseUser | null;
   roles?: Partial<Record<Program, Role>>;
   userName: string;
+  playerId?: string | null;
   signOut: () => Promise<void> | void;
   onAuthOpen?: () => void;
 };
@@ -21,6 +22,7 @@ export default function MobileMenu({
   user,
   roles,
   userName,
+  playerId,
   signOut,
   onAuthOpen,
 }: MobileMenuProps) {
@@ -38,6 +40,7 @@ export default function MobileMenu({
   const isParent = programRole === "parent";
   const isAlumni = programRole === "alumni";
   const canSeePayments = user && (isAdmin || isPlayer || isParent);
+  const isAdminPlayer = isAdmin && !!playerId;
   const canSeeAlumni = user && (isAdmin || isAlumni);
   const isGlobalAdmin = roles?.men === "admin" || roles?.women === "admin";
 
@@ -80,13 +83,24 @@ export default function MobileMenu({
 
       {/* Manage / Portal */}
       {canSeePayments && (
-        <Link
-          to={programLink(isAdmin ? "/manage" : "/portal")}
-          className={linkHover}
-          onClick={() => setOpen(false)}
-        >
-          {isAdmin ? "Manage" : "Portal"}
-        </Link>
+        isAdminPlayer ? (
+          <>
+            <Link to={programLink("/manage")} className={linkHover} onClick={() => setOpen(false)}>
+              Manage
+            </Link>
+            <Link to={programLink("/portal")} className={`${linkHover} pl-3 text-white/70`} onClick={() => setOpen(false)}>
+              Portal
+            </Link>
+          </>
+        ) : (
+          <Link
+            to={programLink(isAdmin ? "/manage" : "/portal")}
+            className={linkHover}
+            onClick={() => setOpen(false)}
+          >
+            {isAdmin ? "Manage" : "Portal"}
+          </Link>
+        )
       )}
 
       {/* Alumni */}

@@ -8,15 +8,16 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.firebase.auth.ActionCodeSettings;
 import com.google.firebase.auth.AuthErrorCode;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.UserRecord;
 import com.mostate.lacrosse.Model.AccountRequestModel;
+import com.mostate.lacrosse.Model.InviteToken;
 import com.mostate.lacrosse.Model.Player;
 import com.mostate.lacrosse.Model.UserAccount;
 import com.mostate.lacrosse.Repository.AccountRequestRepository;
+import com.mostate.lacrosse.Repository.InviteTokenRepository;
 import com.mostate.lacrosse.Repository.PlayerRepository;
 import com.mostate.lacrosse.Repository.UserAccountRepository;
 import com.mostate.lacrosse.Utils.TextSanitizer;
@@ -31,6 +32,7 @@ public class AccountRequestService {
     private final PlayerRepository playerRepository;
     private final PlayerProfileService profileService;
     private final SeasonService seasonService;
+    private final InviteTokenRepository inviteTokenRepository;
     private final ObjectMapper mapper = new ObjectMapper();
 
     public AccountRequestService(
@@ -39,7 +41,8 @@ public class AccountRequestService {
         UserAccountRepository userRepository,
         PlayerRepository playerRepository,
         PlayerProfileService profileService,
-        SeasonService seasonService
+        SeasonService seasonService,
+        InviteTokenRepository inviteTokenRepository
     ) {
         this.repository = repository;
         this.emailService = emailService;
@@ -47,6 +50,7 @@ public class AccountRequestService {
         this.playerRepository = playerRepository;
         this.profileService = profileService;
         this.seasonService = seasonService;
+        this.inviteTokenRepository = inviteTokenRepository;
     }
 
     public String createRequest(AccountRequestModel requestModel) {
@@ -126,29 +130,16 @@ public class AccountRequestService {
                 }
             }
 
-            String resetLink = "";
-            try {
-                resetLink = FirebaseAuth.getInstance().generatePasswordResetLink(
-                        email,
-                        ActionCodeSettings.builder()
-                                .setUrl("https://missouristatelacrosse.com/")
-                                .setHandleCodeInApp(true)
-                                .build()
-                );
-                System.out.println("Password link generated.");
-            } catch (Exception linkEx) {
-                System.err.println("Failed to generate password link: " + linkEx.getMessage());
-            }
+            // Non-expiring InviteToken link, not a raw Firebase reset link: an approved
+            // applicant may not open this email within Firebase's hard-coded 1-hour oobCode
+            // window. Same rationale as the player/parent/alumni onboarding emails in
+            // OnboardingController.
+            String resetLink = generateInviteLink(userRecord.getUid(), email, effectiveProgram);
 
             try {
-                if (!resetLink.isEmpty()) {
-                    String subject = "Your Missouri State Lacrosse Account Has Been Approved";
-                    String body = "Hello " + displayName + ",\n\n"
-                            + "Your account for the " + capitalize(effectiveProgram) + " program has been approved.\n\n"
-                            + "Click below to set your password:\n" + resetLink
-                            + "\n\nWelcome to the team!\n\n— Missouri State Lacrosse";
-                    emailService.sendEmail(email, subject, body);
-                }
+                String subject = "Your Missouri State Lacrosse Account Has Been Approved";
+                String body = approvalEmail(displayName, capitalize(effectiveProgram), resetLink);
+                emailService.sendEmail(email, subject, body);
             } catch (Exception mailEx) {
                 System.err.println("Email sending failed: " + mailEx.getMessage());
             }
@@ -213,6 +204,50 @@ public class AccountRequestService {
     private String capitalize(String s) {
         if (s == null || s.isEmpty()) return s;
         return s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase();
+    }
+
+    // Mirrors OnboardingController.generateInviteLink(): a short, non-expiring link keyed
+    // to an InviteToken row, not the long raw Firebase action-code URL.
+    private String generateInviteLink(String firebaseUid, String email, String program) {
+        InviteToken invite = new InviteToken();
+        invite.setFirebaseUid(firebaseUid);
+        invite.setEmail(email);
+        invite = inviteTokenRepository.save(invite);
+        return "https://missouristatelacrosse.com/set-password?inviteToken="
+            + invite.getToken() + "&program=" + program;
+    }
+
+    private static String approvalEmail(String name, String program, String resetLink) {
+        return """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+            <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
+              <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 0;">
+                <tr><td align="center">
+                  <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1);">
+                    <tr>
+                      <td style="background:#5E0009;padding:28px 40px;text-align:center;">
+                        <h1 style="color:#fff;margin:0;font-size:22px;letter-spacing:1px;">MISSOURI STATE LACROSSE</h1>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:40px;">
+                        <p style="font-size:16px;color:#333;margin:0 0 16px;">Hello %s,</p>
+                        <p style="font-size:15px;color:#555;margin:0 0 24px;">Your account for the %s program has been approved. Set your password using the button below to get access.</p>
+                        <div style="text-align:center;margin:32px 0;">
+                          <a href="%s" style="background:#5E0009;color:#fff;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:15px;font-weight:bold;display:inline-block;">Set My Password</a>
+                        </div>
+                        <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
+                        <p style="font-size:13px;color:#999;margin:0;">Go Bears! Welcome to the team.</p>
+                      </td>
+                    </tr>
+                  </table>
+                </td></tr>
+              </table>
+            </body>
+            </html>
+            """.formatted(name, program, resetLink);
     }
 
     private String toJson(Object value) {

@@ -352,7 +352,7 @@ export default function Portal() {
                 )}
               </div>
 
-              {programRole === "player" && (
+              {(programRole === "player" || (programRole === "admin" && !!linkedPlayer)) && (
                 <div className="mt-8">
                   <TodoList playerId={state.selectedPlayer.id} season={currentSeason} />
                 </div>

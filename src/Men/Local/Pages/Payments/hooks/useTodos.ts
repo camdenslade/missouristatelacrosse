@@ -6,6 +6,7 @@ export type TodoPayload = {
   title?: string;
   description?: string;
   link?: string;
+  image?: string;
   active?: boolean;
 };
 

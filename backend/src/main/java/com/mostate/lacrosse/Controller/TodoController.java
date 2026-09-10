@@ -27,6 +27,7 @@ import com.mostate.lacrosse.Repository.TodoRepository;
 import com.mostate.lacrosse.Repository.TodoStatusRepository;
 import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Service.PlayerProfileService;
+import com.mostate.lacrosse.Service.S3Service;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
@@ -38,19 +39,24 @@ public class TodoController {
     private final PlayerRepository playerRepo;
     private final AuthorizationService authorizationService;
     private final PlayerProfileService profileService;
+    private final S3Service s3Service;
+
+    private static final java.time.Duration IMAGE_TTL = S3Service.IMAGE_TTL;
 
     public TodoController(
         TodoRepository todoRepo,
         TodoStatusRepository statusRepo,
         PlayerRepository playerRepo,
         AuthorizationService authorizationService,
-        PlayerProfileService profileService
+        PlayerProfileService profileService,
+        S3Service s3Service
     ) {
         this.todoRepo = todoRepo;
         this.statusRepo = statusRepo;
         this.playerRepo = playerRepo;
         this.authorizationService = authorizationService;
         this.profileService = profileService;
+        this.s3Service = s3Service;
     }
 
     @GetMapping
@@ -63,7 +69,7 @@ public class TodoController {
         List<Todo> todos = admin
             ? todoRepo.findBySeason(season)
             : todoRepo.findBySeasonAndActiveTrue(season);
-        return ResponseEntity.ok(todos);
+        return ResponseEntity.ok(todos.stream().map(this::toResponse).toList());
     }
 
     @PostMapping
@@ -83,8 +89,11 @@ public class TodoController {
         todo.setTitle(body.title());
         todo.setDescription(body.description());
         todo.setLink(body.link());
+        if (body.image() != null) {
+            todo.setImage(body.image().isBlank() ? null : s3Service.extractKey(body.image()));
+        }
         todo.setActive(body.active() == null || body.active());
-        return ResponseEntity.ok(todoRepo.save(todo));
+        return ResponseEntity.ok(toResponse(todoRepo.save(todo)));
     }
 
     @PutMapping("/{id}")
@@ -105,8 +114,19 @@ public class TodoController {
         if (body.title() != null) todo.setTitle(body.title());
         if (body.description() != null) todo.setDescription(body.description());
         if (body.link() != null) todo.setLink(body.link());
+        if (body.image() != null) {
+            todo.setImage(body.image().isBlank() ? null : s3Service.extractKey(body.image()));
+        }
         if (body.active() != null) todo.setActive(body.active());
-        return ResponseEntity.ok(todoRepo.save(todo));
+        return ResponseEntity.ok(toResponse(todoRepo.save(todo)));
+    }
+
+    private TodoResponse toResponse(Todo t) {
+        return new TodoResponse(
+            t.getId(), t.getSeason(), t.getTitle(), t.getDescription(), t.getLink(),
+            s3Service.toPresignedUrl(t.getImage(), IMAGE_TTL),
+            t.isActive(), t.getCreatedAt(), t.getUpdatedAt()
+        );
     }
 
     @DeleteMapping("/{id}")
@@ -218,7 +238,20 @@ public class TodoController {
         String title,
         String description,
         String link,
+        String image,
         Boolean active
+    ) {}
+
+    public record TodoResponse(
+        UUID id,
+        String season,
+        String title,
+        String description,
+        String link,
+        String image,
+        boolean active,
+        Instant createdAt,
+        Instant updatedAt
     ) {}
 
     public record StatusRequest(

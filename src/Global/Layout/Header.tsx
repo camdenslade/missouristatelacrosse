@@ -2,9 +2,9 @@ import { useEffect, useReducer, useRef } from "react";
 import { FaBars, FaTimes, FaUserCircle } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 
+import MobileMenu from "./Mobile";
 import { getProgramInfo } from "../../Services/programHelper";
 import { useAuth } from "../Context/AuthContext";
-import MobileMenu from "./Mobile";
 
 const initialState = {
   showUserMenu: false,
@@ -39,7 +39,7 @@ type HeaderProps = {
 };
 
 export default function Header({ onAuthOpen }: HeaderProps) {
-  const { user, roles, userName, signOut } = useAuth();
+  const { user, roles, userName, playerId, signOut } = useAuth();
   const [state, dispatch] = useReducer(reducer, initialState);
   const { showUserMenu, mobileMenuOpen } = state;
 
@@ -54,6 +54,7 @@ export default function Header({ onAuthOpen }: HeaderProps) {
   const isParent = programRole === "parent";
   const isAlumni = programRole === "alumni";
   const canSeePayments = user && (isAdmin || isPlayer || isParent);
+  const isAdminPlayer = isAdmin && !!playerId;
   const canSeeAlumni = user && (isAdmin || isAlumni);
   const isGlobalAdmin = roles?.men === "admin" || roles?.women === "admin";
   
@@ -141,9 +142,25 @@ export default function Header({ onAuthOpen }: HeaderProps) {
             </div>
             <Link to={programLink("/gallery")} className={linkHover}>Gallery</Link>
             {canSeePayments && (
-              <Link to={programLink(isAdmin ? "/manage" : "/portal")} className={linkHover}>
-                {isAdmin ? "Manage" : "Portal"}
-              </Link>
+              isAdminPlayer ? (
+                <div className="relative group flex items-center">
+                  <Link to={programLink("/manage")} className={linkHover}>Manage</Link>
+                  <div className="absolute left-0 top-full pt-2 hidden group-hover:block z-50 min-w-[140px]">
+                    <div className="bg-white text-gray-800 shadow-xl rounded-md overflow-hidden border border-gray-100 text-sm font-semibold uppercase tracking-widest">
+                      <Link to={programLink("/manage")} className="block px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                        Manage
+                      </Link>
+                      <Link to={programLink("/portal")} className="block px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                        Portal
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <Link to={programLink(isAdmin ? "/manage" : "/portal")} className={linkHover}>
+                  {isAdmin ? "Manage" : "Portal"}
+                </Link>
+              )
             )}
             {canSeeAlumni && (
               <Link to={programLink("/alumni-budget")} className={linkHover}>Alumni</Link>
@@ -227,6 +244,7 @@ export default function Header({ onAuthOpen }: HeaderProps) {
         user={user}
         roles={roles}
         userName={userName}
+        playerId={playerId}
         signOut={signOut}
         onAuthOpen={onAuthOpen}
       />

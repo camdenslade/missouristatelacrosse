@@ -2,8 +2,13 @@ import { CheckCircle2, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
-import { fetchPlayerTodoStatuses, fetchTodos, setPlayerTodoStatus } from "../hooks/useTodos";
+import { faviconUrl } from "../../../../../Global/Common/utils/linkImage";
 import type { ApiTodo, ApiTodoStatus } from "../../../../../types/api";
+import { fetchPlayerTodoStatuses, fetchTodos, setPlayerTodoStatus } from "../hooks/useTodos";
+
+function cardThumb(t: ApiTodo): string | null {
+  return t.image || faviconUrl(t.link);
+}
 
 type TodoListProps = {
   playerId: string;
@@ -74,21 +79,30 @@ export default function TodoList({ playerId, season }: TodoListProps) {
               }`}
             >
               <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h4 className="font-semibold text-gray-900">{todo.title}</h4>
-                  {todo.description && (
-                    <p className="text-sm text-gray-600 mt-1">{todo.description}</p>
+                <div className="flex items-start gap-3 min-w-0">
+                  {cardThumb(todo) && (
+                    <img
+                      src={cardThumb(todo) as string}
+                      alt=""
+                      className="h-10 w-10 rounded-lg object-cover border border-gray-200 shrink-0"
+                    />
                   )}
-                  {todo.link && (
-                    <a
-                      href={todo.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-sm text-[#5E0009] font-semibold mt-2 hover:underline"
-                    >
-                      Go to site <ExternalLink size={13} />
-                    </a>
-                  )}
+                  <div className="min-w-0">
+                    <h4 className="font-semibold text-gray-900">{todo.title}</h4>
+                    {todo.description && (
+                      <p className="text-sm text-gray-600 mt-1">{todo.description}</p>
+                    )}
+                    {todo.link && (
+                      <a
+                        href={todo.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-sm text-[#5E0009] font-semibold mt-2 hover:underline"
+                      >
+                        Go to site <ExternalLink size={13} />
+                      </a>
+                    )}
+                  </div>
                 </div>
                 <button
                   onClick={() => handleToggle(todo, !done)}

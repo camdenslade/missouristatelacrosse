@@ -24,6 +24,7 @@ type AuthState = {
   role: UserRole | null;
   roles: RolesByProgram;
   userName: string;
+  playerId: string | null;
   loading: boolean;
 };
 
@@ -32,6 +33,7 @@ type AuthAction =
   | { type: "SET_ROLE"; payload: UserRole | null }
   | { type: "SET_ROLES"; payload: RolesByProgram }
   | { type: "SET_USERNAME"; payload: string }
+  | { type: "SET_PLAYER_ID"; payload: string | null }
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "RESET" };
 
@@ -55,6 +57,7 @@ const initialState: AuthState = {
   role: null,
   roles: {},
   userName: "",
+  playerId: null,
   loading: true,
 };
 
@@ -68,6 +71,8 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
       return { ...state, roles: action.payload };
     case "SET_USERNAME":
       return { ...state, userName: action.payload };
+    case "SET_PLAYER_ID":
+      return { ...state, playerId: action.payload };
     case "SET_LOADING":
       return { ...state, loading: action.payload };
     case "RESET":
@@ -134,6 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         dispatch({ type: "SET_ROLE", payload: cached.role });
         dispatch({ type: "SET_ROLES", payload: cached.roles || {} });
         dispatch({ type: "SET_USERNAME", payload: cached.name });
+        dispatch({ type: "SET_PLAYER_ID", payload: cached.playerId || null });
         dispatch({ type: "SET_LOADING", payload: false });
       }
 
@@ -177,6 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         dispatch({ type: "SET_ROLE", payload: currentRole });
         dispatch({ type: "SET_ROLES", payload: userRoles });
         dispatch({ type: "SET_USERNAME", payload: displayName });
+        dispatch({ type: "SET_PLAYER_ID", payload: data.playerId || null });
         dispatch({ type: "SET_LOADING", payload: false });
 
         localStorage.setItem(
@@ -185,6 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             role: currentRole,
             roles: userRoles,
             name: displayName,
+            playerId: data.playerId || null,
             ts: Date.now(),
           })
         );
