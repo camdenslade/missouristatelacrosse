@@ -28,6 +28,7 @@ import com.mostate.lacrosse.Model.Player;
 import com.mostate.lacrosse.Repository.PlayerRepository;
 import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Service.PlayerLinkService;
+import com.mostate.lacrosse.Service.PlayerOnboardingService;
 import com.mostate.lacrosse.Service.PlayerProfileService;
 import com.mostate.lacrosse.Service.S3Service;
 import com.mostate.lacrosse.Service.SeasonService;
@@ -49,6 +50,7 @@ public class PlayersController {
     private final AuthorizationService authorizationService;
     private final SeasonService seasonService;
     private final PlayerLinkService playerLinkService;
+    private final PlayerOnboardingService onboardingService;
 
     public PlayersController(
         PlayerRepository repository,
@@ -56,7 +58,8 @@ public class PlayersController {
         S3Service s3Service,
         AuthorizationService authorizationService,
         SeasonService seasonService,
-        PlayerLinkService playerLinkService
+        PlayerLinkService playerLinkService,
+        PlayerOnboardingService onboardingService
     ) {
         this.repository = repository;
         this.profileService = profileService;
@@ -64,6 +67,7 @@ public class PlayersController {
         this.authorizationService = authorizationService;
         this.playerLinkService = playerLinkService;
         this.seasonService = seasonService;
+        this.onboardingService = onboardingService;
     }
 
     @GetMapping
@@ -195,8 +199,12 @@ public class PlayersController {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         Player player = new Player();
+        boolean hadEmailBefore = false;
+        boolean wasClaimed = false;
         applyPayload(player, payload);
-        return ResponseEntity.ok(toResponse(repository.save(player), request, program));
+        Player saved = repository.save(player);
+        maybeOnboard(saved, hadEmailBefore, wasClaimed, program);
+        return ResponseEntity.ok(toResponse(saved, request, program));
     }
 
     @PutMapping("/{id}")
@@ -213,8 +221,37 @@ public class PlayersController {
         if (!isAdmin(request, program) && !isSelfClaim(request, existing, payload)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
+        boolean hadEmailBefore = existing.getEmail() != null && !existing.getEmail().isBlank();
+        boolean wasClaimed = existing.getUserUid() != null && !existing.getUserUid().isBlank();
         applyPayload(existing, payload);
-        return ResponseEntity.ok(toResponse(repository.save(existing), request, program));
+        Player saved = repository.save(existing);
+        maybeOnboard(saved, hadEmailBefore, wasClaimed, program);
+        return ResponseEntity.ok(toResponse(saved, request, program));
+    }
+
+    /**
+     * Auto-onboards a player the first time they get an email: a roster edit (or a
+     * brand-new player row) that sets Player.email where the row previously had
+     * none, and no login account exists for that address yet, creates the account
+     * and sends the welcome email - the same action as the explicit "Onboard
+     * Player" admin flow, just triggered implicitly by the roster save instead of
+     * a dedicated form. Skips silently for a row that already had an email/account
+     * (e.g. a returning player's season rollover) so it never re-fires or
+     * double-onboards someone.
+     */
+    private void maybeOnboard(Player saved, boolean hadEmailBefore, boolean wasClaimed, String program) {
+        String email = saved.getEmail();
+        if (hadEmailBefore || wasClaimed || email == null || email.isBlank()) {
+            return;
+        }
+        if (onboardingService.hasAccount(email)) {
+            return;
+        }
+        String uid = onboardingService.onboardPlayer(email, saved.getName(), program, saved.getProfileId());
+        if (uid != null) {
+            saved.setUserUid(uid);
+            repository.save(saved);
+        }
     }
 
     /**
