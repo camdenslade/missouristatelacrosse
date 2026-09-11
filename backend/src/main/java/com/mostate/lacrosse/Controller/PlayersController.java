@@ -232,7 +232,7 @@ public class PlayersController {
         Player saved = repository.save(existing);
         maybeOnboard(saved, hadEmailBefore, wasClaimed, program);
         if (wasClaimed) {
-            syncExistingAccountEmail(saved, emailBefore);
+            syncExistingAccountEmail(saved, emailBefore, program);
         }
         return ResponseEntity.ok(toResponse(saved, request, program));
     }
@@ -240,11 +240,13 @@ public class PlayersController {
     /**
      * A player row that already has an account is edited in two disconnected places -
      * Player.email here, and UserAccount.email in Manage Players. If this edit changed
-     * the roster row's email, push it onto the linked account too, so the two don't
-     * silently drift out of sync (Manage Players -> Player is the mirror of this, in
-     * UsersController.upsert()).
+     * the roster row's email, push it onto the linked account, Firebase Auth itself, and
+     * notify the player at the new address (see PlayerOnboardingService.notifyEmailChanged()
+     * for why both of those matter) - so the two don't silently drift, and the player can
+     * still log in and actually finds out. Manage Players -> Player is the mirror of this,
+     * in UsersController.upsert().
      */
-    private void syncExistingAccountEmail(Player saved, String emailBefore) {
+    private void syncExistingAccountEmail(Player saved, String emailBefore, String program) {
         String email = saved.getEmail();
         String uid = saved.getUserUid();
         if (uid == null || uid.isBlank() || email == null || email.isBlank() || email.equalsIgnoreCase(emailBefore)) {
@@ -254,6 +256,7 @@ public class PlayersController {
             account.setEmail(email);
             userAccountRepository.save(account);
         });
+        onboardingService.notifyEmailChanged(uid, email, saved.getName(), program);
     }
 
     /**

@@ -94,6 +94,57 @@ public class PlayerOnboardingService {
         }
     }
 
+    /**
+     * A player who already has an account gets their email changed (from either
+     * Payments > Manage's Player.email or Manage Players' UserAccount.email - both
+     * propagate to each other, see PlayersController.syncExistingAccountEmail() and
+     * UsersController.upsert()). Two things must happen, and previously neither did:
+     *   1. Firebase Auth's own email attribute has to be updated too, or the player
+     *      can never again log in with the new address - Firebase looks accounts up
+     *      by its own stored email, not by anything in our database.
+     *   2. The player needs to actually be told, at the new address, since they may
+     *      not be watching the old one any more (that can be exactly why it changed).
+     * Swallows and logs its own failures, same rationale as onboardPlayer(): this is
+     * a side effect of a roster/account save that must still succeed on its own.
+     */
+    public void notifyEmailChanged(String firebaseUid, String newEmail, String displayName, String program) {
+        if (firebaseUid == null || firebaseUid.isBlank() || newEmail == null || newEmail.isBlank()) {
+            return;
+        }
+        try {
+            try {
+                FirebaseAuth.getInstance().updateUser(
+                    new UserRecord.UpdateRequest(firebaseUid).setEmail(newEmail)
+                );
+            } catch (FirebaseAuthException e) {
+                // Most likely the new address is already someone else's Firebase account.
+                // Don't send a "here's your account" link for an email change that didn't
+                // actually take effect in Firebase.
+                log.error(
+                    "Failed to update Firebase email for uid {} to {}: {} - not sending a notice",
+                    firebaseUid, newEmail, e.getMessage()
+                );
+                return;
+            }
+
+            String resetLink = generateInviteLink(firebaseUid, newEmail, program);
+            String programLabel = program.equalsIgnoreCase("women") ? "Women's" : "Men's";
+            String portalUrl = "https://missouristatelacrosse.com"
+                + (program.equalsIgnoreCase("women") ? "/women/portal" : "/portal");
+            String html = emailChangedEmail(displayName, programLabel, resetLink, portalUrl);
+            boolean sent = emailService.sendEmail(
+                newEmail, "Your Missouri State Lacrosse account email was updated", html
+            );
+            if (sent) {
+                log.info("Notified {} of account email change ({})", newEmail, program);
+            } else {
+                log.warn("Firebase email updated to {} but the notice email failed to send - see EmailService log above", newEmail);
+            }
+        } catch (Exception e) {
+            log.error("notifyEmailChanged failed for uid {} -> {}: {}", firebaseUid, newEmail, e.getMessage(), e);
+        }
+    }
+
     private UserRecord createOrGetFirebaseUser(String email, String displayName) throws FirebaseAuthException {
         try {
             return FirebaseAuth.getInstance().createUser(
@@ -154,6 +205,43 @@ public class PlayerOnboardingService {
                           <a href="%s" style="background:#5E0009;color:#fff;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:15px;font-weight:bold;display:inline-block;">Set My Password</a>
                         </div>
                         <p style="font-size:15px;color:#555;margin:0 0 12px;">Once logged in, your player portal is here:</p>
+                        <div style="text-align:center;margin:0 0 32px;">
+                          <a href="%s" style="background:#f0f0f0;color:#5E0009;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:14px;font-weight:bold;display:inline-block;">Go to My Portal</a>
+                        </div>
+                        <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
+                        <p style="font-size:13px;color:#999;margin:0;">Go Bears! Missouri State %s Lacrosse</p>
+                      </td>
+                    </tr>
+                  </table>
+                </td></tr>
+              </table>
+            </body>
+            </html>
+            """.formatted(program.toUpperCase(), name, resetLink, portalUrl, program);
+    }
+
+    private static String emailChangedEmail(String name, String program, String resetLink, String portalUrl) {
+        return """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+            <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
+              <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 0;">
+                <tr><td align="center">
+                  <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1);">
+                    <tr>
+                      <td style="background:#5E0009;padding:28px 40px;text-align:center;">
+                        <h1 style="color:#fff;margin:0;font-size:22px;letter-spacing:1px;">MISSOURI STATE %s LACROSSE</h1>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:40px;">
+                        <p style="font-size:16px;color:#333;margin:0 0 16px;">Hey %s,</p>
+                        <p style="font-size:15px;color:#555;margin:0 0 24px;">Your coach updated your account to use this email address. If you haven't set a password yet, or want to set a new one, use the button below.</p>
+                        <div style="text-align:center;margin:32px 0;">
+                          <a href="%s" style="background:#5E0009;color:#fff;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:15px;font-weight:bold;display:inline-block;">Set My Password</a>
+                        </div>
+                        <p style="font-size:15px;color:#555;margin:0 0 12px;">Your player portal is here:</p>
                         <div style="text-align:center;margin:0 0 32px;">
                           <a href="%s" style="background:#f0f0f0;color:#5E0009;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:14px;font-weight:bold;display:inline-block;">Go to My Portal</a>
                         </div>

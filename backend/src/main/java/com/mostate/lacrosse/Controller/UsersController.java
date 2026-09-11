@@ -23,6 +23,7 @@ import com.mostate.lacrosse.Model.Player;
 import com.mostate.lacrosse.Repository.PlayerRepository;
 import com.mostate.lacrosse.Repository.UserAccountRepository;
 import com.mostate.lacrosse.Service.AuthorizationService;
+import com.mostate.lacrosse.Service.PlayerOnboardingService;
 import com.mostate.lacrosse.Service.PlayerProfileService;
 import com.mostate.lacrosse.Utils.JsonUtils;
 import com.mostate.lacrosse.Utils.TextSanitizer;
@@ -38,17 +39,20 @@ public class UsersController {
     private final PlayerRepository playerRepository;
     private final PlayerProfileService profileService;
     private final AuthorizationService authorizationService;
+    private final PlayerOnboardingService onboardingService;
 
     public UsersController(
         UserAccountRepository repository,
         PlayerRepository playerRepository,
         PlayerProfileService profileService,
-        AuthorizationService authorizationService
+        AuthorizationService authorizationService,
+        PlayerOnboardingService onboardingService
     ) {
         this.repository = repository;
         this.playerRepository = playerRepository;
         this.profileService = profileService;
         this.authorizationService = authorizationService;
+        this.onboardingService = onboardingService;
     }
 
     @GetMapping
@@ -191,9 +195,12 @@ public class UsersController {
 
         String sanitizedUid = TextSanitizer.clean(uid);
         UserAccount user = repository.findByFirebaseUid(sanitizedUid).orElseGet(UserAccount::new);
+        boolean existedBefore = user.getId() != null;
+        String emailBefore = user.getEmail();
         user.setFirebaseUid(sanitizedUid);
+        String cleanedEmail = null;
         if (payload.email() != null) {
-            String cleanedEmail = TextSanitizer.clean(payload.email());
+            cleanedEmail = TextSanitizer.clean(payload.email());
             user.setEmail(cleanedEmail);
             // Manage Players is the source of truth for a player's email: push an edit here
             // down to the linked profile and every Player row under it, so the roster/dues
@@ -223,6 +230,17 @@ public class UsersController {
         }
 
         UserAccount saved = repository.save(user);
+
+        // See PlayersController.syncExistingAccountEmail() / PlayerOnboardingService
+        // .notifyEmailChanged() - an existing account's email changing has to update
+        // Firebase Auth's own record (or the player can never log in with the new
+        // address) and notify them at it. Only for a real edit to a pre-existing
+        // account, never the very first email a fresh account gets (that path is
+        // PlayerOnboardingService.onboardPlayer(), triggered from Payments > Manage).
+        if (existedBefore && cleanedEmail != null && !cleanedEmail.isBlank() && !cleanedEmail.equalsIgnoreCase(emailBefore)) {
+            onboardingService.notifyEmailChanged(sanitizedUid, cleanedEmail, saved.getDisplayName(), program);
+        }
+
         return ResponseEntity.ok(toResponse(saved));
     }
 
