@@ -118,6 +118,27 @@ export default function ManagePlayers(){
     }
   };
 
+  // The source of truth for a player's email: editing it here also pushes the change
+  // onto their linked roster row(s), so Payments > Manage doesn't go stale (backend:
+  // UsersController.upsert()).
+  const handleEmailChange = async (userId: string, email: string) => {
+    try {
+      await apiRequest(`/api/users/${userId}`, {
+        method: "PUT",
+        json: { email },
+      });
+      dispatch({
+        type: "SET_USERS",
+        users: users.map((user) =>
+          user.id === userId ? { ...user, email } : user
+        ),
+      });
+    } catch (err) {
+      console.error("Failed to update email:", err);
+      throw err;
+    }
+  };
+
   const handleDelete = async (userId: string) => {
     try {
       await apiRequest(`/api/users/${userId}`, { method: "DELETE" });
@@ -168,6 +189,7 @@ export default function ManagePlayers(){
         }))}
         handleRoleChange={handleRoleChange as (userId: string, role: string) => void}
         handleDisplayNameChange={handleDisplayNameChange}
+        handleEmailChange={handleEmailChange}
         handleDelete={handleDelete}
         handleResendInvite={handleResendInvite}
       />

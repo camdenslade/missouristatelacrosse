@@ -26,6 +26,7 @@ import com.mostate.lacrosse.Config.FirebaseAdminFilter;
 import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Model.Player;
 import com.mostate.lacrosse.Repository.PlayerRepository;
+import com.mostate.lacrosse.Repository.UserAccountRepository;
 import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Service.PlayerLinkService;
 import com.mostate.lacrosse.Service.PlayerOnboardingService;
@@ -51,6 +52,7 @@ public class PlayersController {
     private final SeasonService seasonService;
     private final PlayerLinkService playerLinkService;
     private final PlayerOnboardingService onboardingService;
+    private final UserAccountRepository userAccountRepository;
 
     public PlayersController(
         PlayerRepository repository,
@@ -59,7 +61,8 @@ public class PlayersController {
         AuthorizationService authorizationService,
         SeasonService seasonService,
         PlayerLinkService playerLinkService,
-        PlayerOnboardingService onboardingService
+        PlayerOnboardingService onboardingService,
+        UserAccountRepository userAccountRepository
     ) {
         this.repository = repository;
         this.profileService = profileService;
@@ -68,6 +71,7 @@ public class PlayersController {
         this.playerLinkService = playerLinkService;
         this.seasonService = seasonService;
         this.onboardingService = onboardingService;
+        this.userAccountRepository = userAccountRepository;
     }
 
     @GetMapping
@@ -221,12 +225,35 @@ public class PlayersController {
         if (!isAdmin(request, program) && !isSelfClaim(request, existing, payload)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
-        boolean hadEmailBefore = existing.getEmail() != null && !existing.getEmail().isBlank();
+        String emailBefore = existing.getEmail();
+        boolean hadEmailBefore = emailBefore != null && !emailBefore.isBlank();
         boolean wasClaimed = existing.getUserUid() != null && !existing.getUserUid().isBlank();
         applyPayload(existing, payload);
         Player saved = repository.save(existing);
         maybeOnboard(saved, hadEmailBefore, wasClaimed, program);
+        if (wasClaimed) {
+            syncExistingAccountEmail(saved, emailBefore);
+        }
         return ResponseEntity.ok(toResponse(saved, request, program));
+    }
+
+    /**
+     * A player row that already has an account is edited in two disconnected places -
+     * Player.email here, and UserAccount.email in Manage Players. If this edit changed
+     * the roster row's email, push it onto the linked account too, so the two don't
+     * silently drift out of sync (Manage Players -> Player is the mirror of this, in
+     * UsersController.upsert()).
+     */
+    private void syncExistingAccountEmail(Player saved, String emailBefore) {
+        String email = saved.getEmail();
+        String uid = saved.getUserUid();
+        if (uid == null || uid.isBlank() || email == null || email.isBlank() || email.equalsIgnoreCase(emailBefore)) {
+            return;
+        }
+        userAccountRepository.findByFirebaseUid(uid).ifPresent(account -> {
+            account.setEmail(email);
+            userAccountRepository.save(account);
+        });
     }
 
     /**

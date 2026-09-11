@@ -3,6 +3,8 @@ package com.mostate.lacrosse.Service;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import com.google.firebase.auth.AuthErrorCode;
 import com.google.firebase.auth.FirebaseAuth;
@@ -23,6 +25,7 @@ import com.mostate.lacrosse.Utils.JsonUtils;
  */
 @Service
 public class PlayerOnboardingService {
+    private static final Logger log = LoggerFactory.getLogger(PlayerOnboardingService.class);
 
     private final UserAccountRepository userRepo;
     private final InviteTokenRepository inviteTokenRepo;
@@ -72,10 +75,21 @@ public class PlayerOnboardingService {
             String portalUrl = "https://missouristatelacrosse.com"
                 + (program.equalsIgnoreCase("women") ? "/women/portal" : "/portal");
             String html = welcomeEmail(displayName, programLabel, resetLink, portalUrl);
-            emailService.sendEmail(email, "Welcome to Missouri State " + programLabel + " Lacrosse!", html);
+            boolean sent = emailService.sendEmail(
+                email, "Welcome to Missouri State " + programLabel + " Lacrosse!", html
+            );
+            if (sent) {
+                log.info("Onboarded {} ({}) and sent welcome email", email, program);
+            } else {
+                // The account/invite link were still created - only the email failed. Not
+                // fatal (an admin can use "Resend Link" from Manage Players), but silent
+                // otherwise, hence the WARN: this is very likely the "why didn't they get an
+                // email" report before it's asked.
+                log.warn("Onboarded {} ({}) but the welcome email failed to send - see EmailService log above", email, program);
+            }
             return userRecord.getUid();
         } catch (Exception e) {
-            System.err.println("Player onboarding failed for " + email + ": " + e.getMessage());
+            log.error("Player onboarding failed for {}: {}", email, e.getMessage(), e);
             return null;
         }
     }

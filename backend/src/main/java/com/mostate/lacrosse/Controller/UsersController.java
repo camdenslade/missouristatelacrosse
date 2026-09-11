@@ -193,7 +193,19 @@ public class UsersController {
         UserAccount user = repository.findByFirebaseUid(sanitizedUid).orElseGet(UserAccount::new);
         user.setFirebaseUid(sanitizedUid);
         if (payload.email() != null) {
-            user.setEmail(TextSanitizer.clean(payload.email()));
+            String cleanedEmail = TextSanitizer.clean(payload.email());
+            user.setEmail(cleanedEmail);
+            // Manage Players is the source of truth for a player's email: push an edit here
+            // down to the linked profile and every Player row under it, so the roster/dues
+            // page (which reads Player.email, edited separately in Payments > Manage) doesn't
+            // silently drift from the account email edited here.
+            if (user.getPlayerId() != null && cleanedEmail != null && !cleanedEmail.isBlank()) {
+                profileService.setEmail(user.getPlayerId(), cleanedEmail);
+                for (Player linked : playerRepository.findAllByProfileId(user.getPlayerId())) {
+                    linked.setEmail(cleanedEmail);
+                    playerRepository.save(linked);
+                }
+            }
         }
         if (payload.displayName() != null) {
             user.setDisplayName(TextSanitizer.clean(payload.displayName()));
