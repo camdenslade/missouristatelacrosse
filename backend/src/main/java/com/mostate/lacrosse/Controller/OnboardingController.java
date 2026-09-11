@@ -428,7 +428,16 @@ public class OnboardingController {
             );
         } catch (FirebaseAuthException e) {
             if (e.getAuthErrorCode() == AuthErrorCode.EMAIL_ALREADY_EXISTS) {
-                return FirebaseAuth.getInstance().getUserByEmail(email);
+                // See PlayerOnboardingService.createOrGetFirebaseUser() - refresh a reused,
+                // possibly-stale Firebase entry with the current name instead of leaving it
+                // exactly as it was whenever it first got created.
+                UserRecord existing = FirebaseAuth.getInstance().getUserByEmail(email);
+                if (displayName != null && !displayName.isBlank() && !displayName.equals(existing.getDisplayName())) {
+                    existing = FirebaseAuth.getInstance().updateUser(
+                        new UserRecord.UpdateRequest(existing.getUid()).setDisplayName(displayName)
+                    );
+                }
+                return existing;
             }
             throw e;
         }

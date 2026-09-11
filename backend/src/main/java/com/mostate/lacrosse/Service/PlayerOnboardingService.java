@@ -101,7 +101,19 @@ public class PlayerOnboardingService {
             );
         } catch (FirebaseAuthException e) {
             if (e.getAuthErrorCode() == AuthErrorCode.EMAIL_ALREADY_EXISTS) {
-                return FirebaseAuth.getInstance().getUserByEmail(email);
+                // A Firebase Auth entry already exists for this email - most often a leftover
+                // from a prior onboarding attempt that never got this far (e.g. the
+                // UserAccount/Player write failed after the Firebase user was created, or an
+                // old test/unverified signup). Reusing it as-is silently keeps whatever stale
+                // data it had (wrong name, etc.) forever; refresh it with the current name so
+                // the reused entry actually reflects who's being onboarded now.
+                UserRecord existing = FirebaseAuth.getInstance().getUserByEmail(email);
+                if (displayName != null && !displayName.isBlank() && !displayName.equals(existing.getDisplayName())) {
+                    existing = FirebaseAuth.getInstance().updateUser(
+                        new UserRecord.UpdateRequest(existing.getUid()).setDisplayName(displayName)
+                    );
+                }
+                return existing;
             }
             throw e;
         }

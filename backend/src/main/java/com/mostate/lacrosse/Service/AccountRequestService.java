@@ -124,7 +124,15 @@ public class AccountRequestService {
             } catch (FirebaseAuthException e) {
                 if (e.getAuthErrorCode() == AuthErrorCode.EMAIL_ALREADY_EXISTS) {
                     System.out.println("User already exists, reusing existing account");
+                    // See OnboardingController.createOrGetFirebaseUser() - refresh a reused,
+                    // possibly-stale Firebase entry with the current name instead of leaving
+                    // it exactly as it was whenever it first got created.
                     userRecord = FirebaseAuth.getInstance().getUserByEmail(email);
+                    if (displayName != null && !displayName.isBlank() && !displayName.equals(userRecord.getDisplayName())) {
+                        userRecord = FirebaseAuth.getInstance().updateUser(
+                            new UserRecord.UpdateRequest(userRecord.getUid()).setDisplayName(displayName)
+                        );
+                    }
                 } else {
                     throw e;
                 }
