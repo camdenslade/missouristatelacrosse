@@ -48,7 +48,7 @@ public class PrintifyController {
         CustomProductRepository customProductRepository,
         S3Service s3Service,
         @Value("${app.frontend.base-url}") String frontendBaseUrl,
-        @Value("${printify.custom-order-notify:17bacole@gmail.com}") String customOrderNotifyEmail
+        @Value("${printify.custom-order-notify:bcole@missouristatelacrosse.com}") String customOrderNotifyEmail
     ) {
         this.printifyService = printifyService;
         this.emailService = emailService;
