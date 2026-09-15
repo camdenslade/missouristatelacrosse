@@ -524,6 +524,7 @@ public class OnboardingController {
                         </div>
                         <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
                         <p style="font-size:13px;color:#999;margin:0;">Go Bears! Missouri State %s Lacrosse</p>
+                        <p style="font-size:11px;color:#bbb;margin:8px 0 0;">Trouble logging in? <a href="mailto:support@missouristatelacrosse.com" style="color:#bbb;">support@missouristatelacrosse.com</a></p>
                       </td>
                     </tr>
                   </table>
@@ -558,6 +559,7 @@ public class OnboardingController {
                         </div>
                         <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
                         <p style="font-size:13px;color:#999;margin:0;">Go Bears! Missouri State %s Lacrosse</p>
+                        <p style="font-size:11px;color:#bbb;margin:8px 0 0;">Trouble logging in? <a href="mailto:support@missouristatelacrosse.com" style="color:#bbb;">support@missouristatelacrosse.com</a></p>
                       </td>
                     </tr>
                   </table>
@@ -588,6 +590,7 @@ public class OnboardingController {
                         <p style="font-size:15px;color:#555;margin:0 0 24px;">You've been added as a parent contact for <strong>%s</strong> at Missouri State %s Lacrosse. Log in with your existing account to view their payment information and stay up to date with the team.</p>
                         <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
                         <p style="font-size:13px;color:#999;margin:0;">Go Bears! Missouri State %s Lacrosse</p>
+                        <p style="font-size:11px;color:#bbb;margin:8px 0 0;">Trouble logging in? <a href="mailto:support@missouristatelacrosse.com" style="color:#bbb;">support@missouristatelacrosse.com</a></p>
                       </td>
                     </tr>
                   </table>
@@ -674,6 +677,7 @@ public class OnboardingController {
                         </div>
                         <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
                         <p style="font-size:13px;color:#999;margin:0;">Go Bears! Missouri State %s Lacrosse</p>
+                        <p style="font-size:11px;color:#bbb;margin:8px 0 0;">Trouble logging in? <a href="mailto:support@missouristatelacrosse.com" style="color:#bbb;">support@missouristatelacrosse.com</a></p>
                       </td>
                     </tr>
                   </table>
@@ -708,6 +712,7 @@ public class OnboardingController {
                         <p style="font-size:13px;color:#999;margin:0 0 8px;">If you didn't request this, you can ignore this email. Your password won't change.</p>
                         <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
                         <p style="font-size:13px;color:#999;margin:0;">Go Bears! Missouri State Lacrosse</p>
+                        <p style="font-size:11px;color:#bbb;margin:8px 0 0;">Trouble logging in? <a href="mailto:support@missouristatelacrosse.com" style="color:#bbb;">support@missouristatelacrosse.com</a></p>
                       </td>
                     </tr>
                   </table>
@@ -741,6 +746,7 @@ public class OnboardingController {
                         </div>
                         <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
                         <p style="font-size:13px;color:#999;margin:0;">Go Bears! Missouri State Lacrosse</p>
+                        <p style="font-size:11px;color:#bbb;margin:8px 0 0;">Trouble logging in? <a href="mailto:support@missouristatelacrosse.com" style="color:#bbb;">support@missouristatelacrosse.com</a></p>
                       </td>
                     </tr>
                   </table>

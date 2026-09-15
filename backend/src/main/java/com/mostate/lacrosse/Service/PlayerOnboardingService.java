@@ -210,6 +210,7 @@ public class PlayerOnboardingService {
                         </div>
                         <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
                         <p style="font-size:13px;color:#999;margin:0;">Go Bears! Missouri State %s Lacrosse</p>
+                        <p style="font-size:11px;color:#bbb;margin:8px 0 0;">Trouble logging in? <a href="mailto:support@missouristatelacrosse.com" style="color:#bbb;">support@missouristatelacrosse.com</a></p>
                       </td>
                     </tr>
                   </table>
@@ -247,6 +248,7 @@ public class PlayerOnboardingService {
                         </div>
                         <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
                         <p style="font-size:13px;color:#999;margin:0;">Go Bears! Missouri State %s Lacrosse</p>
+                        <p style="font-size:11px;color:#bbb;margin:8px 0 0;">Trouble logging in? <a href="mailto:support@missouristatelacrosse.com" style="color:#bbb;">support@missouristatelacrosse.com</a></p>
                       </td>
                     </tr>
                   </table>

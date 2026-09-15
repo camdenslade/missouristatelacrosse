@@ -74,6 +74,10 @@ export default function Footer() {
             <Link to="/terms-of-service" className="hover:text-white transition-colors">
               Terms of Service
             </Link>
+            <span className="text-white/20">|</span>
+            <a href="mailto:admin@missouristatelacrosse.com" className="hover:text-white transition-colors">
+              Contact
+            </a>
           </div>
           <div>&copy; {new Date().getFullYear()} {teamName}</div>
         </div>

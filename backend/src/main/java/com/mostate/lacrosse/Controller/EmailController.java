@@ -138,6 +138,8 @@ public class EmailController {
 
             %s
 
+            Questions about this order? billing@missouristatelacrosse.com
+
             Go Bears!
             - Missouri State Lacrosse Store
             """.formatted(
@@ -168,6 +170,8 @@ public class EmailController {
 
                 Thank you for your generous donation of $%s to Missouri State Lacrosse!
                 Your support helps our athletes and community thrive.
+
+                Questions about this donation? billing@missouristatelacrosse.com
 
                 Go Bears!
                 - Missouri State Lacrosse
