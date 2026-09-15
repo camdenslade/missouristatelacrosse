@@ -160,8 +160,10 @@ public class OnboardingController {
             // Send welcome email
             if (resetLink != null) {
                 String programLabel = program.equals("women") ? "Women's" : "Men's";
-                String duesUrl = "https://missouristatelacrosse.com" + (program.equals("women") ? "/women/dues" : "/dues");
-                String html = playerWelcomeEmail(displayName, programLabel, resetLink, duesUrl);
+                // /portal (not the old standalone /dues page) - since #28 it's the unified
+                // player panel with dues balance and team to-dos together.
+                String portalUrl = "https://missouristatelacrosse.com" + (program.equals("women") ? "/women/portal" : "/portal");
+                String html = playerWelcomeEmail(displayName, programLabel, resetLink, portalUrl);
                 emailService.sendEmail(email, "Welcome to Missouri State " + programLabel + " Lacrosse!", html);
             }
 
@@ -426,7 +428,16 @@ public class OnboardingController {
             );
         } catch (FirebaseAuthException e) {
             if (e.getAuthErrorCode() == AuthErrorCode.EMAIL_ALREADY_EXISTS) {
-                return FirebaseAuth.getInstance().getUserByEmail(email);
+                // See PlayerOnboardingService.createOrGetFirebaseUser() - refresh a reused,
+                // possibly-stale Firebase entry with the current name instead of leaving it
+                // exactly as it was whenever it first got created.
+                UserRecord existing = FirebaseAuth.getInstance().getUserByEmail(email);
+                if (displayName != null && !displayName.isBlank() && !displayName.equals(existing.getDisplayName())) {
+                    existing = FirebaseAuth.getInstance().updateUser(
+                        new UserRecord.UpdateRequest(existing.getUid()).setDisplayName(displayName)
+                    );
+                }
+                return existing;
             }
             throw e;
         }
@@ -486,7 +497,7 @@ public class OnboardingController {
         return seasonService.getActiveCode();
     }
 
-    private static String playerWelcomeEmail(String name, String program, String resetLink, String duesUrl) {
+    private static String playerWelcomeEmail(String name, String program, String resetLink, String portalUrl) {
         return """
             <!DOCTYPE html>
             <html lang="en">
@@ -507,12 +518,12 @@ public class OnboardingController {
                         <div style="text-align:center;margin:32px 0;">
                           <a href="%s" style="background:#5E0009;color:#fff;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:15px;font-weight:bold;display:inline-block;">Set My Password</a>
                         </div>
-                        <p style="font-size:15px;color:#555;margin:0 0 12px;">Once logged in, you can view your dues balance here:</p>
+                        <p style="font-size:15px;color:#555;margin:0 0 12px;">Once logged in, your player portal is here - dues balance and team to-dos:</p>
                         <div style="text-align:center;margin:0 0 32px;">
-                          <a href="%s" style="background:#f0f0f0;color:#5E0009;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:14px;font-weight:bold;display:inline-block;">View My Dues</a>
+                          <a href="%s" style="background:#f0f0f0;color:#5E0009;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:14px;font-weight:bold;display:inline-block;">Go to My Portal</a>
                         </div>
                         <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
-                        <p style="font-size:13px;color:#999;margin:0;">Go Bears! &mdash; Missouri State %s Lacrosse</p>
+                        <p style="font-size:13px;color:#999;margin:0;">Go Bears! Missouri State %s Lacrosse</p>
                       </td>
                     </tr>
                   </table>
@@ -520,7 +531,7 @@ public class OnboardingController {
               </table>
             </body>
             </html>
-            """.formatted(program.toUpperCase(), name, resetLink, duesUrl, program);
+            """.formatted(program.toUpperCase(), name, resetLink, portalUrl, program);
     }
 
     private static String parentWelcomeEmail(String parentName, String playerName, String program, String resetLink) {
@@ -546,7 +557,7 @@ public class OnboardingController {
                           <a href="%s" style="background:#5E0009;color:#fff;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:15px;font-weight:bold;display:inline-block;">Set My Password</a>
                         </div>
                         <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
-                        <p style="font-size:13px;color:#999;margin:0;">Go Bears! &mdash; Missouri State %s Lacrosse</p>
+                        <p style="font-size:13px;color:#999;margin:0;">Go Bears! Missouri State %s Lacrosse</p>
                       </td>
                     </tr>
                   </table>
@@ -576,7 +587,7 @@ public class OnboardingController {
                         <p style="font-size:16px;color:#333;margin:0 0 16px;">Hello %s,</p>
                         <p style="font-size:15px;color:#555;margin:0 0 24px;">You've been added as a parent contact for <strong>%s</strong> at Missouri State %s Lacrosse. Log in with your existing account to view their payment information and stay up to date with the team.</p>
                         <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
-                        <p style="font-size:13px;color:#999;margin:0;">Go Bears! &mdash; Missouri State %s Lacrosse</p>
+                        <p style="font-size:13px;color:#999;margin:0;">Go Bears! Missouri State %s Lacrosse</p>
                       </td>
                     </tr>
                   </table>
@@ -656,13 +667,13 @@ public class OnboardingController {
                     <tr>
                       <td style="padding:40px;">
                         <p style="font-size:16px;color:#333;margin:0 0 16px;">Hey %s,</p>
-                        <p style="font-size:15px;color:#555;margin:0 0 16px;">Thank you for your continued support of Missouri State %s Lacrosse &mdash; alumni like you are what keep this program going.</p>
+                        <p style="font-size:15px;color:#555;margin:0 0 16px;">Thank you for your continued support of Missouri State %s Lacrosse, alumni like you are what keep this program going.</p>
                         <p style="font-size:15px;color:#555;margin:0 0 24px;">Your alumni account has been created. Set your password using the button below to access the alumni portal.</p>
                         <div style="text-align:center;margin:32px 0;">
                           <a href="%s" style="background:#5E0009;color:#fff;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:15px;font-weight:bold;display:inline-block;">Set My Password</a>
                         </div>
                         <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
-                        <p style="font-size:13px;color:#999;margin:0;">Go Bears! &mdash; Missouri State %s Lacrosse</p>
+                        <p style="font-size:13px;color:#999;margin:0;">Go Bears! Missouri State %s Lacrosse</p>
                       </td>
                     </tr>
                   </table>
@@ -696,7 +707,7 @@ public class OnboardingController {
                         </div>
                         <p style="font-size:13px;color:#999;margin:0 0 8px;">If you didn't request this, you can ignore this email. Your password won't change.</p>
                         <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
-                        <p style="font-size:13px;color:#999;margin:0;">Go Bears! &mdash; Missouri State Lacrosse</p>
+                        <p style="font-size:13px;color:#999;margin:0;">Go Bears! Missouri State Lacrosse</p>
                       </td>
                     </tr>
                   </table>
@@ -729,7 +740,7 @@ public class OnboardingController {
                           <a href="%s" style="background:#5E0009;color:#fff;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:15px;font-weight:bold;display:inline-block;">Set My Password</a>
                         </div>
                         <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
-                        <p style="font-size:13px;color:#999;margin:0;">Go Bears! &mdash; Missouri State Lacrosse</p>
+                        <p style="font-size:13px;color:#999;margin:0;">Go Bears! Missouri State Lacrosse</p>
                       </td>
                     </tr>
                   </table>

@@ -67,50 +67,51 @@ export default function Cart({
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      className={`fixed top-0 h-full w-[360px] bg-white shadow-2xl z-9999 transition-all duration-300 ${
+      className={`fixed top-0 h-full w-[360px] max-w-[90vw] bg-white shadow-2xl rounded-l-2xl z-9999 transition-all duration-300 ${
         showCart ? "right-0" : "-right-[360px]"
       }`}
     >
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="p-4 flex justify-between items-center border-b">
-          <h2 className="text-lg font-bold">Men's Team Cart</h2>
+        <div className="px-5 py-4 flex justify-between items-center border-b border-gray-100">
+          <h2 className="text-lg font-bold text-gray-900">Men's Team Cart</h2>
           <button
             onClick={() => {
               setShowCart(false);
             }}
-            className="text-gray-500 hover:text-black px-3 py-1 border rounded"
+            className="text-gray-400 hover:text-gray-700 transition-colors"
+            aria-label="Close cart"
           >
-            Close
+            <X size={20} />
           </button>
         </div>
 
         {/* Cart Items */}
-        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6">
-          <div className="flex flex-col gap-4">
+        <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-6">
+          <div className="flex flex-col gap-3">
             {safeCart.length === 0 ? (
-              <p className="text-gray-600">Your cart is empty.</p>
+              <p className="text-gray-400 text-center py-10">Your cart is empty.</p>
             ) : (
               safeCart.map((item) => (
                 <div
                   key={`${item.id}-${item.variantId}`}
-                  className="flex gap-4 items-center bg-gray-50 p-2 rounded shadow hover:bg-gray-100 transition"
+                  className="flex gap-4 items-center bg-gray-50 rounded-xl p-3 hover:bg-gray-100 transition"
                 >
                   <img
                     src={item.image}
                     alt={item.title}
-                    className="w-16 h-16 object-contain rounded"
+                    className="w-16 h-16 object-contain rounded-lg bg-white shrink-0"
                   />
-                  <div className="flex-1">
-                    <p className="font-semibold">{item.title}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 leading-snug">{item.title}</p>
                     {item.size && (
-                      <p className="text-sm text-gray-600">Size: {item.size}</p>
+                      <p className="text-sm text-gray-500">Size: {item.size}</p>
                     )}
                     {item.color && (
-                      <p className="text-sm text-gray-600">Color: {item.color}</p>
+                      <p className="text-sm text-gray-500">Color: {item.color}</p>
                     )}
 
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-2 mt-1.5">
                       <input
                         type="number"
                         min="1"
@@ -122,7 +123,7 @@ export default function Cart({
                             parseInt(e.target.value, 10)
                           )
                         }
-                        className="w-16 border rounded px-1 py-0.5 text-center"
+                        className="w-14 border border-gray-200 rounded-lg px-1.5 py-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30"
                       />
                       <span className="text-[#5E0009] font-bold">
                         ${item.price.toFixed(2)}
@@ -132,7 +133,8 @@ export default function Cart({
 
                   <button
                     onClick={() => removeFromCart(item.id, item.variantId)}
-                    className="text-red-500 hover:text-red-700 font-bold text-lg"
+                    className="text-gray-400 hover:text-red-600 transition-colors shrink-0"
+                    aria-label="Remove item"
                   >
                     <X size={16} />
                   </button>
@@ -143,11 +145,11 @@ export default function Cart({
 
           {/* Donation + Checkout */}
           {safeCart.length > 0 && (
-            <div className="flex flex-col gap-3 border-t pt-4">
+            <div className="flex flex-col gap-3 border-t border-gray-100 pt-4">
               {/* Donation */}
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-gray-700">
-                  Optional Donation:
+                  Optional Donation
                 </label>
 
                 <div className="flex gap-2">
@@ -157,11 +159,11 @@ export default function Cart({
                     placeholder="Enter amount"
                     value={donation}
                     onChange={(e) => setDonation(e.target.value)}
-                    className="border rounded px-2 py-1 flex-1"
+                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30"
                   />
                   <button
                     onClick={handleConfirmDonation}
-                    className="bg-[#5E0009] text-white px-3 rounded hover:bg-[#7a0012] transition"
+                    className="bg-[#5E0009] text-white text-sm font-semibold px-4 rounded-full hover:bg-[#7a0012] transition"
                   >
                     {confirmedDonation ? "Update" : "Add"}
                   </button>
@@ -175,12 +177,14 @@ export default function Cart({
               </div>
 
               {/* Total */}
-              <p className="font-semibold text-right text-lg">
-                Shipping: ${SHIPPING_FEE.toFixed(2)}
-              </p>
-              <p className="font-bold text-right text-lg">
-                Total: ${finalTotal.toFixed(2)}
-              </p>
+              <div className="text-right space-y-0.5">
+                <p className="text-sm text-gray-500">
+                  Shipping: ${SHIPPING_FEE.toFixed(2)}
+                </p>
+                <p className="font-bold text-lg text-gray-900">
+                  Total: ${finalTotal.toFixed(2)}
+                </p>
+              </div>
 
               {/* Checkout */}
               <button
@@ -193,7 +197,7 @@ export default function Cart({
                     },
                   });
                 }}
-                className="bg-[#5E0009] text-white py-2 rounded font-semibold hover:bg-[#7a0012] transition"
+                className="bg-[#5E0009] text-white py-2.5 rounded-full font-semibold hover:bg-[#7a0012] transition"
               >
                 Proceed to Checkout
               </button>

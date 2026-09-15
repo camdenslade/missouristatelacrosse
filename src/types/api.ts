@@ -147,6 +147,34 @@ export interface DuesPayment {
   createdAt?: string;
 }
 
+export interface ApiTodo {
+  id: string;
+  season: string;
+  title: string;
+  description?: string | null;
+  link?: string | null;
+  image?: string | null;
+  active: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ApiTodoStatus {
+  id?: string;
+  todoId: string;
+  playerId: string;
+  done: boolean;
+  doneAt?: string | null;
+  markedByUid?: string | null;
+}
+
+export interface ApiTodoCompletion {
+  playerId: string;
+  playerName?: string | null;
+  done: boolean;
+  doneAt?: string | null;
+}
+
 export interface ApiParentRecord {
   uid?: string | null;
   email?: string | null;

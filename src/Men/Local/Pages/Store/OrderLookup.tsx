@@ -107,89 +107,99 @@ export default function OrderLookup() {
   }, [shipping]);
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 p-6">
-      <div className="bg-white border border-gray-200 rounded p-6 shadow-sm space-y-3">
-        <h1 className="text-2xl font-bold text-[#5E0009]">Order Lookup</h1>
-        <p className="text-sm text-gray-600">
-          Enter your order ID (the same value that appears on your email receipt) to
-          view the items and shipping information. The link in your receipt pre-fills the order ID.
-        </p>
-        <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-3">
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(event) => setInputValue(event.target.value)}
-            placeholder="49647108GM469223U"
-            className="flex-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5E0009]"
-          />
-          <button
-            type="submit"
-            className="px-6 py-2 bg-[#5E0009] text-white rounded hover:bg-[#7a0012] disabled:opacity-50"
-            disabled={loading}
-          >
-            {loading ? "Looking up…" : "Lookup Order"}
-          </button>
-        </form>
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-linear-to-r from-[#5E0009] via-[#7a1020] to-[#5E0009] text-white px-6 py-14 text-center">
+        <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/80 mb-3">
+          <span className="h-px w-6 bg-white/50" />
+          Team Store
+          <span className="h-px w-6 bg-white/50" />
+        </div>
+        <h1 className="text-4xl md:text-5xl font-extrabold">Order Lookup</h1>
       </div>
 
-      {loading && (
-        <div className="flex flex-col items-center justify-center space-y-2">
-          <div className="w-10 h-10 border-4 border-[#5E0009] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-gray-600">Fetching order details…</p>
+      <div className="max-w-3xl mx-auto space-y-5 px-4 sm:px-6 -mt-8 pb-16">
+        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-7 space-y-3">
+          <p className="text-sm text-gray-500">
+            Enter your order ID (the same value that appears on your email receipt) to
+            view the items and shipping information. The link in your receipt pre-fills the order ID.
+          </p>
+          <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-3">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(event) => setInputValue(event.target.value)}
+              placeholder="49647108GM469223U"
+              className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
+            />
+            <button
+              type="submit"
+              className="px-6 py-2.5 bg-[#5E0009] text-white rounded-full font-semibold hover:bg-[#7a0012] transition-colors disabled:opacity-50"
+              disabled={loading}
+            >
+              {loading ? "Looking up…" : "Lookup Order"}
+            </button>
+          </form>
         </div>
-      )}
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded p-4 text-sm">
-          {error}
-        </div>
-      )}
-
-      {orderDetails && (
-        <div className="bg-white border border-gray-200 rounded p-6 shadow-sm space-y-6">
-          <div className="space-y-1">
-            <p className="text-sm text-gray-500">Order ID</p>
-            <p className="text-lg font-semibold text-gray-900">{orderDetails.orderId}</p>
+        {loading && (
+          <div className="flex flex-col items-center justify-center gap-2 py-6">
+            <div className="w-10 h-10 border-4 border-[#5E0009] border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-gray-500">Fetching order details…</p>
           </div>
+        )}
 
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <h2 className="text-sm font-semibold text-gray-700">Shipping</h2>
-              {shippingLines.length > 0 ? (
-                <div className="text-sm text-gray-700 space-y-1">
-                  {shippingLines.map((line, idx) => (
-                    <p key={idx}>{line}</p>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">Shipping information is not available.</p>
-              )}
-              {shipping?.email && (
-                <p className="text-sm text-gray-600">Email: {shipping.email}</p>
-              )}
-              {shipping?.phone && (
-                <p className="text-sm text-gray-600">Phone: {shipping.phone}</p>
-              )}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm">
+            {error}
+          </div>
+        )}
+
+        {orderDetails && (
+          <div className="bg-white rounded-2xl shadow-lg p-6 md:p-7 space-y-6">
+            <div className="space-y-1">
+              <p className="text-sm text-gray-500">Order ID</p>
+              <p className="text-lg font-semibold text-gray-900 wrap-break-word">{orderDetails.orderId}</p>
             </div>
 
-            <div className="space-y-2">
-              <h2 className="text-sm font-semibold text-gray-700">Items</h2>
-              <ul className="space-y-1 text-sm text-gray-700 list-disc list-inside">
-                {items.length > 0 ? (
-                  items.map((item, idx) => (
-                    <li key={idx}>
-                      <span className="font-medium">{item.title}</span> - Qty {item.quantity}
-                      {item.size && <span> (Size: {item.size})</span>}
-                    </li>
-                  ))
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <h2 className="text-sm font-semibold text-gray-700">Shipping</h2>
+                {shippingLines.length > 0 ? (
+                  <div className="text-sm text-gray-700 space-y-1">
+                    {shippingLines.map((line, idx) => (
+                      <p key={idx}>{line}</p>
+                    ))}
+                  </div>
                 ) : (
-                  <li className="text-gray-500">No line items were returned for this order.</li>
+                  <p className="text-sm text-gray-500">Shipping information is not available.</p>
                 )}
-              </ul>
+                {shipping?.email && (
+                  <p className="text-sm text-gray-500">Email: {shipping.email}</p>
+                )}
+                {shipping?.phone && (
+                  <p className="text-sm text-gray-500">Phone: {shipping.phone}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <h2 className="text-sm font-semibold text-gray-700">Items</h2>
+                <ul className="space-y-1 text-sm text-gray-700 list-disc list-inside">
+                  {items.length > 0 ? (
+                    items.map((item, idx) => (
+                      <li key={idx}>
+                        <span className="font-medium">{item.title}</span> - Qty {item.quantity}
+                        {item.size && <span> (Size: {item.size})</span>}
+                      </li>
+                    ))
+                  ) : (
+                    <li className="text-gray-500">No line items were returned for this order.</li>
+                  )}
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

@@ -47,7 +47,6 @@ public class WebConfig {
                 "https://missouristatelacrosse.com",
                 "https://www.missouristatelacrosse.com",
                 "https://api.missouristatelacrosse.com",
-                "https://laxsite-backend-env.eba-nnbxwspk.us-east-1.elasticbeanstalk.com",
                 "http://localhost:5173"
             )
         );

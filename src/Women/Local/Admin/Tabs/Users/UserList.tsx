@@ -13,17 +13,22 @@ type UserListProps = {
   users: UserEntry[];
   handleRoleChange: (userId: string, role: string) => void;
   handleDisplayNameChange?: (userId: string, displayName: string) => Promise<void> | void;
+  handleEmailChange?: (userId: string, email: string) => Promise<void> | void;
   handleDelete?: (userId: string) => void;
   handleResendInvite?: (userId: string) => Promise<void> | void;
 };
 
-export default function UserList({ users, handleRoleChange, handleDisplayNameChange, handleDelete, handleResendInvite }: UserListProps) {
+export default function UserList({ users, handleRoleChange, handleDisplayNameChange, handleEmailChange, handleDelete, handleResendInvite }: UserListProps) {
   const confirm = useConfirm();
   const [resendState, setResendState] = useState<Record<string, "sending" | "sent" | "error">>({});
   const [editingNameFor, setEditingNameFor] = useState<string | null>(null);
   const [nameDraft, setNameDraft] = useState("");
   const [savingName, setSavingName] = useState(false);
   const [nameError, setNameError] = useState("");
+  const [editingEmailFor, setEditingEmailFor] = useState<string | null>(null);
+  const [emailDraft, setEmailDraft] = useState("");
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [emailError, setEmailError] = useState("");
 
   const onResend = async (userId: string) => {
     if (!handleResendInvite) return;
@@ -54,6 +59,27 @@ export default function UserList({ users, handleRoleChange, handleDisplayNameCha
       setNameError("Could not save this name. Please try again.");
     } finally {
       setSavingName(false);
+    }
+  };
+
+  const startEmailEdit = (user: UserEntry) => {
+    setEditingEmailFor(user.id);
+    setEmailDraft(user.email || "");
+    setEmailError("");
+  };
+
+  const saveEmail = async (userId: string) => {
+    const email = emailDraft.trim();
+    if (!email || !handleEmailChange) return;
+    setSavingEmail(true);
+    setEmailError("");
+    try {
+      await handleEmailChange(userId, email);
+      setEditingEmailFor(null);
+    } catch {
+      setEmailError("Could not save this email. Please try again.");
+    } finally {
+      setSavingEmail(false);
     }
   };
 
@@ -108,8 +134,51 @@ export default function UserList({ users, handleRoleChange, handleDisplayNameCha
             {editingNameFor === user.id && nameError && (
               <p className="text-xs text-red-600 mt-1">{nameError}</p>
             )}
-            {user.displayName && user.email && (
-              <p className="text-gray-500 text-sm truncate">{user.email}</p>
+            {editingEmailFor === user.id ? (
+              <div className="flex flex-wrap items-center gap-2 mt-1">
+                <input
+                  aria-label="User email"
+                  type="email"
+                  value={emailDraft}
+                  onChange={(event) => setEmailDraft(event.target.value)}
+                  className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => saveEmail(user.id)}
+                  disabled={savingEmail || !emailDraft.trim()}
+                  className="text-sm text-[#5E0009] hover:underline disabled:opacity-50"
+                >
+                  {savingEmail ? "Saving..." : "Save"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingEmailFor(null)}
+                  disabled={savingEmail}
+                  className="text-sm text-gray-500 hover:underline disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              (user.displayName || handleEmailChange) && (
+                <div className="flex items-center gap-2">
+                  {user.email && <p className="text-gray-500 text-sm truncate">{user.email}</p>}
+                  {handleEmailChange && (
+                    <button
+                      type="button"
+                      onClick={() => startEmailEdit(user)}
+                      className="text-xs text-[#5E0009] hover:underline shrink-0"
+                    >
+                      {user.email ? "Edit email" : "Add email"}
+                    </button>
+                  )}
+                </div>
+              )
+            )}
+            {editingEmailFor === user.id && emailError && (
+              <p className="text-xs text-red-600 mt-1">{emailError}</p>
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2">

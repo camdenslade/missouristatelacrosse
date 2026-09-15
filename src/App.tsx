@@ -28,7 +28,9 @@ import Fundraiser from "./Men/Local/Pages/Fundraiser/Fundraiser";
 import FundraiserSuccess from "./Men/Local/Pages/Fundraiser/FundraiserSuccess";
 import Gallery from "./Men/Local/Pages/Gallery/GalleryMain";
 import Home from "./Men/Local/Pages/Home/HomeWrapper";
-import Payments from "./Men/Local/Pages/Payments/Payments";
+import Manage from "./Men/Local/Pages/Payments/Manage";
+import PaymentsRedirect from "./Men/Local/Pages/Payments/PaymentsRedirect";
+import Portal from "./Men/Local/Pages/Payments/Portal";
 import RaffleDetail from "./Men/Local/Pages/Raffles/RaffleDetail";
 import Raffles from "./Men/Local/Pages/Raffles/Raffles";
 import RecruitmentForm from "./Men/Local/Pages/Recruitment/Recruitment";
@@ -53,7 +55,9 @@ import WFundraiser from "./Women/Local/Pages/Fundraiser/Fundraiser";
 import WFundraiserSuccess from "./Women/Local/Pages/Fundraiser/FundraiserSuccess";
 import WGallery from "./Women/Local/Pages/Gallery/GalleryMain";
 import WHome from "./Women/Local/Pages/Home/HomeWrapper";
-import WPayments from "./Women/Local/Pages/Payments/Payments";
+import WManage from "./Women/Local/Pages/Payments/Manage";
+import WPaymentsRedirect from "./Women/Local/Pages/Payments/PaymentsRedirect";
+import WPortal from "./Women/Local/Pages/Payments/Portal";
 import WRaffleDetail from "./Women/Local/Pages/Raffles/RaffleDetail";
 import WRaffles from "./Women/Local/Pages/Raffles/Raffles";
 import WRecruitmentForm from "./Women/Local/Pages/Recruitment/Recruitment";
@@ -123,7 +127,23 @@ export default function App() {
               path="/payments"
               element={
                 <ProtectedRoute allowedRoles={["admin", "player", "parent"]}>
-                  <Payments />
+                  <PaymentsRedirect />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/manage"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <Manage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/portal"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "player", "parent"]}>
+                  <Portal />
                 </ProtectedRoute>
               }
             />
@@ -214,7 +234,23 @@ export default function App() {
               path="/women/payments"
               element={
                 <ProtectedRoute allowedRoles={["admin", "player", "parent"]}>
-                  <WPayments />
+                  <WPaymentsRedirect />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/women/manage"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <WManage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/women/portal"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "player", "parent"]}>
+                  <WPortal />
                 </ProtectedRoute>
               }
             />

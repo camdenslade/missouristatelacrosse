@@ -104,7 +104,7 @@ export default function OrderLogsModal({ isOpen, onClose }) {
         <h2 className="text-2xl font-bold text-[#5E0009]">Store Order Logs</h2>
 
         {/* Direct order lookup */}
-        <div className="border border-gray-200 rounded p-3 bg-gray-50">
+        <div className="border border-gray-100 rounded-xl p-4 bg-gray-50">
           <p className="font-semibold mb-2">Lookup by Order ID</p>
           <div className="flex flex-col md:flex-row md:items-center gap-2">
             <input
@@ -112,7 +112,7 @@ export default function OrderLogsModal({ isOpen, onClose }) {
               value={lookupId}
               onChange={(e) => setLookupId(e.target.value)}
               placeholder="Enter order ID e.g. 49647108GM469223U"
-              className="border rounded px-3 py-2 flex-1"
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm flex-1 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
             />
             <button
               onClick={async () => {
@@ -144,7 +144,7 @@ export default function OrderLogsModal({ isOpen, onClose }) {
                   setLookupLoading(false);
                 }
               }}
-              className="px-4 py-2 bg-[#5E0009] text-white rounded hover:bg-[#7a0012] disabled:opacity-50"
+              className="px-5 py-2 bg-[#5E0009] text-white rounded-full text-sm font-semibold hover:bg-[#7a0012] transition-colors disabled:opacity-50"
               disabled={lookupLoading}
             >
               {lookupLoading ? "Searching..." : "Lookup"}
@@ -156,7 +156,7 @@ export default function OrderLogsModal({ isOpen, onClose }) {
           )}
 
           {lookupResult && (
-            <div className="mt-3 space-y-3 bg-white border rounded p-3">
+            <div className="mt-3 space-y-3 bg-white border border-gray-100 rounded-xl p-4">
               <p className="font-semibold">Order: {lookupResult.orderId}</p>
 
               {lookupResult.printifyLog ? (
@@ -170,7 +170,7 @@ export default function OrderLogsModal({ isOpen, onClose }) {
                     <p className="text-red-600">Error: {lookupResult.printifyLog.errorMessage}</p>
                   )}
                   {lookupResult.printifyLog.requestPayload && (
-                    <details className="bg-gray-50 border rounded p-2">
+                    <details className="bg-gray-50 border border-gray-100 rounded-lg p-2">
                       <summary className="cursor-pointer">Request payload</summary>
                       <pre className="text-xs overflow-x-auto">
                         {formatJson(lookupResult.printifyLog.requestPayload)}
@@ -178,7 +178,7 @@ export default function OrderLogsModal({ isOpen, onClose }) {
                     </details>
                   )}
                   {lookupResult.printifyLog.responsePayload && (
-                    <details className="bg-gray-50 border rounded p-2">
+                    <details className="bg-gray-50 border border-gray-100 rounded-lg p-2">
                       <summary className="cursor-pointer">Response payload</summary>
                       <pre className="text-xs overflow-x-auto">
                         {formatJson(lookupResult.printifyLog.responsePayload)}
@@ -209,7 +209,7 @@ export default function OrderLogsModal({ isOpen, onClose }) {
                     <p>Status: {lookupResult.paymentReceipt.status}</p>
                   )}
                   {lookupResult.paymentReceipt.payload && (
-                    <details className="bg-gray-50 border rounded p-2">
+                    <details className="bg-gray-50 border border-gray-100 rounded-lg p-2">
                       <summary className="cursor-pointer">Raw payment payload</summary>
                       <pre className="text-xs overflow-x-auto">
                         {formatJson(lookupResult.paymentReceipt.payload)}
@@ -230,12 +230,12 @@ export default function OrderLogsModal({ isOpen, onClose }) {
             <span className="ml-3">Loading orders...</span>
           </div>
         ) : error ? (
-          <div className="bg-red-50 border border-red-200 rounded p-4 text-red-700">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
             <p className="font-semibold">Error</p>
             <p>{error}</p>
             <button
               onClick={fetchOrders}
-              className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              className="mt-3 px-4 py-2 bg-red-600 text-white rounded-full text-sm font-semibold hover:bg-red-700 transition-colors"
             >
               Retry
             </button>
@@ -249,7 +249,7 @@ export default function OrderLogsModal({ isOpen, onClose }) {
             {orders.map((order) => (
               <div
                 key={order.id}
-                className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50"
+                className="border border-gray-100 rounded-xl p-4 hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -258,7 +258,7 @@ export default function OrderLogsModal({ isOpen, onClose }) {
                         Order: {order.orderId || "N/A"}
                       </span>
                       <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${
+                        className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                           order.success
                             ? "bg-gray-100 text-gray-700"
                             : "bg-gray-100 text-gray-500"
@@ -267,7 +267,7 @@ export default function OrderLogsModal({ isOpen, onClose }) {
                         {order.success ? "Success" : "Failed"}
                       </span>
                       {order.httpStatusCode && (
-                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                        <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full text-xs">
                           {order.httpStatusCode}
                         </span>
                       )}
@@ -291,7 +291,7 @@ export default function OrderLogsModal({ isOpen, onClose }) {
                   </div>
                   <button
                     onClick={() => toggleExpand(order.id)}
-                    className="ml-4 px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded"
+                    className="ml-4 px-3 py-1 text-sm font-medium bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
                   >
                     {expandedOrder === order.id ? "Hide" : "Details"}
                   </button>
@@ -302,7 +302,7 @@ export default function OrderLogsModal({ isOpen, onClose }) {
                     {order.requestPayload && (
                       <div>
                         <h4 className="font-semibold text-sm mb-2">Request Payload:</h4>
-                        <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto max-h-40 overflow-y-auto">
+                        <pre className="bg-gray-50 border border-gray-100 p-3 rounded-lg text-xs overflow-x-auto max-h-40 overflow-y-auto">
                           {formatJson(order.requestPayload)}
                         </pre>
                       </div>
@@ -310,7 +310,7 @@ export default function OrderLogsModal({ isOpen, onClose }) {
                     {order.responsePayload && (
                       <div>
                         <h4 className="font-semibold text-sm mb-2">Response Payload:</h4>
-                        <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto max-h-40 overflow-y-auto">
+                        <pre className="bg-gray-50 border border-gray-100 p-3 rounded-lg text-xs overflow-x-auto max-h-40 overflow-y-auto">
                           {formatJson(order.responsePayload)}
                         </pre>
                       </div>
@@ -322,10 +322,10 @@ export default function OrderLogsModal({ isOpen, onClose }) {
           </div>
         )}
 
-        <div className="flex justify-end pt-4 border-t">
+        <div className="flex justify-end pt-4 border-t border-gray-100">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
+            className="px-5 py-2 bg-gray-100 hover:bg-gray-200 rounded-full text-sm font-semibold transition-colors"
           >
             Close
           </button>
@@ -334,3 +334,5 @@ export default function OrderLogsModal({ isOpen, onClose }) {
     </Modal>
   );
 }
+
+
