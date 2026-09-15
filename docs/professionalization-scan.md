@@ -21,7 +21,7 @@ dead per owner, teardown added to cost list), #6 (DEBUG logging removed), #7
 (`show-details=when-authorized`), #8 (multipart 1000MB -> 20MB), #9 (deleted duplicate
 `SecretsConfig`; `MainApp.loadSecretsFromAWS` is the sole loader), #10 (removed 2
 placebo `assertTrue(true)` tests + TODO to widen coverage), #11 (`bcole@example.com` ->
-`printify.custom-order-notify` config key, default `17bacole@gmail.com`), #12 (store
+`printify.custom-order-notify` config key, default `bcole@missouristatelacrosse.com`), #12 (store
 receipt email name bug `first_name`->`firstName` fixed both programs).
 Backend `./gradlew build` + frontend `vite build` green after all of it.
 

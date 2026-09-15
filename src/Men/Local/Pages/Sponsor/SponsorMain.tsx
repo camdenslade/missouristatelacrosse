@@ -141,10 +141,10 @@ export default function SponsorMain() {
         <p>Head Coach, Missouri State Men’s Lacrosse</p>
         <p>
           <a
-            href="mailto:17bacole@gmail.com"
+            href="mailto:bcole@missouristatelacrosse.com"
             className="text-[#5E0009] hover:underline font-medium"
           >
-            17bacole@gmail.com
+            bcole@missouristatelacrosse.com
           </a>
         </p>
         <p className="text-gray-700">417-224-9327</p>
