@@ -20,6 +20,8 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
 import com.google.firebase.auth.UserRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.mostate.lacrosse.Config.FirebaseAdminFilter;
 import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Model.ParentAccount;
@@ -46,6 +48,7 @@ import jakarta.validation.constraints.NotNull;
 @RequestMapping("/api/onboard")
 @Validated
 public class OnboardingController {
+    private static final Logger log = LoggerFactory.getLogger(OnboardingController.class);
 
     private final UserAccountRepository userRepo;
     private final PlayerRepository playerRepo;
@@ -351,11 +354,15 @@ public class OnboardingController {
      */
     @PostMapping("/consume-invite")
     public ResponseEntity<?> consumeInvite(@Valid @RequestBody ConsumeInviteRequest body) {
+        InviteToken invite = inviteTokenRepo.findById(body.token()).orElse(null);
+        if (invite == null || invite.getUsedAt() != null) {
+            // InviteToken never expires by time - this is the only way this branch fires,
+            // so "invalid or already used" is the true, complete explanation here. If a
+            // player reports "expired" on a link that gets this far (i.e. the page loaded
+            // and showed their email/the form), the real cause is below, not this branch.
+            return ResponseEntity.status(410).body(new ErrorResponse("This invite link is invalid or has already been used."));
+        }
         try {
-            InviteToken invite = inviteTokenRepo.findById(body.token()).orElse(null);
-            if (invite == null || invite.getUsedAt() != null) {
-                return ResponseEntity.status(410).body(new ErrorResponse("This invite link is invalid or has already been used."));
-            }
             FirebaseAuth.getInstance().updateUser(
                 new UserRecord.UpdateRequest(invite.getFirebaseUid()).setPassword(body.password())
             );
@@ -363,7 +370,11 @@ public class OnboardingController {
             inviteTokenRepo.save(invite);
             return ResponseEntity.ok(Map.of("email", invite.getEmail()));
         } catch (Exception e) {
-            e.printStackTrace();
+            // A valid, unused invite still failing here is never "expired" - it's a real
+            // Firebase/backend error (weak password rejected by Firebase's own policy, the
+            // Firebase user was deleted since the invite was issued, rate limiting, etc.).
+            // Logged with the token/email so a specific report is traceable.
+            log.error("consume-invite failed for token {} ({}): {}", invite.getToken(), invite.getEmail(), e.getMessage(), e);
             return ResponseEntity.internalServerError().body(new ErrorResponse(e.getMessage()));
         }
     }

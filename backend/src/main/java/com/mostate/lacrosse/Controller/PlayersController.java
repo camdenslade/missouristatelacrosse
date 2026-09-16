@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -274,6 +275,25 @@ public class PlayersController {
         if (hadEmailBefore || wasClaimed || email == null || email.isBlank()) {
             return;
         }
+        // A returning player carried into a new season row already has a resolved profile
+        // and, usually, an existing Firebase account - applyPayload() just resolved
+        // saved.getProfileId() above via name/email matching, but that new row's own
+        // user_uid still starts blank. Without this check, "no account exists for this
+        // email" (below) is the wrong question - the profile might already have a live
+        // account under a slightly different email/name match path - and onboardPlayer()
+        // would mint a genuinely new, duplicate Firebase account for someone who already
+        // has one. Root cause of a real incident (two Firebase identities ending up
+        // attached to the same person) - see docs/LANDMINES.md. Reuse the profile's uid
+        // directly instead, once confirmed still live.
+        if (saved.getProfileId() != null) {
+            var profile = profileService.findById(saved.getProfileId());
+            String profileUid = profile != null ? profile.getFirebaseUid() : null;
+            if (profileUid != null && !profileUid.isBlank() && firebaseUserExists(profileUid)) {
+                saved.setUserUid(profileUid);
+                repository.save(saved);
+                return;
+            }
+        }
         if (onboardingService.hasAccount(email)) {
             return;
         }
@@ -281,6 +301,15 @@ public class PlayersController {
         if (uid != null) {
             saved.setUserUid(uid);
             repository.save(saved);
+        }
+    }
+
+    private boolean firebaseUserExists(String uid) {
+        try {
+            FirebaseAuth.getInstance().getUser(uid);
+            return true;
+        } catch (Exception e) {
+            return false;
         }
     }
 

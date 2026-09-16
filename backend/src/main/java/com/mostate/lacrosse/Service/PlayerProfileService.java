@@ -4,8 +4,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.firebase.auth.FirebaseAuth;
 import com.mostate.lacrosse.Model.Player;
 import com.mostate.lacrosse.Model.PlayerProfile;
 import com.mostate.lacrosse.Repository.PlayerProfileRepository;
@@ -14,6 +17,8 @@ import com.mostate.lacrosse.Utils.TextSanitizer;
 
 @Service
 public class PlayerProfileService {
+    private static final Logger log = LoggerFactory.getLogger(PlayerProfileService.class);
+
     private final PlayerProfileRepository repository;
 
     public PlayerProfileService(PlayerProfileRepository repository) {
@@ -57,10 +62,30 @@ public class PlayerProfileService {
         if (profile == null || firebaseUid == null || firebaseUid.isBlank()) {
             return;
         }
-        // Only ever set once — never overwrite an existing link with a different uid, since
-        // that would silently reassign this profile's identity to someone else.
-        if (profile.getFirebaseUid() != null && !profile.getFirebaseUid().isBlank()) {
-            return;
+        String existing = profile.getFirebaseUid();
+        if (existing != null && !existing.isBlank()) {
+            if (existing.equals(firebaseUid)) {
+                return;
+            }
+            // Never overwrite an existing link with a different uid while the account it
+            // already points to is still real — that would silently reassign this profile's
+            // identity to someone else. But if the stored uid no longer exists in Firebase
+            // (deleted — e.g. manual cleanup of a duplicate/test account), refusing to update
+            // was leaving this profile permanently stuck pointing at a dead account with no
+            // way to self-heal. Root cause of a real incident (two players' profiles pinned to
+            // a deleted Firebase user while their actual, working account sat unlinked on a
+            // different season's row) — see docs/LANDMINES.md.
+            if (firebaseUserExists(existing)) {
+                log.warn(
+                    "Profile {} firebase_uid stays {} (still live in Firebase) - not switching to {}",
+                    profileId, existing, firebaseUid
+                );
+                return;
+            }
+            log.warn(
+                "Profile {} firebase_uid {} no longer exists in Firebase - replacing with {}",
+                profileId, existing, firebaseUid
+            );
         }
         // Guards against PlayerLinkService's exact-name sibling fallback: two distinct
         // people sharing the same name (or a duplicate roster row) can otherwise cause this
@@ -75,6 +100,15 @@ public class PlayerProfileService {
         }
         profile.setFirebaseUid(firebaseUid);
         repository.save(profile);
+    }
+
+    private boolean firebaseUserExists(String uid) {
+        try {
+            FirebaseAuth.getInstance().getUser(uid);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**

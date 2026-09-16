@@ -76,9 +76,22 @@ export default function SetPassword() {
       }
       setStatus("success");
       setMessage("");
-    } catch {
+    } catch (err) {
       setStatus("error");
-      setMessage("Failed to set password. The link may have expired.");
+      // This link already verified fine (the form is showing), so a failure here is a real
+      // error - a rejected password, a rate limit, a backend problem - never the link itself
+      // for the invite flow (InviteToken never expires by time). Show the actual reason
+      // instead of guessing "expired" for every possible failure.
+      const code = (err as { code?: string })?.code;
+      if (isInviteFlow) {
+        setMessage(err instanceof Error && err.message ? err.message : "Failed to set password. Please try again.");
+      } else if (code === "auth/expired-action-code") {
+        setMessage("This link has expired. Please request a new one.");
+      } else if (code === "auth/weak-password") {
+        setMessage("Please choose a stronger password.");
+      } else {
+        setMessage("Failed to set password. Please try again or request a new link.");
+      }
     }
   };
 
