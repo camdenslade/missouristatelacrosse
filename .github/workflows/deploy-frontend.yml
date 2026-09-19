@@ -1,11 +1,11 @@
-name: Deploy frontend (Firebase Hosting)
+name: Deploy frontend (S3 + CloudFront)
 
-# Manual only. Builds the SPA and deploys it to Firebase Hosting
-# (project missouristatelacrosse-cc913, from .firebaserc).
+# Manual only. Builds the SPA and publishes it to the site bucket behind CloudFront in the
+# org AWS account (864145505327). Run it from the main branch: the AWS role only trusts main.
 #
-# Required repository secret:
-#   FIREBASE_SERVICE_ACCOUNT   JSON key for a service account with the
-#                              "Firebase Hosting Admin" role
+# No stored AWS keys: GitHub proves its identity to AWS with OIDC and assumes
+# mostatelax-github-web-deploy, which can only write the one site bucket and invalidate the one
+# distribution.
 #
 # Required repository variables (Settings > Secrets and variables > Actions > Variables)
 # - these mirror the local .env, which is intentionally NOT in git:
@@ -22,6 +22,16 @@ on:
 concurrency:
   group: deploy-frontend
   cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ROLE_ARN: arn:aws:iam::864145505327:role/mostatelax-github-web-deploy
+  SITE_BUCKET: mostatelax-prod-web
+  CLOUDFRONT_DISTRIBUTION_ID: EZK3P3OYRIACI
 
 jobs:
   deploy:
@@ -49,9 +59,21 @@ jobs:
           VITE_DONATE_ENABLED_WOMEN: ${{ vars.VITE_DONATE_ENABLED_WOMEN }}
         run: npm run build
 
-      - name: Deploy to Firebase Hosting
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Publish to S3
         run: |
-          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$RUNNER_TEMP/sa.json"
-          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
-          npx --yes firebase-tools@13 deploy --only hosting --non-interactive --project missouristatelacrosse-cc913
-          rm -f "$RUNNER_TEMP/sa.json"
+          # Hashed asset files never change, so browsers and the CDN can keep them for a year.
+          aws s3 sync dist/assets "s3://${SITE_BUCKET}/assets" --delete \
+            --cache-control "public,max-age=31536000,immutable"
+          # Everything else (index.html, service worker, icons) must be re-checked every time.
+          aws s3 sync dist "s3://${SITE_BUCKET}" --exclude "assets/*" --delete \
+            --cache-control "no-cache"
+
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${CLOUDFRONT_DISTRIBUTION_ID}" --paths "/*"

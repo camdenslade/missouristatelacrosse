@@ -2,7 +2,7 @@ import { CheckCircle2 } from "lucide-react";
 import { useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
-import API_BASE from "../../../../Services/API";
+import { sendPaymentConfirmation } from "../../../../Services/paymentConfirmation";
 import { getProgramInfo } from "../../../../Services/programHelper";
 
 export default function FundraiserSuccess() {
@@ -21,29 +21,9 @@ export default function FundraiserSuccess() {
       return;
     }
 
-    const payer = order.payer || {};
-    const name = `${payer.name?.given_name || ""} ${payer.name?.surname || ""}`.trim();
-    const email = payer.email_address || "";
-
-    const sendThankYou = async () => {
-      if (!email) return;
-      try {
-        await fetch(`${API_BASE}/api/email/send`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            to: email,
-            subject: `Thank You for Supporting Missouri State Lacrosse - ${campaignTitle}`,
-            body: `Hi ${name || "Supporter"},\n\nThank you for your generous donation of $${amount?.toFixed(2)} to "${campaignTitle}"!\n\nYour support makes a real difference for our athletes. We are a non-scholarship organization entirely supported by player dues and fundraising, and contributions like yours allow us to compete at the highest level.\n\nAll donations are tax deductible - Missouri State Lacrosse is a registered 501(c)(3) organization.\n\nGo Bears!\nMissouri State Lacrosse`,
-          }),
-        });
-      } catch (err) {
-        console.error("Failed to send thank-you email:", err);
-      }
-    };
-
+    const sendThankYou = () => sendPaymentConfirmation(order?.id, "fundraiser");
     sendThankYou();
-  }, [order, navigate, amount, campaignTitle, slug, base]);
+  }, [order, navigate, slug, base]);
 
   if (!order) return null;
 

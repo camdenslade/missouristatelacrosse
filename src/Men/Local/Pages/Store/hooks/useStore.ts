@@ -2,6 +2,7 @@ import { useCallback } from "react";
 
 import usePaymentButtons from "../../../../../Global/Common/hooks/usePaymentButtons";
 import { apiRequest } from "../../../../../Services/API";
+import { sendPaymentConfirmation } from "../../../../../Services/paymentConfirmation";
 
 type NavigateFn = (path: string, options?: { state?: unknown }) => void;
 type SetCartFn = (items: any[] | ((prev: any[]) => any[])) => void;
@@ -58,20 +59,8 @@ export default function useStore(
         });
       }
 
-      // Send receipt email (non-blocking)
-      try {
-        await apiRequest("/api/email/receipt", {
-          method: "POST",
-          json: {
-            email: shipping?.email,
-            name: `${shipping?.firstName || ""} ${shipping?.lastName || ""}`.trim(),
-            orderId: orderID,
-            body: `Thank you for your order from Missouri State Lacrosse! Your order ID is ${orderID}.`,
-          },
-        });
-      } catch (emailErr) {
-        console.warn("Receipt email failed (non-blocking):", emailErr);
-      }
+      // Confirmation email (non-blocking): the server sends it to the payer on record
+      await sendPaymentConfirmation(orderID, "order");
 
       // Clear cart only after fulfillment request
       if (typeof setCart === "function") {

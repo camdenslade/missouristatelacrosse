@@ -110,7 +110,7 @@ export default function usePayPalButtons(
         );
 
         // Confirmation emails are each flow's own responsibility (DuesPaymentController's
-        // receipt email, Donate/FundraiserSuccess's /api/email/send call, etc.) - this hook
+        // receipt email, the success pages' payment confirmation call, etc.) - this hook
         // used to also fire a generic /api/email/confirm-donation here, but that endpoint
         // never existed server-side, so it silently failed on every single payment.
 

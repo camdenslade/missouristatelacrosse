@@ -21,7 +21,7 @@ END $$;
 -- jsonb arrays of URLs: rewrite each element the same way, leaving non-S3 elements alone.
 UPDATE men.raffles SET images = (
   SELECT jsonb_agg(CASE WHEN e #>> '{}' ~ '^https?://[^/]+\.amazonaws\.com/'
-                        THEN to_jsonb(regexp_replace(e #>> '{}', '^https?://[^/]+/([^?]+).*$', ''))
+                        THEN to_jsonb(regexp_replace(e #>> '{}', '^https?://[^/]+/([^?]+).*$', '\1'))
                         ELSE e END)
   FROM jsonb_array_elements(images) e)
 WHERE jsonb_typeof(images) = 'array' AND images::text ~ 'amazonaws\.com';
@@ -32,7 +32,7 @@ BEGIN
   FOREACH s IN ARRAY ARRAY['men','women'] LOOP
     EXECUTE format($f$UPDATE %I.gallery_folders SET urls = (
       SELECT jsonb_agg(CASE WHEN e #>> '{}' ~ '^https?://[^/]+\.amazonaws\.com/'
-                            THEN to_jsonb(regexp_replace(e #>> '{}', '^https?://[^/]+/([^?]+).*$', ''))
+                            THEN to_jsonb(regexp_replace(e #>> '{}', '^https?://[^/]+/([^?]+).*$', '\1'))
                             ELSE e END)
       FROM jsonb_array_elements(urls) e)
       WHERE jsonb_typeof(urls) = 'array' AND urls::text ~ 'amazonaws\.com'$f$, s);
