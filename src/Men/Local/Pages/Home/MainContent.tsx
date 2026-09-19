@@ -337,6 +337,7 @@ export default function MainContent() {
             >
               Donate
             </a>
+            {/* Hidden for now: the women's site is reachable by URL only. Restore this link to re-list it.
             <a
               href="/women"
               className="text-white font-semibold uppercase text-sm tracking-wide inline-flex items-center gap-1.5 hover:text-white/70 transition"
@@ -344,6 +345,7 @@ export default function MainContent() {
               Women's Site
               <span aria-hidden="true">&#8599;</span>
             </a>
+            */}
           </div>
         </div>
 

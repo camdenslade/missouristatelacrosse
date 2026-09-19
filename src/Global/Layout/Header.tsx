@@ -184,12 +184,16 @@ export default function Header({ onAuthOpen }: HeaderProps) {
                 <div className="px-4 py-3 font-bold text-sm border-b border-gray-100 bg-gray-50">
                   {userName || "User"}
                 </div>
-                <button
-                  onClick={handleSwitchProgram}
-                  className="block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors"
-                >
-                  {isWomen ? "Switch to Men's Site" : "Switch to Women's Site"}
-                </button>
+                {/* The women's site is hidden from the men's site for now (reachable by URL only).
+                    Remove the isWomen guard to bring the switcher back in both directions. */}
+                {isWomen && (
+                  <button
+                    onClick={handleSwitchProgram}
+                    className="block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors"
+                  >
+                    {isWomen ? "Switch to Men's Site" : "Switch to Women's Site"}
+                  </button>
+                )}
                 {isGlobalAdmin && (
                   <Link
                     to={programLink("/admin")}
