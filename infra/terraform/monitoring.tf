@@ -104,11 +104,12 @@ resource "aws_cloudwatch_metric_alarm" "backend_down" {
   ok_actions          = [aws_sns_topic.alerts.arn]
 }
 
-# Emails at 75% of actual spend, and again at 100% of actual and of forecast spend.
+# Target: under $60 a month. Emails at 75% of actual spend ($45), and again at 100% of actual and of
+# forecast spend ($60).
 resource "aws_budgets_budget" "monthly" {
   name         = "mostatelax-prod-monthly"
   budget_type  = "COST"
-  limit_amount = "80.0"
+  limit_amount = "60.0"
   limit_unit   = "USD"
   time_unit    = "MONTHLY"
 

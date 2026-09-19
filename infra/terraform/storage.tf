@@ -38,7 +38,7 @@ resource "aws_s3_bucket_versioning" "images" {
   }
 }
 
-# Nightly database dumps, kept 35 days.
+# Nightly database dumps and password manager backups, each kept 35 days.
 resource "aws_s3_bucket" "backups" {
   bucket = "mostatelax-prod-backups"
 
@@ -76,6 +76,19 @@ resource "aws_s3_bucket_lifecycle_configuration" "backups" {
 
     filter {
       prefix = "db/"
+    }
+
+    expiration {
+      days = 35
+    }
+  }
+
+  rule {
+    id     = "expire-old-vault-backups"
+    status = "Enabled"
+
+    filter {
+      prefix = "vault/"
     }
 
     expiration {
