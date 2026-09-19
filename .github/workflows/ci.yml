@@ -9,6 +9,10 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege: these jobs only read the repository. Nothing here needs to write to it.
+permissions:
+  contents: read
+
 jobs:
   frontend:
     name: Frontend (lint / typecheck / build)

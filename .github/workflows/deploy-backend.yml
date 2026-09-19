@@ -1,15 +1,15 @@
-name: Deploy backend (EC2)
+name: Deploy backend (Systems Manager)
 
-# Manual only. Builds the boot jar, copies it to the EC2 host, restarts the
-# laxsite-backend systemd service. This is the CI version of backend/deploy-backend.sh.
+# Manual only. Builds and tests the backend, uploads the jar to S3, then has the server install it
+# through AWS Systems Manager. Run it from the main branch: the AWS role only trusts main.
 #
-# Required repository secrets (Settings > Secrets and variables > Actions):
-#   EC2_HOST     e.g. api.missouristatelacrosse.com
-#   EC2_USER     e.g. ec2-user
-#   EC2_SSH_KEY  contents of the laxsite-key.pem private key
+# No SSH and no stored keys. GitHub proves its identity to AWS with OIDC and assumes
+# mostatelax-github-backend-deploy, which can only upload to one S3 folder and run one command on
+# the one backend instance. The server checks the jar's checksum before installing it and puts the
+# previous version back automatically if the new one does not come up healthy
+# (infra/backend/deploy-on-server.sh).
 #
-# App secrets (PayPal / Stripe / DB / S3) are NOT needed here - the instance reads them
-# from AWS Secrets Manager at runtime via its IAM role.
+# The old repository secrets EC2_HOST, EC2_USER and EC2_SSH_KEY are no longer used and can be deleted.
 
 on:
   workflow_dispatch:
@@ -18,12 +18,20 @@ concurrency:
   group: deploy-backend
   cancel-in-progress: false
 
+# Least privilege for the GitHub token itself. id-token is what allows the keyless AWS login.
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ROLE_ARN: arn:aws:iam::864145505327:role/mostatelax-github-backend-deploy
+  DEPLOY_BUCKET: mostatelax-prod-backups
+  BACKEND_INSTANCE_ID: i-0a9fa6a3486e95c86
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
     steps:
       - uses: actions/checkout@v4
 
@@ -33,37 +41,57 @@ jobs:
           java-version: "17"
           cache: gradle
 
-      - name: Build boot jar
+      - name: Build and test
+        working-directory: backend
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon clean build
 
-      - name: Resolve jar path
+      - name: Find the jar and checksum it
         id: jar
+        working-directory: backend
         run: |
           JAR=$(ls build/libs/*.jar | grep -v -- '-plain\.jar$' | head -n1)
           test -f "$JAR" || { echo "no boot jar"; exit 1; }
           echo "path=backend/$JAR" >> "$GITHUB_OUTPUT"
+          echo "sha=$(sha256sum "$JAR" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
-      - name: Add SSH key
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload the jar
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+          aws s3 cp "${{ steps.jar.outputs.path }}" \
+            "s3://${DEPLOY_BUCKET}/deploy/backend/${{ steps.jar.outputs.sha }}.jar" --only-show-errors
 
-      - name: Upload + restart
-        working-directory: .
+      - name: Install it on the server
         run: |
-          scp -i ~/.ssh/deploy_key "${{ steps.jar.outputs.path }}" \
-            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/backend/build/libs/"
-          ssh -i ~/.ssh/deploy_key "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
-            "sudo systemctl restart laxsite-backend && sleep 2 && sudo systemctl --no-pager --lines=10 status laxsite-backend"
+          SCRIPT_B64=$(base64 -w0 infra/backend/deploy-on-server.sh)
+          CMD="echo ${SCRIPT_B64} | base64 -d > /tmp/deploy-on-server.sh && bash /tmp/deploy-on-server.sh s3://${DEPLOY_BUCKET}/deploy/backend/${{ steps.jar.outputs.sha }}.jar ${{ steps.jar.outputs.sha }}; rc=\$?; rm -f /tmp/deploy-on-server.sh; exit \$rc"
+          CMD_ID=$(aws ssm send-command \
+            --instance-ids "${BACKEND_INSTANCE_ID}" \
+            --document-name AWS-RunShellScript \
+            --timeout-seconds 600 \
+            --parameters "$(jq -n --arg c "$CMD" '{commands: [$c]}')" \
+            --query Command.CommandId --output text)
+          echo "command $CMD_ID"
+          for i in $(seq 1 200); do
+            STATUS=$(aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "${BACKEND_INSTANCE_ID}" --query Status --output text 2>/dev/null || echo Pending)
+            case "$STATUS" in
+              Success|Failed|Cancelled|TimedOut) break ;;
+            esac
+            sleep 3
+          done
+          aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "${BACKEND_INSTANCE_ID}" \
+            --query '[StandardOutputContent,StandardErrorContent]' --output text
+          test "$STATUS" = "Success" || { echo "deploy did not succeed ($STATUS)"; exit 1; }
 
-      - name: Health check
+      - name: Health check from outside
         run: |
           for i in $(seq 1 10); do
-            if curl -fsS --max-time 5 "https://${{ secrets.EC2_HOST }}/actuator/health" | grep -q '"status":"UP"'; then
+            if curl -fsS --max-time 5 "https://api.missouristatelacrosse.com/actuator/health" | grep -q '"status":"UP"'; then
               echo "healthy"; exit 0
             fi
             echo "waiting for health ($i)"; sleep 5

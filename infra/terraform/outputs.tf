@@ -31,3 +31,8 @@ output "certificate_validation_records" {
     }
   }
 }
+
+output "backend_instance_id" {
+  description = "Used by the backend deploy workflow to target the server. Update the workflow if the instance is ever replaced."
+  value       = aws_instance.backend.id
+}

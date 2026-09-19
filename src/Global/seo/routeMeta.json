@@ -1,0 +1,121 @@
+{
+  "site": "https://missouristatelacrosse.com",
+  "siteName": "Missouri State Lacrosse",
+  "defaultDescription": "Official home of Missouri State Bears men's club lacrosse, an MCLA Division II program. Schedule, roster, stats, team store, events, and ways to support the team.",
+  "pages": [
+    {
+      "path": "/",
+      "title": "Missouri State Lacrosse | Bears Men's Club Lacrosse (MCLA Division II)",
+      "description": "Official home of Missouri State Bears men's club lacrosse, an MCLA Division II program. Schedule, roster, stats, team store, events, and ways to support the team.",
+      "priority": "1.0",
+      "changefreq": "daily"
+    },
+    {
+      "path": "/schedule",
+      "title": "Schedule and Results",
+      "description": "Game schedule, scores, and results for Missouri State Bears men's lacrosse.",
+      "priority": "0.9",
+      "changefreq": "daily"
+    },
+    {
+      "path": "/roster",
+      "title": "Roster",
+      "description": "Meet the players on the Missouri State Bears men's lacrosse roster, season by season.",
+      "priority": "0.8",
+      "changefreq": "weekly"
+    },
+    {
+      "path": "/stats",
+      "title": "Team and Player Stats",
+      "description": "Season statistics for Missouri State men's lacrosse players and the team.",
+      "priority": "0.7",
+      "changefreq": "weekly"
+    },
+    {
+      "path": "/store",
+      "title": "Team Store",
+      "description": "The official Missouri State Lacrosse team store. Apparel and gear that supports the program.",
+      "priority": "0.7",
+      "changefreq": "weekly"
+    },
+    {
+      "path": "/recruitment",
+      "title": "Recruiting",
+      "description": "Interested in playing lacrosse at Missouri State? Tell us about yourself and get in touch with the program.",
+      "priority": "0.7",
+      "changefreq": "monthly"
+    },
+    {
+      "path": "/event-signup",
+      "title": "Events",
+      "description": "Upcoming Missouri State Lacrosse events and signups.",
+      "priority": "0.6",
+      "changefreq": "weekly"
+    },
+    {
+      "path": "/raffles",
+      "title": "Raffles",
+      "description": "Enter Missouri State Lacrosse raffles and support the team.",
+      "priority": "0.5",
+      "changefreq": "weekly"
+    },
+    {
+      "path": "/donate",
+      "title": "Donate",
+      "description": "Support Missouri State Lacrosse with a tax-deductible donation. We are a registered 501(c)(3) organization.",
+      "priority": "0.7",
+      "changefreq": "monthly"
+    },
+    {
+      "path": "/sponsorships",
+      "title": "Become a Sponsor",
+      "description": "Connect your business with Missouri State Lacrosse. Learn about sponsorship opportunities with the Bears.",
+      "priority": "0.6",
+      "changefreq": "monthly"
+    },
+    {
+      "path": "/gallery",
+      "title": "Photo Gallery",
+      "description": "Game and team photos from Missouri State Lacrosse.",
+      "priority": "0.6",
+      "changefreq": "weekly"
+    },
+    {
+      "path": "/privacy-policy",
+      "title": "Privacy Policy",
+      "description": "How Missouri State Lacrosse collects and uses information on this site.",
+      "priority": "0.2",
+      "changefreq": "yearly"
+    },
+    {
+      "path": "/terms-of-service",
+      "title": "Terms of Service",
+      "description": "The terms for using the Missouri State Lacrosse website.",
+      "priority": "0.2",
+      "changefreq": "yearly"
+    }
+  ],
+  "detailPages": [
+    { "prefix": "/raffles/", "title": "Raffle" },
+    { "prefix": "/event-signup/", "title": "Event" },
+    { "prefix": "/fundraiser/", "title": "Fundraiser" }
+  ],
+  "noindexPrefixes": [
+    "/women",
+    "/manage",
+    "/portal",
+    "/payments",
+    "/settings",
+    "/admin",
+    "/checkout",
+    "/pending-approval",
+    "/set-password",
+    "/reset-password",
+    "/alumni-join",
+    "/alumni-budget",
+    "/recruitment/submissions",
+    "/order-lookup",
+    "/dues"
+  ],
+  "noindexSuffixes": ["/success"]
+}

@@ -6,8 +6,8 @@ import { apiRequest } from "../../Services/API";
 import { describeAuthError } from "../../Services/cognitoAuth";
 import { getActiveProgram } from "../../Services/programHelper";
 import type { Program } from "../../types/api";
-import { useAuth } from "../Context/AuthContext";
 import { validateEmail, validateText } from "../Common/utils/validation";
+import { useAuth } from "../Context/AuthContext";
 
 const initialState = {
   isSignUp: false,

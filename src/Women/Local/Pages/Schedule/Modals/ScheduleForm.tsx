@@ -2,6 +2,7 @@ import React, { useEffect, useReducer, useRef } from "react";
 
 import { uploadCompressedImage } from "../../../../../Global/Common/hooks/uploadHelper";
 import Modal from "../../../../../Global/Common/Modal";
+import { safeImageSrc } from "../../../../../Global/Common/utils/safeUrl";
 import {
   getSeasonValue as getCurrentSeasonShort,
   fetchSeasons,
@@ -390,7 +391,7 @@ export default function ScheduleFormModal({
 
         {previewPhoto && (
           <div className="flex flex-col items-center">
-            <img src={previewPhoto} alt="Preview" className="w-32 h-32 object-contain mt-2" />
+            <img src={safeImageSrc(previewPhoto)} alt="Preview" className="w-32 h-32 object-contain mt-2" />
             <button
               type="button"
               onClick={handleRemoveImage}

@@ -2,6 +2,7 @@ import { Instagram, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
+import { safeHttpUrl } from "./utils/safeUrl";
 import { apiRequest } from "../../Services/API";
 import type { ApiInstagramFeed } from "../../types/api";
 
@@ -129,7 +130,7 @@ export default function InstagramManagerModal({ open, onClose, contentKey }: Ins
                   <div className="min-w-0 flex items-center gap-3">
                     <Instagram size={16} className="text-[#5E0009] shrink-0" />
                     <a
-                      href={url}
+                      href={safeHttpUrl(url)}
                       target="_blank"
                       rel="noreferrer"
                       className="text-gray-700 hover:text-[#5E0009] text-sm truncate transition"

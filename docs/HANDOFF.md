@@ -54,7 +54,7 @@ AWS bill looks high, that's where the rest is.
 | Firebase service account (backend) | AWS Secrets Manager `firebase-service-account` (JSON) | used by `FirebaseConfig` to verify ID tokens |
 | Frontend build config | `/.env` (git-ignored) | `VITE_API_BASE`, `VITE_PAYPAL_CLIENT_ID`, `VITE_PAYMENT_PROVIDER(_WOMEN)`, `VITE_STRIPE_PUBLISHABLE_KEY`, `VITE_TEAMSTORE_ENABLED*`, `VITE_DONATE_ENABLED*`. All public-safe (they ship in the browser bundle). |
 | Firebase web config | `src/Services/firebaseConfig.ts` (tracked) | public by design |
-| EC2 SSH key | `backend/laxsite-key.pem` (git-ignored) | `ssh -i backend/laxsite-key.pem ec2-user@api.missouristatelacrosse.com` |
+| EC2 SSH key | `backend/mostatelax-prod-key.pem` (git-ignored) | `ssh -i backend/mostatelax-prod-key.pem ec2-user@api.missouristatelacrosse.com` |
 | AWS deploy keys | `~/.aws/credentials` on the maintainer's machine | IAM user `backenddeploy` |
 | TLS cert (api subdomain) | `/etc/letsencrypt/live/api.missouristatelacrosse.com/` on the box | auto-renewed by `certbot-renew.timer` |
 
@@ -98,13 +98,25 @@ cd backend
 That script: runs `./gradlew test`, builds the boot jar, `scp`s it to
 `ec2-user@api.missouristatelacrosse.com:~/backend/build/libs/`, then
 `sudo systemctl restart laxsite-backend` and health-checks. Needs
-`backend/laxsite-key.pem`.
+`backend/mostatelax-prod-key.pem`.
 
-### CI/CD (GitHub Actions - scaffolded, needs secrets)
+### CI/CD (GitHub Actions)
 
-`.github/workflows/`: `ci.yml` runs on every PR (lint/typecheck/test/build + gradle
-build). `deploy-backend.yml` / `deploy-frontend.yml` are manual (`workflow_dispatch`).
-To activate the deploy workflows, add repo secrets - see `ci-cd.md`.
+`.github/workflows/`: `ci.yml` runs on every PR (lint, typecheck, tests, build, gradle build).
+The two deploy workflows are manual (`workflow_dispatch`) and must be run from the **main** branch:
+
+- `deploy-frontend.yml` builds the site, syncs it to the S3 bucket, and clears the CloudFront cache.
+- `deploy-backend.yml` builds and tests the backend, uploads the jar to S3, and has the server
+  install it through AWS Systems Manager. The server checks the jar's checksum first and puts the
+  previous version back automatically if the new one does not come up healthy.
+
+Neither uses stored AWS keys or SSH: GitHub proves its identity to AWS with OIDC, and each role can
+only touch its own bucket or instance (see `infra/terraform/iam.tf`). The old repository secrets
+`EC2_HOST`, `EC2_USER` and `EC2_SSH_KEY` are no longer used. The frontend build reads its settings
+from repository **variables** (see the header of `deploy-frontend.yml`).
+
+`backend/deploy-backend.sh` still works from your own machine over SSH (allowed from your own address
+only) and is a fallback if GitHub is unavailable.
 
 ---
 
@@ -131,7 +143,7 @@ in real Firebase UIDs, run against the DB.
 
 ## 7. Operations runbook (the EC2 box)
 
-SSH: `ssh -i backend/laxsite-key.pem ec2-user@api.missouristatelacrosse.com`
+SSH: `ssh -i backend/mostatelax-prod-key.pem ec2-user@api.missouristatelacrosse.com`
 
 | Thing | Command / location |
 |---|---|
@@ -267,7 +279,7 @@ Bundle** subscriptions (leftovers from an old streaming approach - nothing uses 
 - [ ] Transfer the **domain registration**.
 - [ ] Add the new owner as an admin on **PayPal / Stripe / Printify**.
 - [ ] Give them **GitHub** repo admin.
-- [ ] Hand over `backend/laxsite-key.pem` and a copy of `/.env` securely (not email).
+- [ ] Hand over `backend/mostatelax-prod-key.pem` and a copy of `/.env` securely (not email).
 - [ ] Walk through one real backend deploy and one frontend deploy together.
 - [ ] Confirm they can SSH to the box and restart services.
 - [ ] Rotate every shared credential after the handoff (SSH key, Printify token,

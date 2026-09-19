@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { useConfirm } from "../../../../../Global/Common/components/ConfirmModal";
 import { uploadCompressedImage } from "../../../../../Global/Common/hooks/uploadHelper";
 import { faviconUrl } from "../../../../../Global/Common/utils/linkImage";
+import { safeImageSrc } from "../../../../../Global/Common/utils/safeUrl";
 import type { ApiTodo, ApiTodoCompletion } from "../../../../../types/api";
 import {
   createTodo,
@@ -290,7 +291,7 @@ export default function ManageTodos({ season, availableSeasons = [] }: ManageTod
             <p className="text-xs text-gray-400 mb-2">Optional. Without one, the card shows the link's favicon.</p>
             {imageItem ? (
               <div className="relative w-16">
-                <img src={imageItem.preview} alt="" className="h-16 w-16 object-cover rounded-lg border border-gray-200" />
+                <img src={safeImageSrc(imageItem.preview)} alt="" className="h-16 w-16 object-cover rounded-lg border border-gray-200" />
                 <button
                   type="button"
                   onClick={() => setImageItem(null)}

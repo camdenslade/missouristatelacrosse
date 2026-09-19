@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 
 import { useSponsors } from "../../../../Global/Common/hooks/useSponsors";
+import { safeImageSrc } from "../../../../Global/Common/utils/safeUrl";
 import { validateText, validateUrl } from "../../../../Global/Common/utils/validation";
 import type { ApiSponsor } from "../../../../types/api";
 
@@ -152,7 +153,7 @@ export default function ManageSponsors() {
           />
           {preview && (
             <img
-              src={preview}
+              src={safeImageSrc(preview)}
               alt="Preview"
               className="mt-2 h-16 object-contain border border-gray-200 rounded-lg p-1 bg-white"
             />

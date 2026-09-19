@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 
 import { uploadCompressedImage } from "../../../../../Global/Common/hooks/uploadHelper";
 import Modal from "../../../../../Global/Common/Modal";
+import { safeImageSrc } from "../../../../../Global/Common/utils/safeUrl";
 import { validateNumber, validateText } from "../../../../../Global/Common/utils/validation";
 import { apiRequest } from "../../../../../Services/API";
 import useCoaches from "../contenthooks/useCoaches";
@@ -392,7 +393,7 @@ export default function RosterFormModal({
         {previewPhoto && (
           <div className="flex flex-col items-center">
             <img
-              src={previewPhoto}
+              src={safeImageSrc(previewPhoto)}
               alt="Preview"
               className="w-32 h-48 object-cover mt-2"
             />

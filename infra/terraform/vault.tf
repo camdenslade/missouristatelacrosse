@@ -182,3 +182,55 @@ output "vault_public_ip" {
   description = "Point the vault DNS record (an A record) at this."
   value       = aws_eip.vault.public_ip
 }
+
+# Outgoing mail for the password manager (officer invites, sign-in notices), sent through the same
+# SES domain as the site. Vaultwarden speaks SMTP, and SES's SMTP needs its own credential, so this
+# is a dedicated user that can do exactly one thing: send mail from no-reply@. Its key is created
+# by hand, converted to an SMTP password, and stored only in Secrets Manager. It is not in Terraform
+# or git, and the raw key is discarded.
+resource "aws_iam_user" "vault_smtp" {
+  name = "mostatelax-prod-vault-smtp"
+  path = "/service/"
+}
+
+resource "aws_iam_user_policy" "vault_smtp" {
+  name = "send-as-no-reply"
+  user = aws_iam_user.vault_smtp.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "SendFromNoReplyOnly"
+      Effect   = "Allow"
+      Action   = "ses:SendRawEmail"
+      Resource = aws_sesv2_email_identity.domain.arn
+      Condition = {
+        StringEquals = { "ses:FromAddress" = "no-reply@missouristatelacrosse.com" }
+      }
+    }]
+  })
+}
+
+resource "aws_secretsmanager_secret" "vault_smtp" {
+  name        = "mostatelax/prod/vault-smtp"
+  description = "SES SMTP username and password for the password manager"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "aws_iam_role_policy" "vault_read_smtp" {
+  name = "read-smtp-secret"
+  role = aws_iam_role.vault.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "ReadOwnSmtpSecret"
+      Effect   = "Allow"
+      Action   = "secretsmanager:GetSecretValue"
+      Resource = aws_secretsmanager_secret.vault_smtp.arn
+    }]
+  })
+}

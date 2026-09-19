@@ -10,6 +10,7 @@ import {
   fetchAdminFundraisers,
   updateFundraiser,
 } from "../../../../Global/Common/hooks/useFundraisers";
+import { safeImageSrc } from "../../../../Global/Common/utils/safeUrl";
 import { apiRequest } from "../../../../Services/API";
 import { getProgramInfo } from "../../../../Services/programHelper";
 import type { ApiFundraiser, ApiFundraiserExpense } from "../../../../types/api";
@@ -400,7 +401,7 @@ function FundraiserForm({
           <label className="block text-sm font-medium text-gray-700 mb-1">Campaign Image</label>
           {imageItem ? (
             <div className="relative w-40">
-              <img src={imageItem.preview} alt="" className="h-24 w-40 object-cover rounded-lg border border-gray-200" />
+              <img src={safeImageSrc(imageItem.preview)} alt="" className="h-24 w-40 object-cover rounded-lg border border-gray-200" />
               <button
                 type="button"
                 onClick={onRemoveImage}

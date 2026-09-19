@@ -8,8 +8,9 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "build:fast": "vite build",
+    "sitemap": "node scripts/generate-sitemap.mjs",
+    "build": "npm run sitemap && tsc --noEmit && vite build",
+    "build:fast": "npm run sitemap && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

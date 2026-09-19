@@ -21,6 +21,8 @@ import jakarta.servlet.http.HttpServletRequest;
 @RestController
 @RequestMapping("api/account-requests")
 public class AccountRequestController {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AccountRequestController.class);
+
     private final AccountRequestService accountRequestService;
     private final AuthorizationService authorizationService;
 
@@ -39,8 +41,10 @@ public class AccountRequestController {
             String id = accountRequestService.createRequest(requestModel);
             return ResponseEntity.ok(id);
         } catch (Exception e){
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().body("Error creating request: " + e.getMessage());
+            // The reason stays in the server log. Callers only get a fixed message, so internal
+            // details (class names, SQL, addresses) never reach an anonymous visitor.
+            log.error("Could not create account request", e);
+            return ResponseEntity.internalServerError().body("We could not submit your request. Please try again.");
         }
     }
 

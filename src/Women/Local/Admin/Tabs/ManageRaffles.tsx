@@ -17,6 +17,7 @@ import {
   toggleRaffleStream,
   updateRaffle,
 } from "../../../../Global/Common/hooks/useRaffles";
+import { safeImageSrc } from "../../../../Global/Common/utils/safeUrl";
 import { getProgramInfo } from "../../../../Services/programHelper";
 import type { ApiRaffle, ApiRaffleEntry } from "../../../../types/api";
 
@@ -574,7 +575,7 @@ function RaffleForm({
           <div className="flex flex-wrap gap-3 mt-2">
             {imageItems.map((item, idx) => (
               <div key={idx} className="relative">
-                <img src={item.preview} alt="" className="h-20 w-24 object-cover rounded-lg border border-gray-200" />
+                <img src={safeImageSrc(item.preview)} alt="" className="h-20 w-24 object-cover rounded-lg border border-gray-200" />
                 <button
                   type="button"
                   onClick={() => onRemoveImage(idx)}

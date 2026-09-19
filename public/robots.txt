@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+
+# Pages that are only for signed-in people or have nothing to show a search engine. The women's
+# site is not listed here on purpose: it is kept out of search results with a noindex header, which
+# crawlers can only see if they are allowed to fetch the page.
+Disallow: /manage
+Disallow: /portal
+Disallow: /payments
+Disallow: /settings
+Disallow: /admin
+Disallow: /dues
+Disallow: /order-lookup
+Disallow: /checkout
+Disallow: /pending-approval
+Disallow: /set-password
+Disallow: /reset-password
+Disallow: /alumni-budget
+Disallow: /recruitment/submissions
+Disallow: /api/
+
+Sitemap: https://missouristatelacrosse.com/sitemap.xml

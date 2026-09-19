@@ -52,8 +52,10 @@ encrypted), with locking, so two people cannot apply at once.
 
 - **Your home IP changed and SSH stopped working:** set `admin_ssh_cidr` (in `compute.tf`, or pass
   `-var admin_ssh_cidr=1.2.3.4/32`) and apply.
-- **Deploy the website:** that is the GitHub workflow, not Terraform. Terraform only defines where it
-  goes.
+- **Deploy the website or the backend:** those are the GitHub workflows, not Terraform. Terraform only
+  defines where they go and who may do it. The backend deploys through Systems Manager, so the
+  server needs no SSH access for it. If the instance is ever replaced, update `BACKEND_INSTANCE_ID`
+  in `.github/workflows/deploy-backend.yml` (`terraform output backend_instance_id`).
 - **Retire Firebase sign-in:** delete the `lambda_config` block in `auth.tf`, then the migration
   Lambda and its role and permission.
 
@@ -77,13 +79,18 @@ about $11 a month. It has no SSH and its admin panel is disabled. Contents are e
 person's browser, so the server and its backups never hold readable passwords.
 
 - **Add an officer:** in the web vault, open the organization, then Members, then Invite. They
-  register with the same email address. Public sign-up is off, and no email is sent (there is no
-  mail server configured), so tell them directly.
+  register with the same email address. Public sign-up is off. Invite emails are sent from
+  no-reply@ through SES.
 - **Server access:** through AWS Systems Manager, not SSH. Console: Systems Manager, Session
   Manager. The DNS record is `vault` (A) pointing at `terraform output vault_public_ip`.
 - **Backups:** nightly at 07:30 UTC to `s3://mostatelax-prod-backups/vault/` (kept 35 days), plus the
   daily disk snapshot. To restore, unpack a backup into `/opt/vault/data` and restart the
   `vaultwarden` service.
+- **Email:** the server sends through SES SMTP with a dedicated credential (IAM user
+  `mostatelax-prod-vault-smtp`) that can only send mail from `no-reply@`. Its login is in Secrets
+  Manager (`mostatelax/prod/vault-smtp`), never in git or Terraform. To rotate it, delete the old
+  key, create a new one, rerun the credential step, then run `/usr/local/bin/vault-load-smtp.sh` on
+  the server.
 - **Upgrade:** change `vaultwarden_version` in `vault.tf`, then on the server run
   `docker pull vaultwarden/server:<version>` and `systemctl restart vaultwarden`. Terraform does not
   redeploy the server when versions change (first-boot settings only apply when it is created).

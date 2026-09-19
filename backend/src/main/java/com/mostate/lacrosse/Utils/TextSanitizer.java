@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 public final class TextSanitizer {
-    private static final Pattern TAGS = Pattern.compile("(?s)<[^>]*>");
     private static final Pattern CONTROL = Pattern.compile("[\\p{Cntrl}&&[^\\r\\n\\t]]");
 
     private TextSanitizer() {}
@@ -17,9 +16,34 @@ public final class TextSanitizer {
             return null;
         }
         String sanitized = input.trim();
-        sanitized = TAGS.matcher(sanitized).replaceAll("");
+        sanitized = stripTags(sanitized);
         sanitized = CONTROL.matcher(sanitized).replaceAll("");
         return sanitized;
+    }
+
+    /**
+     * Removes every complete "<...>" run. Same result as the regex "(?s)<[^>]*>", but a single pass:
+     * the regex rescans to the end of the string for every "<" that has no closing ">", which takes
+     * quadratic time on input like "<<<<<<...". This runs on public form fields, so that matters.
+     */
+    static String stripTags(String input) {
+        StringBuilder out = new StringBuilder(input.length());
+        int i = 0;
+        while (i < input.length()) {
+            int open = input.indexOf('<', i);
+            if (open < 0) {
+                break;
+            }
+            int close = input.indexOf('>', open + 1);
+            if (close < 0) {
+                // No ">" anywhere after this "<", so no later "<" can form a tag either.
+                break;
+            }
+            out.append(input, i, open);
+            i = close + 1;
+        }
+        out.append(input, i, input.length());
+        return out.toString();
     }
 
     public static List<String> cleanStringList(List<String> input) {

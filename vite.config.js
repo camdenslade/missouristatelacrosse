@@ -34,7 +34,6 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8080', // Spring Boot backend
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '/api'), // keep /api
       },
       '/ws': {
         target: 'http://localhost:8080',

@@ -1,6 +1,6 @@
-import type { AuthUser } from "../../Services/cognitoAuth";
 import { Link } from "react-router-dom";
 
+import type { AuthUser } from "../../Services/cognitoAuth";
 import { getProgramInfo } from "../../Services/programHelper";
 import type { Program, Role } from "../../types/api";
 

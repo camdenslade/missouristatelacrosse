@@ -162,3 +162,76 @@ resource "aws_iam_role_policy" "github_web_deploy" {
     ]
   })
 }
+
+# Backend deploys without SSH. GitHub uploads the built jar to a folder in the backup bucket, then
+# tells the server to fetch and install it through AWS Systems Manager. The server itself only
+# needs to read that one folder and be manageable by Systems Manager.
+resource "aws_iam_role_policy_attachment" "ec2_ssm" {
+  role       = aws_iam_role.ec2.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_role_policy" "ec2_deploy_artifacts" {
+  name = "read-deploy-artifacts"
+  role = aws_iam_role.ec2.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "ReadBackendJars"
+      Effect   = "Allow"
+      Action   = ["s3:GetObject"]
+      Resource = "${aws_s3_bucket.backups.arn}/deploy/backend/*"
+    }]
+  })
+}
+
+# Trusted only from the main branch of this repository, like the website deploy role.
+resource "aws_iam_role" "github_backend_deploy" {
+  name        = "mostatelax-github-backend-deploy"
+  description = "GitHub Actions deploys the backend through Systems Manager (main branch only)"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Action    = "sts:AssumeRoleWithWebIdentity"
+      Principal = { Federated = aws_iam_openid_connect_provider.github.arn }
+      Condition = {
+        StringEquals = {
+          "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+          "token.actions.githubusercontent.com:sub" = "repo:camdenslade/missouristatelacrosse:ref:refs/heads/main"
+        }
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "github_backend_deploy" {
+  name = "deploy-backend"
+  role = aws_iam_role.github_backend_deploy.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "UploadJar"
+        Effect   = "Allow"
+        Action   = ["s3:PutObject"]
+        Resource = "${aws_s3_bucket.backups.arn}/deploy/backend/*"
+      },
+      {
+        Sid      = "RunOneCommandOnTheBackend"
+        Effect   = "Allow"
+        Action   = ["ssm:SendCommand"]
+        Resource = [aws_instance.backend.arn, "arn:aws:ssm:us-east-1::document/AWS-RunShellScript"]
+      },
+      {
+        Sid      = "ReadCommandResult"
+        Effect   = "Allow"
+        Action   = ["ssm:GetCommandInvocation", "ssm:ListCommandInvocations"]
+        Resource = "*"
+      },
+    ]
+  })
+}

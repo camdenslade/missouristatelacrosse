@@ -21,6 +21,7 @@ import {
   updateEvent,
   sendTeamReminder,
 } from "../../../../Global/Common/hooks/useEvents";
+import { safeImageSrc } from "../../../../Global/Common/utils/safeUrl";
 import {
   extractTeamNameLabel,
   getRegistrationTeamName,
@@ -537,7 +538,7 @@ function EventForm({
           />
           {imagePreview && (
             <div className="mt-2 flex items-center gap-3">
-              <img src={imagePreview} alt="Preview" className="h-20 w-32 object-cover rounded-lg border border-gray-200" />
+              <img src={safeImageSrc(imagePreview)} alt="Preview" className="h-20 w-32 object-cover rounded-lg border border-gray-200" />
               <button
                 type="button"
                 onClick={() => {

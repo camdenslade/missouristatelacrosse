@@ -2,7 +2,7 @@
 set -euo pipefail
 
 
-PEM="./laxsite-key.pem"
+PEM="./mostatelax-prod-key.pem"
 HOST="ec2-user@api.missouristatelacrosse.com"
 
 
@@ -33,5 +33,5 @@ echo "Done. Health check (remote localhost):"
 ssh -i "$PEM" "$HOST" "curl -s --connect-timeout 5 --max-time 10 http://localhost:8080/actuator/health || true"
 echo
 echo "Health check (public):"
-curl -s --connect-timeout 5 --max-time 10 "http://api.missouristatelacrosse.com:8080/actuator/health" || true
+curl -s --connect-timeout 5 --max-time 10 "https://api.missouristatelacrosse.com/actuator/health" || true
 echo
