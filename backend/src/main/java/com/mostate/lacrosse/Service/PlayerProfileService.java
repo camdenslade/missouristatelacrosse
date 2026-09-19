@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.firebase.auth.FirebaseAuth;
 import com.mostate.lacrosse.Model.Player;
 import com.mostate.lacrosse.Model.PlayerProfile;
 import com.mostate.lacrosse.Repository.PlayerProfileRepository;
@@ -20,9 +19,11 @@ public class PlayerProfileService {
     private static final Logger log = LoggerFactory.getLogger(PlayerProfileService.class);
 
     private final PlayerProfileRepository repository;
+    private final IdentityService identityService;
 
-    public PlayerProfileService(PlayerProfileRepository repository) {
+    public PlayerProfileService(PlayerProfileRepository repository, IdentityService identityService) {
         this.repository = repository;
+        this.identityService = identityService;
     }
 
     public PlayerProfile findById(UUID id) {
@@ -69,21 +70,21 @@ public class PlayerProfileService {
             }
             // Never overwrite an existing link with a different uid while the account it
             // already points to is still real — that would silently reassign this profile's
-            // identity to someone else. But if the stored uid no longer exists in Firebase
+            // identity to someone else. But if the stored uid has no account row
             // (deleted — e.g. manual cleanup of a duplicate/test account), refusing to update
             // was leaving this profile permanently stuck pointing at a dead account with no
             // way to self-heal. Root cause of a real incident (two players' profiles pinned to
             // a deleted Firebase user while their actual, working account sat unlinked on a
             // different season's row) — see docs/LANDMINES.md.
-            if (firebaseUserExists(existing)) {
+            if (identityService.accountKnown(existing)) {
                 log.warn(
-                    "Profile {} firebase_uid stays {} (still live in Firebase) - not switching to {}",
+                    "Profile {} firebase_uid stays {} (still has an account) - not switching to {}",
                     profileId, existing, firebaseUid
                 );
                 return;
             }
             log.warn(
-                "Profile {} firebase_uid {} no longer exists in Firebase - replacing with {}",
+                "Profile {} firebase_uid {} has no account row - replacing with {}",
                 profileId, existing, firebaseUid
             );
         }
@@ -100,15 +101,6 @@ public class PlayerProfileService {
         }
         profile.setFirebaseUid(firebaseUid);
         repository.save(profile);
-    }
-
-    private boolean firebaseUserExists(String uid) {
-        try {
-            FirebaseAuth.getInstance().getUser(uid);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
     }
 
     /**

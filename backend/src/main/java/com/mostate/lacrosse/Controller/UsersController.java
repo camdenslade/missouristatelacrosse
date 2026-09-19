@@ -77,6 +77,25 @@ public class UsersController {
         return ResponseEntity.ok(payload);
     }
 
+    /**
+     * The signed-in caller's own account, resolved from their token. This is how the frontend
+     * learns its account uid: a Cognito sign-in only knows the provider's id, and the uid every
+     * other endpoint and table uses is ours. An unknown account never reaches here (the auth
+     * filter answers 401 first).
+     */
+    @GetMapping("/me")
+    public ResponseEntity<?> me(HttpServletRequest request) {
+        String uid = (String) request.getAttribute("firebaseUid");
+        if (uid == null || uid.isBlank()) {
+            return ResponseEntity.status(401).body(new ErrorResponse("Authentication required"));
+        }
+        UserAccount user = repository.findByFirebaseUid(uid).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(404).body(new ErrorResponse("No account for this sign-in"));
+        }
+        return ResponseEntity.ok(toResponse(user));
+    }
+
     @GetMapping("/{uid}")
     public ResponseEntity<?> getByUid(
         HttpServletRequest request,

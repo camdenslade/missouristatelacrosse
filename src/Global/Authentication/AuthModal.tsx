@@ -1,12 +1,12 @@
-import { signInWithEmailAndPassword } from "firebase/auth";
 import { X } from "lucide-react";
 import { useReducer } from "react";
 import type { FormEvent } from "react";
 
 import { apiRequest } from "../../Services/API";
-import { auth } from "../../Services/firebaseConfig";
+import { describeAuthError } from "../../Services/cognitoAuth";
 import { getActiveProgram } from "../../Services/programHelper";
-import type { ApiUser, Program } from "../../types/api";
+import type { Program } from "../../types/api";
+import { useAuth } from "../Context/AuthContext";
 import { validateEmail, validateText } from "../Common/utils/validation";
 
 const initialState = {
@@ -53,6 +53,7 @@ type AuthModalProps = {
 };
 
 export default function AuthModal({ onClose }: AuthModalProps) {
+  const { signIn } = useAuth();
   const [state, dispatch] = useReducer(reducer, initialState);
   const { isSignUp, email, displayName, password, error, submitted, submitting } = state;
 
@@ -93,52 +94,11 @@ export default function AuthModal({ onClose }: AuthModalProps) {
     dispatch({ type: "SUBMITTING" });
 
     try {
-      const program = getActiveProgram() as Program;
-      const userCred = await signInWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCred.user;
-
-      const userId = firebaseUser.uid;
-      let userData = await apiRequest<ApiUser>(`/api/users/${userId}`).catch(() => null);
-
-      if (!userData) {
-        const newDisplayName = firebaseUser.displayName || email.split("@")[0];
-        userData = await apiRequest<ApiUser>(`/api/users/${userId}`, {
-          method: "PUT",
-          json: {
-            email: firebaseUser.email,
-            displayName: newDisplayName,
-            roles: { [program]: "player" },
-            programs: [program],
-          },
-        });
-      } else {
-        const roles = userData.roles || {};
-        const updates: Partial<ApiUser> = {};
-        if (!roles[program]) {
-          updates.roles = { [program]: "player" };
-        }
-        const programs = Array.isArray(userData.programs) ? userData.programs : [];
-        if (!programs.includes(program)) {
-          updates.programs = [...programs, program];
-        }
-        if (Object.keys(updates).length > 0) {
-          await apiRequest<ApiUser>(`/api/users/${userId}`, {
-            method: "PUT",
-            json: updates,
-          });
-        }
-      }
-
+      await signIn(email, password);
       onClose();
     } catch (err) {
       console.error(err);
-      const message = err instanceof Error ? err.message : String(err);
-      const code = (err as { code?: string }).code;
-      let msg = "Failed to sign in: " + message;
-      if (code === "auth/user-not-found") msg = "No account found with this email.";
-      else if (code === "auth/wrong-password") msg = "Incorrect password. Please try again.";
-      else if (code === "auth/too-many-requests") msg = "Too many attempts. Please wait a moment.";
-      dispatch({ type: "ERROR", error: msg });
+      dispatch({ type: "ERROR", error: describeAuthError(err) });
     } finally {
       dispatch({ type: "SET_FIELD", field: "submitting", value: false });
     }

@@ -1,5 +1,3 @@
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import type { User as FirebaseUser } from "firebase/auth";
 import {
   createContext,
   useCallback,
@@ -11,7 +9,13 @@ import {
 import type { ReactNode } from "react";
 
 import { apiRequest } from "../../Services/API";
-import { auth } from "../../Services/firebaseConfig";
+import {
+  getSession,
+  setCurrentUid,
+  signIn as cognitoSignIn,
+  signOut as cognitoSignOut,
+} from "../../Services/cognitoAuth";
+import type { AuthUser } from "../../Services/cognitoAuth";
 import { getActiveProgram } from "../../Services/programHelper";
 import { fetchActiveSeasonCode } from "../Common/utils/seasonUtils";
 
@@ -20,7 +24,7 @@ type UserRole = "admin" | "player" | "user" | "parent" | string;
 type RolesByProgram = Record<ProgramKey, UserRole | undefined>;
 
 type AuthState = {
-  user: FirebaseUser | null;
+  user: AuthUser | null;
   role: UserRole | null;
   roles: RolesByProgram;
   userName: string;
@@ -29,7 +33,7 @@ type AuthState = {
 };
 
 type AuthAction =
-  | { type: "SET_USER"; payload: FirebaseUser | null }
+  | { type: "SET_USER"; payload: AuthUser | null }
   | { type: "SET_ROLE"; payload: UserRole | null }
   | { type: "SET_ROLES"; payload: RolesByProgram }
   | { type: "SET_USERNAME"; payload: string }
@@ -41,10 +45,12 @@ type AuthContextValue = AuthState & {
   isAdmin: boolean;
   isAuthenticated: boolean;
   dispatch: React.Dispatch<AuthAction>;
+  signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
 type ApiUserProfile = {
+  uid?: string;
   displayName?: string;
   email?: string | null;
   roles?: RolesByProgram;
@@ -113,29 +119,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+  const signOutUser = useCallback(async () => {
+    try {
+      cognitoSignOut();
+    } finally {
+      setCurrentUid(null);
+      dispatch({ type: "RESET" });
       const program = getProgramProp();
+      localStorage.removeItem(`authCache_${program}`);
+    }
+  }, [getProgramProp]);
 
-      if (!currentUser) {
+  // Loads who the stored Cognito session belongs to. With strict set (an explicit sign-in),
+  // a person Cognito accepts but who has no account here is signed out again and an error is
+  // thrown so the form can say so, instead of leaving a half signed-in state.
+  const hydrate = useCallback(
+    async (strict: boolean) => {
+      const program = getProgramProp();
+      const session = await getSession();
+
+      if (!session) {
+        setCurrentUid(null);
         dispatch({ type: "RESET" });
         localStorage.removeItem(`authCache_${program}`);
         return;
       }
 
-      dispatch({ type: "SET_USER", payload: currentUser });
+      const claims = session.getIdToken().payload as { email?: string; name?: string };
+      const email = claims.email ?? null;
+      const emailFallback = email ? email.split("@")[0] : "";
       dispatch({ type: "SET_LOADING", payload: true });
-      const emailFallback = currentUser.email
-        ? currentUser.email.split("@")[0]
-        : "";
-      const fallbackName = currentUser.displayName || emailFallback;
-      if (fallbackName) {
-        dispatch({ type: "SET_USERNAME", payload: fallbackName });
-      }
 
       const cached = getCachedAuth(program);
-      if (cached && auth.currentUser) {
-        dispatch({ type: "SET_USER", payload: auth.currentUser });
+      if (cached?.uid) {
+        setCurrentUid(cached.uid);
+        dispatch({
+          type: "SET_USER",
+          payload: { uid: cached.uid, email, displayName: cached.name || claims.name || emailFallback },
+        });
         dispatch({ type: "SET_ROLE", payload: cached.role });
         dispatch({ type: "SET_ROLES", payload: cached.roles || {} });
         dispatch({ type: "SET_USERNAME", payload: cached.name });
@@ -143,37 +164,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         dispatch({ type: "SET_LOADING", payload: false });
       }
 
+      let data: ApiUserProfile;
       try {
-        let data = await apiRequest<ApiUserProfile>(
-          `/api/users/${currentUser.uid}`
-        ).catch(() => null);
-        if (!data) {
-          data = await apiRequest<ApiUserProfile>(`/api/users/${currentUser.uid}`, {
-            method: "PUT",
-            json: {
-              email: currentUser.email,
-              displayName:
-                currentUser.displayName || emailFallback,
-              roles: { [program]: "player" },
-              programs: [program],
-            },
-          });
+        data = await apiRequest<ApiUserProfile>("/api/users/me");
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (/^API (401|403|404)/.test(message)) {
+          await signOutUser();
+          if (strict) {
+            throw new Error(
+              "This account is not set up for this site. Ask an admin to add you, or request an account."
+            );
+          }
+        } else {
+          console.error("Auth revalidation error:", err);
+          dispatch({ type: "SET_LOADING", payload: false });
+          if (strict) throw err;
         }
+        return;
+      }
+
+      try {
+        const uid = data.uid as string;
+        const currentUser: AuthUser = {
+          uid,
+          email: data.email ?? email,
+          displayName: data.displayName || claims.name || emailFallback,
+        };
+        setCurrentUid(uid);
 
         const userRoles = data.roles || {};
-        const currentRole =
-          userRoles[program]?.toLowerCase() || null;
-        const displayName =
-          data.displayName ||
-          currentUser.displayName ||
-          currentUser.email ||
-          "";
+        const currentRole = userRoles[program]?.toLowerCase() || null;
+        const displayName = data.displayName || claims.name || email || "";
 
         const programs = Object.keys(userRoles || {});
         const dataProgramSort = JSON.stringify((data.programs || []).sort());
         const programSort = JSON.stringify(programs.sort());
         if (!data.programs || dataProgramSort !== programSort) {
-          await apiRequest<ApiUserProfile>(`/api/users/${currentUser.uid}`, {
+          await apiRequest<ApiUserProfile>(`/api/users/${uid}`, {
             method: "PUT",
             json: { programs },
           });
@@ -189,6 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(
           `authCache_${program}`,
           JSON.stringify({
+            uid,
             role: currentRole,
             roles: userRoles,
             name: displayName,
@@ -204,20 +233,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error("Auth revalidation error:", err);
         dispatch({ type: "SET_LOADING", payload: false });
       }
+    },
+    [getCachedAuth, getProgramProp, signOutUser]
+  );
+
+  useEffect(() => {
+    hydrate(false).catch((err) => {
+      console.error("Auth startup error:", err);
+      dispatch({ type: "SET_LOADING", payload: false });
     });
+  }, [hydrate]);
 
-    return () => unsubscribe();
-  }, [getCachedAuth, getProgramProp]);
-
-  const signOutUser = useCallback(async () => {
-    try {
-      await signOut(auth);
-    } finally {
-      dispatch({ type: "RESET" });
-      const program = getProgramProp();
-      localStorage.removeItem(`authCache_${program}`);
-    }
-  }, [getProgramProp]);
+  const signInUser = useCallback(
+    async (email: string, password: string) => {
+      await cognitoSignIn(email, password);
+      await hydrate(true);
+    },
+    [hydrate]
+  );
 
   const isAdmin = useMemo(() => state.role === "admin", [state.role]);
   const isAuthenticated = useMemo(() => !!state.user, [state.user]);
@@ -228,16 +261,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin,
       isAuthenticated,
       dispatch,
+      signIn: signInUser,
       signOut: signOutUser,
     }),
-    [state, isAdmin, isAuthenticated, signOutUser]
+    [state, isAdmin, isAuthenticated, signInUser, signOutUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 async function tryAutoLinkPlayer(
-  firebaseUser: FirebaseUser,
+  authUser: AuthUser,
   displayName: string
 ) {
   try {
@@ -247,11 +281,11 @@ async function tryAutoLinkPlayer(
       `/api/players/search?name=${encodeURIComponent(displayName)}&season=${encodeURIComponent(currentSeason)}`
     ).catch(() => null);
 
-    if (!player?.id && firebaseUser.email) {
+    if (!player?.id && authUser.email) {
       const allPlayers = await apiRequest<{ id?: string; email?: string }[]>(
         `/api/players?season=${encodeURIComponent(currentSeason)}`
       ).catch(() => []);
-      const emailLower = firebaseUser.email.toLowerCase();
+      const emailLower = authUser.email.toLowerCase();
       player = allPlayers.find(
         (p) => p.email && p.email.toLowerCase() === emailLower
       ) || null;
@@ -260,13 +294,13 @@ async function tryAutoLinkPlayer(
     if (player?.id) {
       const playerId = player.id;
 
-      await apiRequest(`/api/users/${firebaseUser.uid}`, {
+      await apiRequest(`/api/users/${authUser.uid}`, {
         method: "PUT",
         json: { playerId },
       });
       await apiRequest(`/api/players/${playerId}`, {
         method: "PUT",
-        json: { userUid: firebaseUser.uid },
+        json: { userUid: authUser.uid },
       });
     }
   } catch (err) {

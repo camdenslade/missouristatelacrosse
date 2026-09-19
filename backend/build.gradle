@@ -30,10 +30,12 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     implementation 'com.google.firebase:firebase-admin:9.3.0'
+    implementation 'com.nimbusds:nimbus-jose-jwt:9.47'
 
     implementation "software.amazon.awssdk:ses:${awsSdkVersion}"
     implementation "software.amazon.awssdk:auth:${awsSdkVersion}"
     implementation "software.amazon.awssdk:secretsmanager:${awsSdkVersion}"
+    implementation "software.amazon.awssdk:cognitoidentityprovider:${awsSdkVersion}"
     implementation "software.amazon.awssdk:regions:${awsSdkVersion}"
     implementation "software.amazon.awssdk:core:${awsSdkVersion}"
     implementation "software.amazon.awssdk:s3:${awsSdkVersion}"

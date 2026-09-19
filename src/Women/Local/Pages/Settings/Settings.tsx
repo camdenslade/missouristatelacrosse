@@ -2,7 +2,7 @@ import { useEffect, useReducer } from "react";
 
 import { useAuth } from "../../../../Global/Context/AuthContext";
 import { apiRequest } from "../../../../Services/API";
-import { auth } from "../../../../Services/firebaseConfig";
+import { requestPasswordReset } from "../../../../Services/cognitoAuth";
 
 
 
@@ -22,7 +22,7 @@ function settingsReducer(state, action){
 }
 
 export default function WSettings(){
-  const { roles, userName, signOut } = useAuth();
+  const { user, roles, userName, signOut } = useAuth();
 
   const [state, dispatch] = useReducer(settingsReducer, {
     displayName: userName || "",
@@ -41,7 +41,7 @@ export default function WSettings(){
   }, [userName]);
 
   const handleSave = async () => {
-    const currentUser = auth.currentUser;
+    const currentUser = user;
     if (!currentUser) return;
 
     try{
@@ -60,18 +60,15 @@ export default function WSettings(){
   };
 
   const handleResetPassword = async () => {
-    const currentUser = auth.currentUser;
-    if (!currentUser?.email) return;
+    const email = user?.email;
+    if (!email) return;
 
     try{
-      await apiRequest("/api/onboard/forgot-password", {
-        method: "POST",
-        json: { email: currentUser.email },
-      });
-      dispatch({ type: "SET_MESSAGE", payload: "Password reset email sent!" });
+      await requestPasswordReset(email);
+      window.location.href = `/reset-password?step=code&email=${encodeURIComponent(email)}`;
     } catch (err){
-      console.error("Error sending reset email:", err);
-      dispatch({ type: "SET_MESSAGE", payload: "Failed to send password reset email." });
+      console.error("Error sending reset code:", err);
+      dispatch({ type: "SET_MESSAGE", payload: "Failed to send the reset code." });
     }
   };
 
@@ -113,7 +110,7 @@ export default function WSettings(){
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email</label>
             <input
               type="text"
-              value={auth.currentUser?.email || ""}
+              value={user?.email || ""}
               disabled
               className="bg-gray-100 border border-gray-200 text-gray-500 rounded-xl px-4 py-2.5 w-full cursor-not-allowed"
             />

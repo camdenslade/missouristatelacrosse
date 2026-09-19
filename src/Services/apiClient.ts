@@ -1,4 +1,4 @@
-import { auth } from "./firebaseConfig";
+import { getCurrentUid, getIdToken } from "./cognitoAuth";
 import { getActiveProgram } from "./programHelper";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
@@ -9,17 +9,15 @@ type ApiOptions = RequestInit & {
 };
 
 async function getAuthToken(): Promise<string | null> {
-  const user = auth.currentUser;
-  if (!user) return null;
   try {
-    return await user.getIdToken();
+    return await getIdToken();
   } catch {
     return null;
   }
 }
 
 function getUserId(): string | null {
-  return auth.currentUser?.uid ?? null;
+  return getCurrentUid();
 }
 
 export async function apiRequest<T = unknown>(endpoint: string, options: ApiOptions = {}): Promise<T> {

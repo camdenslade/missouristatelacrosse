@@ -7,6 +7,10 @@ import com.mostate.lacrosse.Model.UserAccount;
 
 public interface UserAccountRepository extends JpaRepository<UserAccount, UUID> {
     Optional<UserAccount> findByFirebaseUid(String firebaseUid);
+
+    Optional<UserAccount> findByCognitoSub(String cognitoSub);
+
+    Optional<UserAccount> findByEmailIgnoreCase(String email);
     Optional<UserAccount> findFirstByEmailIgnoreCase(String email);
     Optional<UserAccount> findFirstByPlayerId(UUID playerId);
     java.util.List<UserAccount> findAllByOrderByDisplayNameAsc();

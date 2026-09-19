@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -284,7 +283,7 @@ public class PlayersController {
         // would mint a genuinely new, duplicate Firebase account for someone who already
         // has one. Root cause of a real incident (two Firebase identities ending up
         // attached to the same person) - see docs/LANDMINES.md. Reuse the profile's uid
-        // directly instead, once confirmed still live.
+        // directly instead, once confirmed it still has an account.
         if (saved.getProfileId() != null) {
             var profile = profileService.findById(saved.getProfileId());
             String profileUid = profile != null ? profile.getFirebaseUid() : null;
@@ -304,13 +303,9 @@ public class PlayersController {
         }
     }
 
+    /** True if the uid belongs to an existing account in this program. */
     private boolean firebaseUserExists(String uid) {
-        try {
-            FirebaseAuth.getInstance().getUser(uid);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+        return userAccountRepository.findByFirebaseUid(uid).isPresent();
     }
 
     /**

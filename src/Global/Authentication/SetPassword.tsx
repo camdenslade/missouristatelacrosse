@@ -1,13 +1,10 @@
-import { confirmPasswordReset, verifyPasswordResetCode } from "firebase/auth";
 import { useState } from "react";
 import { useEffect } from "react";
 
 import API_BASE from "../../Services/API";
-import { auth } from "../../Services/firebaseConfig";
 
-// The invite-link flow (player/parent/alumni onboarding + admin resends) doesn't go through
-// Firebase's own oobCode at all — it's verified/consumed against our backend instead, so we
-// can't use apiRequest()'s path-based program detection here (this page has no /women/ prefix
+// Invite links (player/parent/alumni onboarding + admin resends) are verified and consumed
+// against our backend, so we can't use apiRequest()'s path-based program detection here (this page has no /women/ prefix
 // to derive it from). `program` is embedded directly in the link by the backend, and we send
 // it as both the query param and the X-Program header ourselves so ProgramFilter doesn't see
 // a mismatch.
@@ -25,8 +22,6 @@ async function inviteFetch(path: string, program: string, options: RequestInit =
 
 export default function SetPassword() {
   const params = new URLSearchParams(window.location.search);
-  const oobCode = params.get("oobCode") ?? "";
-  const mode = params.get("mode") ?? "";
   const inviteToken = params.get("inviteToken") ?? "";
   const inviteProgram = params.get("program") || "men";
   const isInviteFlow = Boolean(inviteToken);
@@ -47,18 +42,9 @@ export default function SetPassword() {
         });
       return;
     }
-    if (!oobCode || mode !== "resetPassword") {
-      setMessage("Invalid or expired link. Please request a new one.");
-      setStatus("error");
-      return;
-    }
-    verifyPasswordResetCode(auth, oobCode)
-      .then((e) => setEmail(e))
-      .catch(() => {
-        setMessage("This link has expired or already been used. Please request a new one.");
-        setStatus("error");
-      });
-  }, [isInviteFlow, inviteToken, inviteProgram, oobCode, mode]);
+    setMessage("Invalid or expired link. Please request a new one.");
+    setStatus("error");
+  }, [isInviteFlow, inviteToken, inviteProgram]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,32 +52,18 @@ export default function SetPassword() {
     if (password !== confirm) { setMessage("Passwords do not match."); return; }
     setStatus("loading");
     try {
-      if (isInviteFlow) {
-        await inviteFetch(`/api/onboard/consume-invite`, inviteProgram, {
-          method: "POST",
-          body: JSON.stringify({ token: inviteToken, password }),
-        });
-      } else {
-        await confirmPasswordReset(auth, oobCode, password);
-      }
+      await inviteFetch(`/api/onboard/consume-invite`, inviteProgram, {
+        method: "POST",
+        body: JSON.stringify({ token: inviteToken, password }),
+      });
       setStatus("success");
       setMessage("");
     } catch (err) {
       setStatus("error");
-      // This link already verified fine (the form is showing), so a failure here is a real
-      // error - a rejected password, a rate limit, a backend problem - never the link itself
-      // for the invite flow (InviteToken never expires by time). Show the actual reason
-      // instead of guessing "expired" for every possible failure.
-      const code = (err as { code?: string })?.code;
-      if (isInviteFlow) {
-        setMessage(err instanceof Error && err.message ? err.message : "Failed to set password. Please try again.");
-      } else if (code === "auth/expired-action-code") {
-        setMessage("This link has expired. Please request a new one.");
-      } else if (code === "auth/weak-password") {
-        setMessage("Please choose a stronger password.");
-      } else {
-        setMessage("Failed to set password. Please try again or request a new link.");
-      }
+      // The link already verified fine (the form is showing), so a failure here is a real
+      // error (a rejected password, a rate limit, a backend problem), never the link itself,
+      // since invite links do not expire by time. Show the actual reason.
+      setMessage(err instanceof Error && err.message ? err.message : "Failed to set password. Please try again.");
     }
   };
 

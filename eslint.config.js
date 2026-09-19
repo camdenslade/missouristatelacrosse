@@ -13,6 +13,7 @@ export default tseslint.config(
       "node_modules/**",
       "backend/**",
       "functions/**",
+      "infra/**",
       "public/**",
       "*.config.js",
     ],

@@ -6,10 +6,6 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import com.google.firebase.auth.AuthErrorCode;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseAuthException;
-import com.google.firebase.auth.UserRecord;
 import com.mostate.lacrosse.Model.InviteToken;
 import com.mostate.lacrosse.Model.UserAccount;
 import com.mostate.lacrosse.Repository.InviteTokenRepository;
@@ -30,15 +26,18 @@ public class PlayerOnboardingService {
     private final UserAccountRepository userRepo;
     private final InviteTokenRepository inviteTokenRepo;
     private final EmailService emailService;
+    private final IdentityService identityService;
 
     public PlayerOnboardingService(
         UserAccountRepository userRepo,
         InviteTokenRepository inviteTokenRepo,
-        EmailService emailService
+        EmailService emailService,
+        IdentityService identityService
     ) {
         this.userRepo = userRepo;
         this.inviteTokenRepo = inviteTokenRepo;
         this.emailService = emailService;
+        this.identityService = identityService;
     }
 
     /** True if a login account already exists for this email - onboarding should not re-fire. */
@@ -57,11 +56,14 @@ public class PlayerOnboardingService {
      */
     public String onboardPlayer(String email, String displayName, String program, UUID profileId) {
         try {
-            UserRecord userRecord = createOrGetFirebaseUser(email, displayName);
+            IdentityService.Account userRecord = identityService.createOrGetAccount(email, displayName);
             String resetLink = generateInviteLink(userRecord.getUid(), email, program);
 
             UserAccount account = userRepo.findByFirebaseUid(userRecord.getUid()).orElseGet(UserAccount::new);
             account.setFirebaseUid(userRecord.getUid());
+            if (userRecord.cognitoSub() != null) {
+                account.setCognitoSub(userRecord.cognitoSub());
+            }
             account.setEmail(email);
             account.setDisplayName(displayName);
             account.setRoles(JsonUtils.toJson(Map.of(program, "player")));
@@ -99,7 +101,7 @@ public class PlayerOnboardingService {
      * Payments > Manage's Player.email or Manage Players' UserAccount.email - both
      * propagate to each other, see PlayersController.syncExistingAccountEmail() and
      * UsersController.upsert()). Two things must happen, and previously neither did:
-     *   1. Firebase Auth's own email attribute has to be updated too, or the player
+     *   1. The sign-in provider's own email has to be updated too, or the player
      *      can never again log in with the new address - Firebase looks accounts up
      *      by its own stored email, not by anything in our database.
      *   2. The player needs to actually be told, at the new address, since they may
@@ -112,18 +114,11 @@ public class PlayerOnboardingService {
             return;
         }
         try {
-            try {
-                FirebaseAuth.getInstance().updateUser(
-                    new UserRecord.UpdateRequest(firebaseUid).setEmail(newEmail)
-                );
-            } catch (FirebaseAuthException e) {
-                // Most likely the new address is already someone else's Firebase account.
+            if (!identityService.changeEmail(firebaseUid, newEmail)) {
+                // Most likely the new address already belongs to a different account.
                 // Don't send a "here's your account" link for an email change that didn't
-                // actually take effect in Firebase.
-                log.error(
-                    "Failed to update Firebase email for uid {} to {}: {} - not sending a notice",
-                    firebaseUid, newEmail, e.getMessage()
-                );
+                // actually take effect with the auth provider.
+                log.error("Failed to update sign-in email for uid {} to {} - not sending a notice", firebaseUid, newEmail);
                 return;
             }
 
@@ -142,31 +137,6 @@ public class PlayerOnboardingService {
             }
         } catch (Exception e) {
             log.error("notifyEmailChanged failed for uid {} -> {}: {}", firebaseUid, newEmail, e.getMessage(), e);
-        }
-    }
-
-    private UserRecord createOrGetFirebaseUser(String email, String displayName) throws FirebaseAuthException {
-        try {
-            return FirebaseAuth.getInstance().createUser(
-                new UserRecord.CreateRequest().setEmail(email).setDisplayName(displayName)
-            );
-        } catch (FirebaseAuthException e) {
-            if (e.getAuthErrorCode() == AuthErrorCode.EMAIL_ALREADY_EXISTS) {
-                // A Firebase Auth entry already exists for this email - most often a leftover
-                // from a prior onboarding attempt that never got this far (e.g. the
-                // UserAccount/Player write failed after the Firebase user was created, or an
-                // old test/unverified signup). Reusing it as-is silently keeps whatever stale
-                // data it had (wrong name, etc.) forever; refresh it with the current name so
-                // the reused entry actually reflects who's being onboarded now.
-                UserRecord existing = FirebaseAuth.getInstance().getUserByEmail(email);
-                if (displayName != null && !displayName.isBlank() && !displayName.equals(existing.getDisplayName())) {
-                    existing = FirebaseAuth.getInstance().updateUser(
-                        new UserRecord.UpdateRequest(existing.getUid()).setDisplayName(displayName)
-                    );
-                }
-                return existing;
-            }
-            throw e;
         }
     }
 

@@ -8,10 +8,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.firebase.auth.AuthErrorCode;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseAuthException;
-import com.google.firebase.auth.UserRecord;
 import com.mostate.lacrosse.Model.AccountRequestModel;
 import com.mostate.lacrosse.Model.InviteToken;
 import com.mostate.lacrosse.Model.Player;
@@ -33,6 +29,7 @@ public class AccountRequestService {
     private final PlayerProfileService profileService;
     private final SeasonService seasonService;
     private final InviteTokenRepository inviteTokenRepository;
+    private final IdentityService identityService;
     private final ObjectMapper mapper = new ObjectMapper();
 
     public AccountRequestService(
@@ -42,7 +39,8 @@ public class AccountRequestService {
         PlayerRepository playerRepository,
         PlayerProfileService profileService,
         SeasonService seasonService,
-        InviteTokenRepository inviteTokenRepository
+        InviteTokenRepository inviteTokenRepository,
+        IdentityService identityService
     ) {
         this.repository = repository;
         this.emailService = emailService;
@@ -51,6 +49,7 @@ public class AccountRequestService {
         this.profileService = profileService;
         this.seasonService = seasonService;
         this.inviteTokenRepository = inviteTokenRepository;
+        this.identityService = identityService;
     }
 
     public String createRequest(AccountRequestModel requestModel) {
@@ -113,35 +112,11 @@ public class AccountRequestService {
                     ? sanitizedRole.toLowerCase()
                     : "user";
 
-            UserRecord userRecord;
-            try {
-                userRecord = FirebaseAuth.getInstance().createUser(
-                        new UserRecord.CreateRequest()
-                                .setEmail(email)
-                                .setDisplayName(displayName)
-                );
-                System.out.println("New User created: " + userRecord.getUid());
-            } catch (FirebaseAuthException e) {
-                if (e.getAuthErrorCode() == AuthErrorCode.EMAIL_ALREADY_EXISTS) {
-                    System.out.println("User already exists, reusing existing account");
-                    // See OnboardingController.createOrGetFirebaseUser() - refresh a reused,
-                    // possibly-stale Firebase entry with the current name instead of leaving
-                    // it exactly as it was whenever it first got created.
-                    userRecord = FirebaseAuth.getInstance().getUserByEmail(email);
-                    if (displayName != null && !displayName.isBlank() && !displayName.equals(userRecord.getDisplayName())) {
-                        userRecord = FirebaseAuth.getInstance().updateUser(
-                            new UserRecord.UpdateRequest(userRecord.getUid()).setDisplayName(displayName)
-                        );
-                    }
-                } else {
-                    throw e;
-                }
-            }
+            IdentityService.Account userRecord = identityService.createOrGetAccount(email, displayName);
 
-            // Non-expiring InviteToken link, not a raw Firebase reset link: an approved
-            // applicant may not open this email within Firebase's hard-coded 1-hour oobCode
-            // window. Same rationale as the player/parent/alumni onboarding emails in
-            // OnboardingController.
+            // Non-expiring InviteToken link: an approved applicant may not open this email
+            // within a short window. Same rationale as the player/parent/alumni onboarding
+            // emails in OnboardingController.
             String resetLink = generateInviteLink(userRecord.getUid(), email, effectiveProgram);
 
             try {
@@ -190,6 +165,9 @@ public class AccountRequestService {
                 .findByFirebaseUid(userRecord.getUid())
                 .orElseGet(UserAccount::new);
             userAccount.setFirebaseUid(userRecord.getUid());
+            if (userRecord.cognitoSub() != null) {
+                userAccount.setCognitoSub(userRecord.cognitoSub());
+            }
             userAccount.setEmail(email);
             userAccount.setDisplayName(displayName);
             userAccount.setPlayerId(profile != null ? profile.getId() : null);

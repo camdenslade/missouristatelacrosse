@@ -22,6 +22,9 @@ public class UserAccount {
     @Column(name = "firebase_uid", unique = true, nullable = false)
     private String firebaseUid;
 
+    @Column(name = "cognito_sub")
+    private String cognitoSub;
+
     private String email;
 
     @Column(name = "display_name")
@@ -56,6 +59,8 @@ public class UserAccount {
         updatedAt = Instant.now();
     }
 
+    public String getCognitoSub() {return cognitoSub;}
+    public void setCognitoSub(String cognitoSub) {this.cognitoSub = cognitoSub;}
     public UUID getId() {return id;}
     public void setId(UUID id) {this.id = id;}
 

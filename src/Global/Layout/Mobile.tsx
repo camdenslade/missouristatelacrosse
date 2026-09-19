@@ -1,4 +1,4 @@
-import type { User as FirebaseUser } from "firebase/auth";
+import type { AuthUser } from "../../Services/cognitoAuth";
 import { Link } from "react-router-dom";
 
 import { getProgramInfo } from "../../Services/programHelper";
@@ -8,7 +8,7 @@ import type { Program, Role } from "../../types/api";
 type MobileMenuProps = {
   open: boolean;
   setOpen: (open: boolean) => void;
-  user: FirebaseUser | null;
+  user: AuthUser | null;
   roles?: Partial<Record<Program, Role>>;
   userName: string;
   playerId?: string | null;

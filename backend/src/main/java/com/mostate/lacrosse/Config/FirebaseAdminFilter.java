@@ -3,6 +3,9 @@ package com.mostate.lacrosse.Config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
+import com.mostate.lacrosse.Model.UserAccount;
+import com.mostate.lacrosse.Repository.UserAccountRepository;
+import com.mostate.lacrosse.Service.AuthorizationService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,6 +41,11 @@ import java.util.Set;
  *
  * Anything matching none of the above passes through untouched (fully public, no
  * identity attached).
+ *
+ * Bearer tokens may be Firebase ID tokens or Cognito ID tokens. Either way the request gets
+ * the same "firebaseUid" attribute (the account's stored id), so controllers do not care which
+ * provider signed the user in. Cognito callers carry no Firebase token and no role claim; their
+ * admin status comes from the roles stored on the user row.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 10)
@@ -45,6 +53,21 @@ public class FirebaseAdminFilter extends OncePerRequestFilter {
 
     public static final String FIREBASE_TOKEN_ATTR = "firebaseToken";
     private static final Logger log = LoggerFactory.getLogger(FirebaseAdminFilter.class);
+
+    private final CognitoTokenVerifier cognito;
+    private final UserAccountRepository users;
+    private final AuthorizationService authorization;
+
+    public FirebaseAdminFilter(CognitoTokenVerifier cognito,
+                               UserAccountRepository users,
+                               AuthorizationService authorization) {
+        this.cognito = cognito;
+        this.users = users;
+        this.authorization = authorization;
+    }
+
+    /** Who the token belongs to. firebaseToken is null for Cognito callers. */
+    private record Principal(String uid, FirebaseToken firebaseToken, boolean admin) {}
 
     /**
      * Path prefixes that are always admin-only (any HTTP method).
@@ -169,31 +192,83 @@ public class FirebaseAdminFilter extends OncePerRequestFilter {
             return;
         }
 
-        FirebaseToken decoded;
+        Principal principal;
         try {
-            decoded = FirebaseAuth.getInstance().verifyIdToken(token);
+            principal = authenticate(token);
         } catch (Exception e) {
-            log.warn("Firebase token verification failed for {} {}: {}", method, path, e.getMessage());
+            log.warn("Token verification failed for {} {}: {}", method, path, e.getMessage());
+            rejectUnauthorized(response, "Invalid or expired token");
+            return;
+        }
+        if (principal == null) {
+            log.warn("Token rejected for {} {}", method, path);
             rejectUnauthorized(response, "Invalid or expired token");
             return;
         }
 
         // For /api/admin/ paths and auth-required (non-admin-only) paths, the controller does
-        // its own DB-level authorization check. Only enforce the role claim here for stream
+        // its own DB-level authorization check. Only enforce the admin check here for stream
         // paths that have no downstream authorization.
         if (!path.startsWith("/api/admin/") && !needsAuthOnly) {
-            Object role = decoded.getClaims().get("role");
-            if (!"admin".equals(role)) {
-                log.warn("Access denied for uid={} role={} on {} {}", decoded.getUid(), role, method, path);
+            if (!principal.admin()) {
+                log.warn("Access denied for uid={} on {} {}", principal.uid(), method, path);
                 rejectForbidden(response, "Admin access required");
                 return;
             }
         }
 
         // Expose UID downstream so controllers can use it if needed
-        request.setAttribute("firebaseUid", decoded.getUid());
-        request.setAttribute(FIREBASE_TOKEN_ATTR, decoded);
+        attach(request, principal);
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * Verifies a Firebase or Cognito token. Returns null for a Cognito token that is invalid or
+     * belongs to no known account; throws for an invalid Firebase token.
+     */
+    private Principal authenticate(String token) throws Exception {
+        if (cognito.isIssuer(token)) {
+            CognitoTokenVerifier.Identity identity = cognito.verify(token);
+            if (identity == null) {
+                return null;
+            }
+            UserAccount user = resolveCognitoUser(identity);
+            if (user == null) {
+                return null;
+            }
+            boolean admin = authorization.isAdmin(user.getFirebaseUid(), TenantContext.getTenant(), null);
+            return new Principal(user.getFirebaseUid(), null, admin);
+        }
+        FirebaseToken decoded = FirebaseAuth.getInstance().verifyIdToken(token);
+        boolean admin = "admin".equals(decoded.getClaims().get("role"));
+        return new Principal(decoded.getUid(), decoded, admin);
+    }
+
+    /**
+     * Finds the account for a verified Cognito identity: by Cognito sub if already linked,
+     * otherwise by email, recording the sub on first sign-in. Unknown emails get no account.
+     */
+    private UserAccount resolveCognitoUser(CognitoTokenVerifier.Identity identity) {
+        var bySub = users.findByCognitoSub(identity.sub());
+        if (bySub.isPresent()) {
+            return bySub.get();
+        }
+        var byEmail = users.findByEmailIgnoreCase(identity.email());
+        if (byEmail.isEmpty()) {
+            return null;
+        }
+        UserAccount user = byEmail.get();
+        if (user.getCognitoSub() != null && !user.getCognitoSub().equals(identity.sub())) {
+            log.warn("Email {} is already linked to a different Cognito account", identity.email());
+            return null;
+        }
+        user.setCognitoSub(identity.sub());
+        return users.save(user);
+    }
+
+    private void attach(HttpServletRequest request, Principal principal) {
+        request.setAttribute("firebaseUid", principal.uid());
+        request.setAttribute(FIREBASE_TOKEN_ATTR, principal.firebaseToken());
     }
 
     /** Verifies a Bearer token if present, but never rejects the request either way. */
@@ -203,11 +278,12 @@ public class FirebaseAdminFilter extends OncePerRequestFilter {
             return;
         }
         try {
-            FirebaseToken decoded = FirebaseAuth.getInstance().verifyIdToken(token);
-            request.setAttribute("firebaseUid", decoded.getUid());
-            request.setAttribute(FIREBASE_TOKEN_ATTR, decoded);
+            Principal principal = authenticate(token);
+            if (principal != null) {
+                attach(request, principal);
+            }
         } catch (Exception e) {
-            // Invalid/expired token on an optional-auth path — treat as anonymous.
+            // Invalid/expired token on an optional-auth path: treat as anonymous.
         }
     }
 
