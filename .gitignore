@@ -79,3 +79,7 @@ coverage/
 *.tar
 *.gz
 *.rar
+
+# Firebase Auth export (contains password hashes)
+firebase-users*.json
+infra/**/*.zip
