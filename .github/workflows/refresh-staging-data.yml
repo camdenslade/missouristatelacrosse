@@ -1,0 +1,55 @@
+name: Refresh staging data
+
+# Manual only. Replaces the staging database with a fresh, scrubbed copy of production, so staging
+# has current data to test against. Everything in staging's database is lost (test accounts,
+# anything entered while testing) and the test admin is recreated. Production is only read, through
+# a dump, and is not changed. Run from the main branch or a branch called "staging".
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: refresh-staging-data
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ROLE_ARN: arn:aws:iam::864145505327:role/mostatelax-github-staging-backend-deploy
+  BACKEND_INSTANCE_ID: i-0a9fa6a3486e95c86
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Refresh and scrub
+        run: |
+          REFRESH_B64=$(base64 -w0 infra/staging/refresh-db.sh)
+          SCRUB_B64=$(base64 -w0 infra/staging/scrub.sql)
+          CMD="install -d /opt/laxsite-staging && echo ${SCRUB_B64} | base64 -d > /opt/laxsite-staging/scrub.sql && echo ${REFRESH_B64} | base64 -d > /opt/laxsite-staging/refresh-db.sh && bash /opt/laxsite-staging/refresh-db.sh /opt/laxsite-staging/scrub.sql"
+          CMD_ID=$(aws ssm send-command \
+            --instance-ids "${BACKEND_INSTANCE_ID}" \
+            --document-name AWS-RunShellScript \
+            --timeout-seconds 900 \
+            --parameters "$(jq -n --arg c "$CMD" '{commands: [$c]}')" \
+            --query Command.CommandId --output text)
+          for i in $(seq 1 300); do
+            STATUS=$(aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "${BACKEND_INSTANCE_ID}" --query Status --output text 2>/dev/null || echo Pending)
+            case "$STATUS" in
+              Success|Failed|Cancelled|TimedOut) break ;;
+            esac
+            sleep 3
+          done
+          aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "${BACKEND_INSTANCE_ID}" \
+            --query '[StandardOutputContent,StandardErrorContent]' --output text
+          test "$STATUS" = "Success" || { echo "refresh did not succeed ($STATUS)"; exit 1; }

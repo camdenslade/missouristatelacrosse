@@ -1,0 +1,80 @@
+name: Deploy staging frontend
+
+# Manual only. Builds the site pointed at the staging backend and publishes it to
+# https://staging.missouristatelacrosse.com. Run it from the main branch or a branch called
+# "staging" (the AWS role trusts those two), so a change can be checked before it goes live.
+#
+# Same keyless AWS login as the production deploys. The staging site asks for a shared password
+# (user "staging"; read it with `terraform output -raw staging_site_password`) and tells search
+# engines to stay away.
+#
+# Optional repository variables for testing payments with sandbox keys:
+#   STAGING_PAYPAL_CLIENT_ID     a PayPal sandbox client id
+#   STAGING_STRIPE_PUBLISHABLE_KEY   a Stripe test publishable key (pk_test_...)
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging-frontend
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ROLE_ARN: arn:aws:iam::864145505327:role/mostatelax-github-staging-web-deploy
+  STAGING_BUCKET: mostatelax-staging-web
+  STAGING_DISTRIBUTION_ID: E16YDEKN715V03
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build against staging
+        env:
+          VITE_API_BASE: https://api-staging.missouristatelacrosse.com
+          VITE_COGNITO_USER_POOL_ID: us-east-1_fyiuEwlBY
+          VITE_COGNITO_CLIENT_ID: 48t6kjh2f7bic666ujf9bes0f4
+          VITE_PAYMENT_PROVIDER: ${{ vars.VITE_PAYMENT_PROVIDER }}
+          VITE_PAYMENT_PROVIDER_WOMEN: ${{ vars.VITE_PAYMENT_PROVIDER_WOMEN }}
+          VITE_PAYPAL_CLIENT_ID: ${{ vars.STAGING_PAYPAL_CLIENT_ID }}
+          VITE_STRIPE_PUBLISHABLE_KEY: ${{ vars.STAGING_STRIPE_PUBLISHABLE_KEY }}
+          VITE_TEAMSTORE_ENABLED: ${{ vars.VITE_TEAMSTORE_ENABLED }}
+          VITE_TEAMSTORE_ENABLED_WOMEN: ${{ vars.VITE_TEAMSTORE_ENABLED_WOMEN }}
+          VITE_DONATE_ENABLED: ${{ vars.VITE_DONATE_ENABLED }}
+          VITE_DONATE_ENABLED_WOMEN: ${{ vars.VITE_DONATE_ENABLED_WOMEN }}
+        run: npm run build
+
+      - name: Keep search engines out
+        run: |
+          printf 'User-agent: *\nDisallow: /\n' > dist/robots.txt
+          rm -f dist/sitemap.xml
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Publish to the staging bucket
+        run: |
+          aws s3 sync dist/assets "s3://${STAGING_BUCKET}/assets" --delete \
+            --cache-control "public,max-age=31536000,immutable"
+          aws s3 sync dist "s3://${STAGING_BUCKET}" --exclude "assets/*" --delete \
+            --cache-control "no-cache"
+
+      - name: Clear the staging cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${STAGING_DISTRIBUTION_ID}" --paths "/*"

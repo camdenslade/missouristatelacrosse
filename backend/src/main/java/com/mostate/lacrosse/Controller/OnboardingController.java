@@ -44,6 +44,11 @@ import jakarta.validation.constraints.NotNull;
 @RequestMapping("/api/onboard")
 @Validated
 public class OnboardingController {
+
+    /** Public address of the website, used in links we email and in payment return addresses. */
+    @org.springframework.beans.factory.annotation.Value("${app.frontend.base-url:https://missouristatelacrosse.com}")
+    private String frontendBaseUrl = "https://missouristatelacrosse.com";
+
     private static final Logger log = LoggerFactory.getLogger(OnboardingController.class);
 
     private final UserAccountRepository userRepo;
@@ -167,7 +172,7 @@ public class OnboardingController {
                 String programLabel = program.equals("women") ? "Women's" : "Men's";
                 // /portal (not the old standalone /dues page) - since #28 it's the unified
                 // player panel with dues balance and team to-dos together.
-                String portalUrl = "https://missouristatelacrosse.com" + (program.equals("women") ? "/women/portal" : "/portal");
+                String portalUrl = frontendBaseUrl + (program.equals("women") ? "/women/portal" : "/portal");
                 String html = playerWelcomeEmail(displayName, programLabel, resetLink, portalUrl);
                 emailService.sendEmail(email, "Welcome to Missouri State " + programLabel + " Lacrosse!", html);
             }
@@ -426,7 +431,7 @@ public class OnboardingController {
         invite.setFirebaseUid(firebaseUid);
         invite.setEmail(email);
         invite = inviteTokenRepo.save(invite);
-        return "https://missouristatelacrosse.com/set-password?inviteToken="
+        return frontendBaseUrl + "/set-password?inviteToken="
             + invite.getToken() + "&program=" + program;
     }
 

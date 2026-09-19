@@ -1,0 +1,88 @@
+name: Deploy staging backend
+
+# Manual only. Builds and tests the backend, then installs it as the STAGING service on the shared
+# server through AWS Systems Manager. Run it from the main branch or a branch called "staging".
+# The database migrations in the jar run against the staging database on start, so this is also
+# the place to see a migration work before it reaches the real data.
+#
+# The staging service is separate from production (own database, own settings, own port), so
+# nothing here can change the live site. As with production, the server checks the checksum first
+# and puts the previous version back if the new one does not come up healthy.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging-backend
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ROLE_ARN: arn:aws:iam::864145505327:role/mostatelax-github-staging-backend-deploy
+  DEPLOY_BUCKET: mostatelax-prod-backups
+  BACKEND_INSTANCE_ID: i-0a9fa6a3486e95c86
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Build and test
+        working-directory: backend
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon clean build
+
+      - name: Find the jar and checksum it
+        id: jar
+        working-directory: backend
+        run: |
+          JAR=$(ls build/libs/*.jar | grep -v -- '-plain\.jar$' | head -n1)
+          test -f "$JAR" || { echo "no boot jar"; exit 1; }
+          echo "path=backend/$JAR" >> "$GITHUB_OUTPUT"
+          echo "sha=$(sha256sum "$JAR" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload the jar
+        run: |
+          aws s3 cp "${{ steps.jar.outputs.path }}" \
+            "s3://${DEPLOY_BUCKET}/deploy/backend-staging/${{ steps.jar.outputs.sha }}.jar" --only-show-errors
+
+      - name: Install it as the staging service
+        run: |
+          SCRIPT_B64=$(base64 -w0 infra/backend/deploy-on-server.sh)
+          URI="s3://${DEPLOY_BUCKET}/deploy/backend-staging/${{ steps.jar.outputs.sha }}.jar"
+          ENVS="SERVICE=laxsite-backend-staging JAR=/home/ec2-user/staging/laxsite-backend.jar PREVIOUS=/home/ec2-user/staging/laxsite-backend.previous.jar HEALTH_URL=http://localhost:8081/actuator/health HEALTH_WAIT_SECONDS=150"
+          CMD="echo ${SCRIPT_B64} | base64 -d > /tmp/deploy-staging.sh && env ${ENVS} bash /tmp/deploy-staging.sh ${URI} ${{ steps.jar.outputs.sha }}; rc=\$?; rm -f /tmp/deploy-staging.sh; exit \$rc"
+          CMD_ID=$(aws ssm send-command \
+            --instance-ids "${BACKEND_INSTANCE_ID}" \
+            --document-name AWS-RunShellScript \
+            --timeout-seconds 600 \
+            --parameters "$(jq -n --arg c "$CMD" '{commands: [$c]}')" \
+            --query Command.CommandId --output text)
+          echo "command $CMD_ID"
+          for i in $(seq 1 200); do
+            STATUS=$(aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "${BACKEND_INSTANCE_ID}" --query Status --output text 2>/dev/null || echo Pending)
+            case "$STATUS" in
+              Success|Failed|Cancelled|TimedOut) break ;;
+            esac
+            sleep 3
+          done
+          aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "${BACKEND_INSTANCE_ID}" \
+            --query '[StandardOutputContent,StandardErrorContent]' --output text
+          test "$STATUS" = "Success" || { echo "staging deploy did not succeed ($STATUS)"; exit 1; }

@@ -17,6 +17,11 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class PayPalSDKService {
 
+    /** Public address of the website, used in links we email and in payment return addresses. */
+    @org.springframework.beans.factory.annotation.Value("${app.frontend.base-url:https://missouristatelacrosse.com}")
+    private String frontendBaseUrl = "https://missouristatelacrosse.com";
+
+
     @Value("${PAYPAL_CLIENT_ID:}")
     private String clientId;
 
@@ -92,11 +97,11 @@ public class PayPalSDKService {
                     "brand_name": "Missouri State Lacrosse",
                     "landing_page": "BILLING",
                     "user_action": "PAY_NOW",
-                    "return_url": "https://missouristatelacrosse.com/checkout-success",
-                    "cancel_url": "https://missouristatelacrosse.com/store"
+                    "return_url": "%s/checkout-success",
+                    "cancel_url": "%s/store"
                   }
                 }
-                """.formatted(amount);
+                """.formatted(amount, frontendBaseUrl, frontendBaseUrl);
 
             HttpEntity<String> orderRequest = new HttpEntity<>(orderBody, headers);
             ResponseEntity<Map<String, Object>> orderResponse = rest.exchange(

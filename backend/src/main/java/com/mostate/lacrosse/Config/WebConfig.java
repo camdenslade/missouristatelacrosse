@@ -15,6 +15,28 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig {
 
+    /**
+     * Extra origins allowed to call the API, comma separated, for environments such as staging
+     * (CORS_EXTRA_ORIGINS). Empty in production.
+     */
+    @org.springframework.beans.factory.annotation.Value("${app.cors.extra-origins:}")
+    private String extraOrigins = "";
+
+    private List<String> allowedOrigins() {
+        List<String> origins = new java.util.ArrayList<>(List.of(
+            "https://missouristatelacrosse.com",
+            "https://www.missouristatelacrosse.com",
+            "https://api.missouristatelacrosse.com",
+            "http://localhost:5173"
+        ));
+        for (String extra : extraOrigins.split(",")) {
+            if (!extra.isBlank()) {
+                origins.add(extra.trim());
+            }
+        }
+        return origins;
+    }
+
     @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
@@ -42,14 +64,7 @@ public class WebConfig {
     @Bean
     public FilterRegistrationBean<CorsFilter> corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(
-            List.of(
-                "https://missouristatelacrosse.com",
-                "https://www.missouristatelacrosse.com",
-                "https://api.missouristatelacrosse.com",
-                "http://localhost:5173"
-            )
-        );
+        config.setAllowedOrigins(allowedOrigins());
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

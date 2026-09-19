@@ -21,6 +21,11 @@ import com.mostate.lacrosse.Utils.JsonUtils;
  */
 @Service
 public class PlayerOnboardingService {
+
+    /** Public address of the website, used in links we email and in payment return addresses. */
+    @org.springframework.beans.factory.annotation.Value("${app.frontend.base-url:https://missouristatelacrosse.com}")
+    private String frontendBaseUrl = "https://missouristatelacrosse.com";
+
     private static final Logger log = LoggerFactory.getLogger(PlayerOnboardingService.class);
 
     private final UserAccountRepository userRepo;
@@ -74,7 +79,7 @@ public class PlayerOnboardingService {
             userRepo.save(account);
 
             String programLabel = program.equalsIgnoreCase("women") ? "Women's" : "Men's";
-            String portalUrl = "https://missouristatelacrosse.com"
+            String portalUrl = frontendBaseUrl
                 + (program.equalsIgnoreCase("women") ? "/women/portal" : "/portal");
             String html = welcomeEmail(displayName, programLabel, resetLink, portalUrl);
             boolean sent = emailService.sendEmail(
@@ -124,7 +129,7 @@ public class PlayerOnboardingService {
 
             String resetLink = generateInviteLink(firebaseUid, newEmail, program);
             String programLabel = program.equalsIgnoreCase("women") ? "Women's" : "Men's";
-            String portalUrl = "https://missouristatelacrosse.com"
+            String portalUrl = frontendBaseUrl
                 + (program.equalsIgnoreCase("women") ? "/women/portal" : "/portal");
             String html = emailChangedEmail(displayName, programLabel, resetLink, portalUrl);
             boolean sent = emailService.sendEmail(
@@ -149,7 +154,7 @@ public class PlayerOnboardingService {
         invite.setFirebaseUid(firebaseUid);
         invite.setEmail(email);
         invite = inviteTokenRepo.save(invite);
-        return "https://missouristatelacrosse.com/set-password?inviteToken="
+        return frontendBaseUrl + "/set-password?inviteToken="
             + invite.getToken() + "&program=" + program;
     }
 

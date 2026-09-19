@@ -32,6 +32,7 @@ encrypted), with locking, so two people cannot apply at once.
 | `auth.tf` | Cognito user pool, app client, and the Firebase migration Lambda |
 | `website.tf` | The certificate, CloudFront, and its cache and header rules |
 | `vault.tf` | The team password manager server (Vaultwarden), see below |
+| `staging.tf` | The staging site, backend settings, sign-in pool and deploy permissions, see `docs/staging.md` |
 | `lambda/healthcheck/` | Source of the uptime Lambda |
 | `../cognito-migrate/` | Source of the sign-in migration Lambda |
 

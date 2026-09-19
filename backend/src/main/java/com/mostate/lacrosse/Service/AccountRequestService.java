@@ -22,6 +22,11 @@ import com.mostate.lacrosse.Utils.TextSanitizer;
 @Service
 public class AccountRequestService {
 
+    /** Public address of the website, used in links we email and in payment return addresses. */
+    @org.springframework.beans.factory.annotation.Value("${app.frontend.base-url:https://missouristatelacrosse.com}")
+    private String frontendBaseUrl = "https://missouristatelacrosse.com";
+
+
     private final AccountRequestRepository repository;
     private final EmailService emailService;
     private final UserAccountRepository userRepository;
@@ -199,7 +204,7 @@ public class AccountRequestService {
         invite.setFirebaseUid(firebaseUid);
         invite.setEmail(email);
         invite = inviteTokenRepository.save(invite);
-        return "https://missouristatelacrosse.com/set-password?inviteToken="
+        return frontendBaseUrl + "/set-password?inviteToken="
             + invite.getToken() + "&program=" + program;
     }
 
