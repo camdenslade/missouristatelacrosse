@@ -51,8 +51,9 @@ public class MainApp {
                 .region(Region.US_EAST_1)
                 .build()) {
 
+            String secretId = System.getenv().getOrDefault("BACKEND_SECRET_ID", "backend-prod");
             GetSecretValueRequest request = GetSecretValueRequest.builder()
-                    .secretId("backend-prod")
+                    .secretId(secretId)
                     .build();
 
             GetSecretValueResponse response = client.getSecretValue(request);

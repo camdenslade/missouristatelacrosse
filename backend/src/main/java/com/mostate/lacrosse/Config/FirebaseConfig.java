@@ -39,8 +39,9 @@ public class FirebaseConfig {
                     .region(region)
                     .build();
 
+            String secretId = System.getenv().getOrDefault("FIREBASE_SECRET_ID", "firebase-service-account");
             GetSecretValueRequest request = GetSecretValueRequest.builder()
-                    .secretId("firebase-service-account")
+                    .secretId(secretId)
                     .build();
 
             GetSecretValueResponse response = client.getSecretValue(request);
