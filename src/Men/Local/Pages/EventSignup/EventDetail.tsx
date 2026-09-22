@@ -327,7 +327,7 @@ export default function EventDetail() {
             )}
           </div>
           {event.description && (
-            <p className="text-white/80 text-sm mb-2">{event.description}</p>
+            <p className="text-white/80 text-sm mb-2 whitespace-pre-line">{event.description}</p>
           )}
           <div className="text-sm text-white/80 space-y-0.5">
             <div><span className="font-medium text-white">Start:</span> {formatDate(event.startTime)}</div>

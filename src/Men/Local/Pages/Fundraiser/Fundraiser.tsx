@@ -112,7 +112,7 @@ export default function Fundraiser() {
             {fundraiser.title}
           </h1>
           {fundraiser.description && (
-            <p className="text-white/85 text-base leading-relaxed">{fundraiser.description}</p>
+            <p className="text-white/85 text-base leading-relaxed whitespace-pre-line">{fundraiser.description}</p>
           )}
         </div>
       </div>
