@@ -60,18 +60,29 @@ encrypted), with locking, so two people cannot apply at once.
 - **Retire Firebase sign-in:** delete the `lambda_config` block in `auth.tf`, then the migration
   Lambda and its role and permission.
 
-## Known gaps worth fixing
+## Known gaps
 
 1. **The database volume is not encrypted.** Fixing it means replacing the volume (snapshot, encrypted
-   copy, swap), which needs a short outage, so it was left as found. See the note in `compute.tf`.
+   copy, swap), which needs a short outage. Do this on a scheduled maintenance window, not casually -
+   see the note in `compute.tf`.
 2. **CPU credits are `unlimited`.** A busy instance can burst past its credits and be billed for it.
    Switch to `standard` if the bill surprises you.
-3. **RTMP (port 1935) is open to the world.** Streaming needs it, but it should be limited to known
-   encoders or gated by stream keys at the media server.
-4. **Uptime monitoring only checks the API.** Nothing watches the website itself.
-5. **Single server.** The backend, database and streaming server share one machine. The nightly
+3. **Single server.** The backend, database and streaming server share one machine. The nightly
    dump and daily snapshots are the recovery path; a restore has been rehearsed but not on a
    schedule.
+
+Checked and not actually gaps:
+
+- **RTMP (port 1935) is open to the world.** This looks alarming but is intentional: streams come
+  from away-game venues with unpredictable IPs, so an IP allowlist (like SSH's) is not workable. The
+  real gate is at the application layer - MediaMTX calls back to
+  `/api/stream/rtmp/auth` on every publish attempt (`authMethod: http` in `/etc/mediamtx/mediamtx.yml`
+  on the server), and a bad stream key is rejected (confirmed 2026-09-20; the rejection currently
+  comes back as a 500 rather than a clean 401, which is worth tidying in `StreamController` but does
+  not weaken the check - it still fails closed).
+- **Uptime monitoring only checked the API.** Fixed 2026-09-20: the health-check Lambda now also
+  fetches the site's home page and reports it as a separate `SiteUp` metric, with its own alarm
+  (`mostatelax-prod-site-down`).
 
 ## Password manager (Vaultwarden)
 

@@ -273,7 +273,7 @@ export default function RaffleDetail() {
               </span>
             )}
           </div>
-          {raffle.description && <p className="text-white/80 text-sm mb-2">{raffle.description}</p>}
+          {raffle.description && <p className="text-white/80 text-sm mb-2 whitespace-pre-line">{raffle.description}</p>}
           {raffle.winnerName && (
             <p className="text-sm text-white font-medium">Winner: {raffle.winnerName}</p>
           )}

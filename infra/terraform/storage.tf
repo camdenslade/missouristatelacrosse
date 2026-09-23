@@ -38,6 +38,25 @@ resource "aws_s3_bucket_versioning" "images" {
   }
 }
 
+# The browser uploads photos straight to S3 with a presigned PUT (uploadHelper.ts), not through
+# the backend, so the bucket itself needs to allow that cross-origin request. This was missing
+# entirely (the bucket never had a CORS policy at all), which silently broke every upload -
+# found and fixed 2026-09-23.
+resource "aws_s3_bucket_cors_configuration" "images" {
+  bucket = aws_s3_bucket.images.id
+
+  cors_rule {
+    allowed_origins = [
+      "https://missouristatelacrosse.com",
+      "https://www.missouristatelacrosse.com",
+      "http://localhost:5173",
+    ]
+    allowed_methods = ["PUT", "GET", "HEAD"]
+    allowed_headers = ["*"]
+    max_age_seconds = 3000
+  }
+}
+
 # Nightly database dumps and password manager backups, each kept 35 days. Deploy jars kept 14.
 resource "aws_s3_bucket" "backups" {
   bucket = "mostatelax-prod-backups"

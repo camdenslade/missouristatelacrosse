@@ -79,13 +79,18 @@ resource "aws_instance" "backend" {
     cpu_credits = "unlimited"
   }
 
-  # TODO: this volume is not encrypted. Turning it on means replacing the volume (snapshot,
-  # encrypted copy, swap), which needs a short outage, so it is not changed here.
+  # Encrypted 2026-09-20 (snapshot, encrypted copy, swap while stopped - see
+  # infra/backend/encrypt-root-volume.sh). The old unencrypted volume and both snapshots from
+  # that swap are kept as a rollback safety net for now; delete them once confident, and also
+  # check `systemctl is-enabled laxsite-backend` after any future reboot of this box - it was
+  # found disabled (never auto-started on boot) during this swap, now fixed by hand, but this
+  # unit is not managed by Terraform/cloud-init so a from-scratch rebuild needs it done again.
   root_block_device {
     volume_size           = 30
     volume_type           = "gp3"
     iops                  = 3000
     throughput            = 125
+    encrypted             = true
     delete_on_termination = true
 
     # The snapshot policy below selects volumes by this tag. Do not remove it.
