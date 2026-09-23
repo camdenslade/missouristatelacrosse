@@ -1,3 +1,5 @@
+> **Historical.** This describes the old personal AWS account and its ~$16-40/mo pricing, from before the 2026-09 migration to the new AWS org account. Kept for background only - see HANDOFF.md §10 and the Terraform budget alert for current cost. See [`HANDOFF.md`](HANDOFF.md) for what's actually true today.
+
 # AWS cost - findings & plan
 
 ## Progress (2026-08-30)

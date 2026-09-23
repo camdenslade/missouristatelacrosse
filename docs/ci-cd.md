@@ -1,3 +1,5 @@
+> **Historical.** This describes activating the CI/CD workflows by adding repo secrets, from before the 2026-09 migration to the new AWS org account. Kept for background only - the deploy workflows are live and use GitHub OIDC, not stored secrets - see HANDOFF.md §5. See [`HANDOFF.md`](HANDOFF.md) for what's actually true today.
+
 # CI / CD
 
 GitHub Actions workflows in `.github/workflows/`.
