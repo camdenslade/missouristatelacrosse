@@ -4,16 +4,21 @@ Java 17 / Spring Boot REST API for the Missouri State Lacrosse site. Serves both
 Men's and Women's programs from a single instance using Postgres schema-per-program
 multi-tenancy (`men` / `women`), selected per request by the `X-Program` header.
 
-- Frontend: `../` (React + Vite, deployed to Firebase Hosting)
+- Frontend: `../` (React + Vite, deployed to S3 + CloudFront)
+- Auth: Amazon Cognito, with existing Firebase accounts migrating automatically on
+  first sign-in - see [`../docs/cognito-migration-plan.md`](../docs/cognito-migration-plan.md)
 - Payments: PayPal + Stripe - see [`../docs/payments.md`](../docs/payments.md)
-- Full repo findings / cleanup status: [`../docs/professionalization-scan.md`](../docs/professionalization-scan.md)
+- Operations, deploys, and the account/credential map: [`../docs/HANDOFF.md`](../docs/HANDOFF.md)
+- Infrastructure as code: [`../infra/terraform/`](../infra/terraform/README.md)
 
 ## Stack
 
 - Spring Boot 3.5 (web, data-jpa, websocket, actuator, validation)
 - PostgreSQL + Flyway migrations (`src/main/resources/db/migration`, `V*.sql`)
-- Firebase Admin SDK for auth-token verification (`FirebaseAdminFilter`)
-- AWS: SES (transactional email), S3 (image storage), Secrets Manager (prod config)
+- `CognitoTokenVerifier` + `FirebaseAdminFilter` for auth-token verification (both
+  providers are accepted while the Firebase migration is still open)
+- AWS: SES (transactional email), S3 (image storage), Cognito (sign-in), Secrets
+  Manager (prod config)
 - PayPal REST (hand-rolled `RestTemplate`) + Stripe Java SDK
 - Printify REST for the team store
 - Self-hosted RTMP/HLS streaming via MediaMTX (`/etc/mediamtx/mediamtx.yml` on the box)
@@ -70,9 +75,15 @@ Health check: `GET http://localhost:8080/actuator/health`.
 
 ## Deploy
 
-`./deploy-backend.sh` - runs the tests, builds the boot jar, `scp`s it to the EC2 host
-(`api.missouristatelacrosse.com`), and restarts the `laxsite-backend` systemd service.
-Requires `laxsite-key.pem` (git-ignored) in this directory.
+The normal path is the **"Deploy backend (Systems Manager)"** GitHub Actions workflow
+(manual, run from `main`): it builds, tests, uploads the jar to S3, and has the server
+install it through AWS Systems Manager - no SSH, no stored AWS keys. It checks the
+jar's checksum and automatically rolls back to the previous version if the new one
+doesn't come up healthy. See [`../docs/HANDOFF.md`](../docs/HANDOFF.md) §5.
+
+`./deploy-backend.sh` still works as a fallback from your own machine over SSH (only
+from the admin's allowed IP - `admin_ssh_cidr` in `../infra/terraform/compute.tf`).
+Requires `mostatelax-prod-key.pem` (git-ignored) in this directory.
 
 ## Layout
 

@@ -1,3 +1,5 @@
+> **Historical.** This describes manually resizing the old t3.micro box for game-night traffic, from before the 2026-09 migration to the new AWS org account. Kept for background only - the current server is a fixed t3.medium and is not resized. See [`HANDOFF.md`](HANDOFF.md) for what's actually true today.
+
 # EC2 sizing & game-night scaling
 
 The backend runs on **one EC2 instance** (`i-0800e9fce88ebd384`, `lacrosse-backend`,
