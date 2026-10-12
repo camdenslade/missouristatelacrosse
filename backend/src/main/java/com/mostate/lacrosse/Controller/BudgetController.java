@@ -48,6 +48,18 @@ import jakarta.servlet.http.HttpServletRequest;
 @RestController
 @RequestMapping("/api/budget")
 public class BudgetController {
+    // Stripe's standard US rate (2.9% + $0.30). PayPal's is close enough that a single
+    // estimate is fine here - this is "roughly how much actually lands in the account",
+    // not a reconciled statement. Only applied to processor-captured rows; cash/check
+    // entries (dues-manual, plain manual entries) never had a cut taken.
+    private static final BigDecimal PROCESSOR_RATE = new BigDecimal("0.029");
+    private static final BigDecimal PROCESSOR_FLAT_FEE = new BigDecimal("0.30");
+
+    private static BigDecimal estimateNet(BigDecimal gross) {
+        BigDecimal fee = gross.multiply(PROCESSOR_RATE).add(PROCESSOR_FLAT_FEE);
+        BigDecimal net = gross.subtract(fee);
+        return net.signum() > 0 ? net.setScale(2, java.math.RoundingMode.HALF_UP) : BigDecimal.ZERO;
+    }
     private final PaymentReceiptRepository receiptRepo;
     private final DuesPaymentRepository duesRepo;
     private final BudgetEntryRepository entryRepo;
@@ -90,8 +102,9 @@ public class BudgetController {
             if (!"COMPLETED".equalsIgnoreCase(r.getStatus())) continue;
             LocalDate date = toDate(r.getCreatedAt());
             if (!season.equals(SeasonUtil.currentSeason(date))) continue;
+            BigDecimal gross = r.getAmount() != null ? r.getAmount() : BigDecimal.ZERO;
             rows.add(new Row(
-                date, describeSource(r.getSource()), r.getAmount(), "income",
+                date, describeSource(r.getSource()), gross, estimateNet(gross), "income",
                 r.getSource() != null ? r.getSource() : "payment", null
             ));
         }
@@ -102,12 +115,13 @@ public class BudgetController {
             if (!season.equals(SeasonUtil.currentSeason(date))) continue;
             String playerName = playerRepo.findById(d.getPlayerId()).map(Player::getName).orElse("Unknown player");
             String desc = "Dues - " + playerName + (d.getNote() != null && !d.getNote().isBlank() ? " (" + d.getNote() + ")" : "");
-            rows.add(new Row(date, desc, d.getAmount(), "income", "dues-manual", null));
+            // Manually recorded ("paid directly") - no processor took a cut.
+            rows.add(new Row(date, desc, d.getAmount(), d.getAmount(), "income", "dues-manual", null));
         }
 
         for (BudgetEntry e : entryRepo.findAll()) {
             if (!season.equals(SeasonUtil.currentSeason(e.getEntryDate()))) continue;
-            rows.add(new Row(e.getEntryDate(), e.getDescription(), e.getAmount(), e.getEntryType(), "manual", e.getId()));
+            rows.add(new Row(e.getEntryDate(), e.getDescription(), e.getAmount(), e.getAmount(), e.getEntryType(), "manual", e.getId()));
         }
 
         rows.sort(Comparator.comparing((Row r) -> r.date));
@@ -115,12 +129,13 @@ public class BudgetController {
         BigDecimal running = BigDecimal.ZERO;
         List<Map<String, Object>> withRunningTotal = new ArrayList<>();
         for (Row r : rows) {
-            BigDecimal signed = "expense".equals(r.type) ? r.amount.negate() : r.amount;
-            running = running.add(signed);
+            BigDecimal signedNet = "expense".equals(r.type) ? r.netAmount.negate() : r.netAmount;
+            running = running.add(signedNet);
             withRunningTotal.add(Map.of(
                 "date", r.date,
                 "description", r.description,
                 "amount", r.amount,
+                "netAmount", r.netAmount,
                 "type", r.type,
                 "source", r.source,
                 "manualEntryId", r.manualEntryId != null ? r.manualEntryId : "",
@@ -183,7 +198,10 @@ public class BudgetController {
         return source;
     }
 
-    private record Row(LocalDate date, String description, BigDecimal amount, String type, String source, UUID manualEntryId) {}
+    private record Row(
+        LocalDate date, String description, BigDecimal amount, BigDecimal netAmount,
+        String type, String source, UUID manualEntryId
+    ) {}
 
     public record EntryRequest(String entryType, BigDecimal amount, String description, LocalDate entryDate) {}
 }

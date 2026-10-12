@@ -12,7 +12,7 @@ const TYPES = [
 
 const STATUSES = ["pending", "filed", "overdue"];
 
-const blankForm = { type: "MO_ANNUAL", name: "", dueDate: "", lastFiled: "", status: "pending", notes: "" };
+const blankForm = { type: "MO_ANNUAL", name: "", dueDate: "", lastFiled: "", status: "pending", notes: "", link: "", recurring: false };
 
 const initialState = { filings: [], loading: true, form: blankForm, saving: false };
 
@@ -128,9 +128,11 @@ export default function ManageCompliance() {
             className={`${input} bg-white flex-1 min-w-[180px]`}
           />
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-3 items-end">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Due date</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              {state.form.recurring ? "Next due date" : "Due date"}
+            </label>
             <input
               type="date"
               value={state.form.dueDate}
@@ -147,7 +149,29 @@ export default function ManageCompliance() {
               className={`${input} bg-white`}
             />
           </div>
+          <label className="flex items-center gap-2 text-sm text-gray-700 pb-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={state.form.recurring}
+              onChange={(e) => dispatch({ type: "SET_FIELD", field: "recurring", value: e.target.checked })}
+              className="w-4 h-4 accent-[#5E0009]"
+            />
+            Recurs annually
+          </label>
         </div>
+        {state.form.recurring && (
+          <p className="text-xs text-gray-400 -mt-2">
+            Marking this "filed" will automatically roll the due date forward one year,
+            instead of needing it re-entered each time.
+          </p>
+        )}
+        <input
+          type="text"
+          placeholder="Link (filing portal, document, etc - optional)"
+          value={state.form.link}
+          onChange={(e) => dispatch({ type: "SET_FIELD", field: "link", value: e.target.value })}
+          className={`${input} bg-white w-full`}
+        />
         <textarea
           placeholder="Notes (optional)"
           value={state.form.notes}
@@ -174,12 +198,29 @@ export default function ManageCompliance() {
           {state.filings.map((f) => (
             <div key={f.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="font-semibold text-gray-900">{f.name}</p>
+                <p className="font-semibold text-gray-900 flex items-center gap-2">
+                  {f.name}
+                  {f.recurring && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-normal">
+                      Annual
+                    </span>
+                  )}
+                </p>
                 <p className="text-xs text-gray-500">
                   {TYPES.find((t) => t.value === f.type)?.label || f.type}
                   {f.dueDate && ` - due ${f.dueDate}`}
                   {f.lastFiled && ` - last filed ${f.lastFiled}`}
                 </p>
+                {f.link && (
+                  <a
+                    href={f.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-[#5E0009] hover:underline"
+                  >
+                    Open link
+                  </a>
+                )}
                 {f.notes && <p className="text-xs text-gray-400 mt-1">{f.notes}</p>}
               </div>
               <div className="flex items-center gap-2 shrink-0">

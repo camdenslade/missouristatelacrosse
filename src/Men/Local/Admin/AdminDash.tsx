@@ -8,6 +8,7 @@ import ManageCompliance from "./Tabs/ManageCompliance";
 import ManageCustomListings from "./Tabs/ManageCustomListings";
 import ManageEvents from "./Tabs/ManageEvents";
 import ManageFundraisers from "./Tabs/ManageFundraisers";
+import ManageOrderForms from "./Tabs/ManageOrderForms";
 import ManagePlayers from "./Tabs/ManagePlayers";
 import ManageRaffles from "./Tabs/ManageRaffles";
 import ManageSeasons from "./Tabs/ManageSeasons";
@@ -56,6 +57,7 @@ export default function AdminDashboard(){
       { id: "compliance", label: "Compliance", minRole: "vp" },
       { id: "calendar", label: "Board Calendar", minRole: "board" },
       { id: "budget", label: "Budget", minRole: "treasurer" },
+      { id: "order-forms", label: "Order Forms", minRole: "president" },
     ],
     []
   );
@@ -92,6 +94,8 @@ export default function AdminDashboard(){
         return <BoardCalendar />;
       case "budget":
         return <ManageBudget />;
+      case "order-forms":
+        return <ManageOrderForms />;
       default:
         return null;
     }

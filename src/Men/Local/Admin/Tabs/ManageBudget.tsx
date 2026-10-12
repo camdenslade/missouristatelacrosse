@@ -115,8 +115,11 @@ export default function ManageBudget() {
       </div>
       <p className="text-sm text-gray-500 -mt-4">
         Every dues payment, raffle, event, fundraiser, and store sale for this season, plus
-        any manual entries below, in order. This is the legal financial record, kept exactly
-        as recorded - real payments can't be edited here.
+        any manual entries below, in order. The "Amount" column is what was charged;
+        "Net (est.)" and the running total estimate what actually lands in the account after
+        Stripe/PayPal's cut (~2.9% + $0.30) - cash/check entries have no cut taken. The
+        "Amount" column itself is the legal record, kept exactly as recorded - real payments
+        can't be edited here.
       </p>
 
       <form onSubmit={handleAdd} className="bg-gray-50 border border-gray-200 rounded-xl p-5 shadow-sm space-y-3">
@@ -176,6 +179,7 @@ export default function ManageBudget() {
                 <th className="px-4 py-2.5 text-left">Date</th>
                 <th className="px-4 py-2.5 text-left">Description</th>
                 <th className="px-4 py-2.5 text-right">Amount</th>
+                <th className="px-4 py-2.5 text-right">Net (est.)</th>
                 <th className="px-4 py-2.5 text-right">Running Total</th>
                 <th className="px-4 py-2.5" />
               </tr>
@@ -183,7 +187,7 @@ export default function ManageBudget() {
             <tbody>
               {state.entries.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-gray-400">
+                  <td colSpan={6} className="px-4 py-6 text-center text-gray-400">
                     No entries for this season yet.
                   </td>
                 </tr>
@@ -194,6 +198,11 @@ export default function ManageBudget() {
                   <td className="px-4 py-2.5 text-gray-800">{row.description}</td>
                   <td className={`px-4 py-2.5 text-right font-mono ${row.type === "expense" ? "text-red-600" : "text-green-700"}`}>
                     {row.type === "expense" ? "-" : "+"}${Number(row.amount).toFixed(2)}
+                  </td>
+                  <td className="px-4 py-2.5 text-right font-mono text-gray-500 text-xs">
+                    {row.source === "manual" || row.source === "dues-manual"
+                      ? "-"
+                      : `${row.type === "expense" ? "-" : "+"}$${Number(row.netAmount).toFixed(2)}`}
                   </td>
                   <td className="px-4 py-2.5 text-right font-mono text-gray-700">
                     ${Number(row.runningTotal).toFixed(2)}
@@ -214,7 +223,7 @@ export default function ManageBudget() {
             {state.entries.length > 0 && (
               <tfoot>
                 <tr className="border-t-2 border-gray-200 bg-gray-50 font-bold">
-                  <td colSpan={3} className="px-4 py-3 text-right">Season Total</td>
+                  <td colSpan={4} className="px-4 py-3 text-right">Season Total (net, est.)</td>
                   <td className="px-4 py-3 text-right font-mono">${Number(state.total).toFixed(2)}</td>
                   <td />
                 </tr>

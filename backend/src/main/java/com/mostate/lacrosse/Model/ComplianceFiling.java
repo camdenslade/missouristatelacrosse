@@ -37,6 +37,11 @@ public class ComplianceFiling {
 
     private String notes;
 
+    private String link;
+
+    @Column(nullable = false)
+    private boolean recurring = false;
+
     @Column(name = "created_at")
     private Instant createdAt;
 
@@ -75,6 +80,12 @@ public class ComplianceFiling {
 
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
+
+    public String getLink() { return link; }
+    public void setLink(String link) { this.link = link; }
+
+    public boolean isRecurring() { return recurring; }
+    public void setRecurring(boolean recurring) { this.recurring = recurring; }
 
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }

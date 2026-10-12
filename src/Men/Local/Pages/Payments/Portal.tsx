@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useReducer, useState } from "react";
 import toast from "react-hot-toast";
 
+import OrderForms from "./components/OrderForms";
 import ParentPlayerSelect from "./components/ParentPlayerSelect";
 import PlayerPaymentDetails from "./components/PlayerPaymentDetails";
 import TodoList from "./components/TodoList";
@@ -353,8 +354,9 @@ export default function Portal() {
               </div>
 
               {(programRole === "player" || (programRole === "admin" && !!linkedPlayer)) && (
-                <div className="mt-8">
+                <div className="mt-8 space-y-8">
                   <TodoList playerId={state.selectedPlayer.id} season={currentSeason} />
+                  <OrderForms playerId={state.selectedPlayer.id} />
                 </div>
               )}
             </div>

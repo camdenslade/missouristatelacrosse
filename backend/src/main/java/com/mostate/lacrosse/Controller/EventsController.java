@@ -44,8 +44,18 @@ import com.mostate.lacrosse.Repository.PaymentReceiptRepository;
 import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Service.EmailService;
 import com.mostate.lacrosse.Service.S3Service;
+import com.mostate.lacrosse.Service.StripeService;
 import com.mostate.lacrosse.Utils.JsonUtils;
 import com.mostate.lacrosse.Utils.TextSanitizer;
+import com.stripe.exception.StripeException;
+import com.stripe.model.Customer;
+import com.stripe.model.CustomerCollection;
+import com.stripe.model.Invoice;
+import com.stripe.model.InvoiceItem;
+import com.stripe.param.CustomerCreateParams;
+import com.stripe.param.CustomerListParams;
+import com.stripe.param.InvoiceCreateParams;
+import com.stripe.param.InvoiceItemCreateParams;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
@@ -60,6 +70,7 @@ public class EventsController {
     private final EmailService emailService;
     private final S3Service s3Service;
     private final AuthorizationService authorizationService;
+    private final StripeService stripeService;
 
     @Value("${app.frontend.base-url}")
     private String frontendBaseUrl;
@@ -72,7 +83,8 @@ public class EventsController {
         EventPosItemRepository posItemRepo,
         EmailService emailService,
         S3Service s3Service,
-        AuthorizationService authorizationService
+        AuthorizationService authorizationService,
+        StripeService stripeService
     ) {
         this.eventRepo = eventRepo;
         this.registrationRepo = registrationRepo;
@@ -82,6 +94,7 @@ public class EventsController {
         this.emailService = emailService;
         this.s3Service = s3Service;
         this.authorizationService = authorizationService;
+        this.stripeService = stripeService;
     }
 
     private boolean isAdmin(HttpServletRequest request, String program) {
@@ -1014,4 +1027,110 @@ public class EventsController {
     }
 
     public record PosItemRequest(String name, BigDecimal price) {}
+
+    // --- Manual payment tracking + bulk invoicing -----------------------------------------
+
+    /** For cash, check, or any payment collected outside Stripe/PayPal. */
+    @PutMapping("/{eventId}/registrations/{regId}/mark-paid")
+    public ResponseEntity<?> markPaid(
+        HttpServletRequest request,
+        @PathVariable UUID eventId,
+        @PathVariable UUID regId,
+        @RequestParam(defaultValue = "men") String program,
+        @RequestBody(required = false) MarkPaidRequest body
+    ) {
+        if (!isBoard(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Board access required"));
+        }
+        EventRegistration reg = registrationRepo.findById(regId).orElse(null);
+        if (reg == null || !eventId.equals(reg.getEventId())) {
+            return ResponseEntity.notFound().build();
+        }
+        Event event = eventRepo.findById(eventId).orElse(null);
+        reg.setPaid(true);
+        reg.setPaidAt(Instant.now());
+        BigDecimal amount = body != null && body.amount() != null
+            ? body.amount()
+            : (reg.getAmountPaid() != null && reg.getAmountPaid().signum() > 0
+                ? reg.getAmountPaid()
+                : (event != null && event.getPrice() != null ? event.getPrice() : BigDecimal.ZERO));
+        reg.setAmountPaid(amount);
+        return ResponseEntity.ok(toRegResponse(registrationRepo.save(reg)));
+    }
+
+    /**
+     * Sends a real Stripe Invoice (not a Checkout Session - this is Stripe's separate
+     * invoicing product, emailed directly by Stripe with its own pay link) to every unpaid
+     * registrant with an email on file.
+     */
+    @PostMapping("/{eventId}/invoice-unpaid")
+    public ResponseEntity<?> invoiceUnpaid(
+        HttpServletRequest request,
+        @PathVariable UUID eventId,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isBoard(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Board access required"));
+        }
+        if (!stripeService.isEnabled()) {
+            return ResponseEntity.status(503).body(new ErrorResponse("Stripe is not enabled"));
+        }
+        Event event = eventRepo.findById(eventId).orElse(null);
+        if (event == null) return ResponseEntity.notFound().build();
+        if (event.getPrice() == null || event.getPrice().signum() <= 0) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("This event has no price set"));
+        }
+
+        List<EventRegistration> unpaid = registrationRepo.findAllByEventId(eventId).stream()
+            .filter(r -> !r.isPaid() && r.getPayerEmail() != null && !r.getPayerEmail().isBlank())
+            .toList();
+
+        int sent = 0;
+        List<String> failures = new ArrayList<>();
+        long priceCents = event.getPrice().movePointRight(2).longValueExact();
+
+        for (EventRegistration reg : unpaid) {
+            try {
+                Customer customer = findOrCreateCustomer(reg.getPayerEmail(), reg.getPayerName());
+
+                InvoiceItemCreateParams itemParams = InvoiceItemCreateParams.builder()
+                    .setCustomer(customer.getId())
+                    .setAmount(priceCents)
+                    .setCurrency("usd")
+                    .setDescription(event.getName() + " - registration")
+                    .build();
+                InvoiceItem.create(itemParams);
+
+                InvoiceCreateParams invoiceParams = InvoiceCreateParams.builder()
+                    .setCustomer(customer.getId())
+                    .setCollectionMethod(InvoiceCreateParams.CollectionMethod.SEND_INVOICE)
+                    .setDaysUntilDue(14L)
+                    .setDescription("Missouri State Lacrosse - " + event.getName())
+                    .build();
+                Invoice invoice = Invoice.create(invoiceParams);
+                invoice.finalizeInvoice();
+                invoice.sendInvoice();
+                sent++;
+            } catch (StripeException e) {
+                failures.add(reg.getPayerEmail() + ": " + e.getMessage());
+            }
+        }
+
+        return ResponseEntity.ok(Map.of("invoicesSent", sent, "failures", failures));
+    }
+
+    private Customer findOrCreateCustomer(String email, String name) throws StripeException {
+        CustomerListParams listParams = CustomerListParams.builder().setEmail(email).setLimit(1L).build();
+        CustomerCollection existing = Customer.list(listParams);
+        if (!existing.getData().isEmpty()) {
+            return existing.getData().get(0);
+        }
+        CustomerCreateParams createParams = CustomerCreateParams.builder()
+            .setEmail(email)
+            .setName(name != null && !name.isBlank() ? name : email)
+            .build();
+        return Customer.create(createParams);
+    }
+
+    public record MarkPaidRequest(BigDecimal amount) {}
 }
