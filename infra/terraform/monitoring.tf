@@ -1,8 +1,8 @@
 # Uptime alerting and the cost guardrail.
 #
-# Every 5 minutes a small Lambda calls the backend's health endpoint and records 1 (up) or 0
-# (down) as a CloudWatch metric. If it is not up for 3 checks in a row (or stops reporting), the
-# alarm emails admin@. It only watches the API; the website itself is served by CloudFront.
+# Every 5 minutes a small Lambda calls the backend's health endpoint AND fetches the website's home
+# page, and records each as a CloudWatch metric (1 up / 0 down). If either is not up for 3 checks in
+# a row (or stops reporting), the matching alarm emails admin@.
 
 variable "alert_email" {
   description = "Where uptime and budget alerts are sent."
@@ -94,6 +94,21 @@ resource "aws_cloudwatch_metric_alarm" "backend_down" {
   alarm_description   = "Missouri State Lacrosse backend health check failing"
   namespace           = "MostateLacrosse"
   metric_name         = "BackendUp"
+  statistic           = "Maximum"
+  period              = 300
+  evaluation_periods  = 3
+  threshold           = 1
+  comparison_operator = "LessThanThreshold"
+  treat_missing_data  = "breaching"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+  ok_actions          = [aws_sns_topic.alerts.arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "site_down" {
+  alarm_name          = "mostatelax-prod-site-down"
+  alarm_description   = "Missouri State Lacrosse website is not responding"
+  namespace           = "MostateLacrosse"
+  metric_name         = "SiteUp"
   statistic           = "Maximum"
   period              = 300
   evaluation_periods  = 3

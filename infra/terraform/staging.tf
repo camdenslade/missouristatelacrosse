@@ -99,6 +99,21 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "staging_images" {
   }
 }
 
+# Same reason as the prod images bucket (see storage.tf): the browser uploads straight to S3.
+resource "aws_s3_bucket_cors_configuration" "staging_images" {
+  bucket = aws_s3_bucket.staging_images.id
+
+  cors_rule {
+    allowed_origins = [
+      "https://${var.staging_domain}",
+      "http://localhost:5173",
+    ]
+    allowed_methods = ["PUT", "GET", "HEAD"]
+    allowed_headers = ["*"]
+    max_age_seconds = 3000
+  }
+}
+
 resource "aws_acm_certificate" "staging" {
   domain_name       = var.staging_domain
   validation_method = "DNS"
