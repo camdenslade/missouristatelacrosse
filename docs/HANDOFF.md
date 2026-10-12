@@ -28,6 +28,9 @@ on anything they disagree about.
   request by the `X-Program` header.
 - **Password manager:** a self-hosted Vaultwarden (Bitwarden-compatible) instance for
   officers, on its own small server - see §7.
+- **Document store:** a self-hosted Nextcloud instance (`docs.missouristatelacrosse.com`)
+  for bank statements, contracts, and other files officers need to share - shares the
+  same server as Vaultwarden, each with its own separate login - see §7.
 
 Request flow: browser -> `https://missouristatelacrosse.com` (CloudFront + S3) ->
 `/api/*` calls go to `https://api.missouristatelacrosse.com` (EC2, nginx TLS -> Spring
@@ -43,7 +46,8 @@ account by hand and the drift needs resolving.
 |---|---|---|---|
 | **AWS** (org account `864145505327`, region `us-east-1`) | EC2 (backend + vault), S3, CloudFront, Cognito, Secrets Manager, SES, DNS certs | IAM user for whoever runs Terraform / deploys by hand; GitHub Actions uses no stored keys (OIDC) | ~$50/mo, budget-capped at $60 (see §9) |
 | **Cognito** (pool `mostatelax-prod-users`, `us-east-1_HqmiTqIrF`) | Sign-in for the live site | managed entirely through Terraform + the AWS console | included above |
-| **Vaultwarden** (`vault.missouristatelacrosse.com`) | Team password manager | invite-only; admins add officers from inside the app | included above (~$11/mo of it) |
+| **Vaultwarden** (`vault.missouristatelacrosse.com`) | Team password manager | invite-only; admins add officers from inside the app | included above |
+| **Nextcloud** (`docs.missouristatelacrosse.com`) | Document store (bank statements, contracts) | separate login from Vaultwarden; admin adds officer accounts from inside the app | included above - shares the vault server (~$15/mo of it) |
 | **Firebase** (project `missouristatelacrosse-cc913`) | Legacy auth only, kept alive until every user has migrated to Cognito (see §1). Hosting is no longer used for anything. | Google account tied to the project | free tier |
 | **Cloudflare** | DNS for `missouristatelacrosse.com` | Cloudflare account | free tier |
 | **Domain registrar** | `missouristatelacrosse.com` registration | confirm current registrar | ~$12/yr |
@@ -173,8 +177,10 @@ the database.
 
 ### The vault server (`mostatelax-prod-vault`)
 
-No SSH at all, ever - Systems Manager only. Full detail in `infra/terraform/README.md`
-under "Password manager (Vaultwarden)".
+Runs both Vaultwarden and Nextcloud, each in its own Docker container behind Caddy, each
+with its own login - a problem in one app doesn't hand over the other's data. No SSH at
+all, ever - Systems Manager only. Full detail in `infra/terraform/README.md` under
+"Password manager (Vaultwarden)".
 
 ---
 
@@ -267,9 +273,11 @@ proportional to viewership - worth a glance at the bill after a big one.
       `staging` branch protection rules (not exempt from them).
 - [ ] Add them as an officer in **Vaultwarden** and walk through where the shared
       credentials live.
+- [ ] Add them an account in **Nextcloud** (`docs.missouristatelacrosse.com`) for the
+      document store.
 - [ ] Walk through one real backend deploy and one frontend deploy together, through
       GitHub Actions (not by hand).
 - [ ] Confirm they can reach the boxes through Systems Manager.
 - [ ] Rotate every shared credential after the handoff so the departing owner no
       longer has access (AWS keys, Printify token, PayPal/Stripe keys, the SSH key
-      pair, Vaultwarden admin access).
+      pair, Vaultwarden admin access, Nextcloud admin access).

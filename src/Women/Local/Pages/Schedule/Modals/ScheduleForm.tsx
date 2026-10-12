@@ -21,6 +21,7 @@ type ScheduleFormData = {
   location: string;
   awayLogo: File | string | null;
   awayLink: string;
+  liveLink: string;
   isConference: boolean;
   isDivision: boolean;
   tournamentType: string;
@@ -73,6 +74,7 @@ const initialForm = (
   location: editingGame?.location || "",
   awayLogo: editingGame?.awayLogo || null,
   awayLink: editingGame?.awayLink || "",
+  liveLink: editingGame?.liveLink || "",
   isConference: !!editingGame?.isConference,
   isDivision: !!editingGame?.isDivision,
   tournamentType: editingGame?.tournamentType || "none",
@@ -193,7 +195,8 @@ export default function ScheduleFormModal({
       validateText(formData.date, "Date", { required: true, max: 10 }) ||
       validateText(formData.time, "Time", { required: false, max: 10 }) ||
       validateText(formData.location, "Location", { required: false, max: 120 }) ||
-      validateUrl(formData.awayLink, "Opponent link", { required: false });
+      validateUrl(formData.awayLink, "Opponent link", { required: false }) ||
+      validateUrl(formData.liveLink, "Live stream link", { required: false });
     if (validationError) {
       setFormError(validationError);
       return;
@@ -379,6 +382,22 @@ export default function ScheduleFormModal({
           onChange={handleInputChange}
           className="p-2 border text-lg"
         />
+
+        {/* Live stream embed */}
+        <div>
+          <input
+            type="text"
+            name="liveLink"
+            placeholder="Live stream embed URL (e.g. https://www.youtube.com/embed/live_stream?channel=YOUR_CHANNEL_ID)"
+            value={formData.liveLink}
+            onChange={handleInputChange}
+            className="p-2 border text-lg w-full"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Shown on the live game page. Use your YouTube channel's "embed/live_stream" link so it
+            always shows whatever is currently live - no need to update this per game.
+          </p>
+        </div>
 
         {/* Logo Upload */}
         <input

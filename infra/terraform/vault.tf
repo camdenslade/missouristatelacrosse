@@ -1,15 +1,23 @@
-# The team password manager (Vaultwarden, a Bitwarden-compatible server) for officers.
-#
-# It runs on its own small server, apart from the app, so a problem in one cannot reach the other.
+# The team password manager (Vaultwarden, a Bitwarden-compatible server) and document store
+# (Nextcloud, for bank statements, contracts, and other files officers need to share) - two
+# officer-only tools sharing one small server, apart from the public site, so a problem in either
+# cannot reach it.
 # Hardening choices:
 #   - No SSH at all. The server is managed through AWS Systems Manager, so there is no open admin
 #     port and no key to lose.
-#   - The disk is encrypted.
-#   - The admin web panel is not enabled. People are added by inviting them from inside the app.
-#   - Backups go to S3 every night, and the disk is snapshotted daily like the app server.
+#   - Both services are only reachable from the admin CIDR (see the Caddyfile), on top of each
+#     having its own login.
+#   - Every disk is encrypted, including the document store's, which is kept on its own EBS volume
+#     separate from the password vault's database.
+#   - Neither admin web panel is enabled by default. People are added by inviting them from inside
+#     each app.
+#   - Backups go to S3 every night, and every disk is snapshotted daily like the app server.
 #
 # Vault contents are encrypted in each person's browser before they reach the server, so even a
-# stolen backup is unreadable without the users' master passwords.
+# stolen backup is unreadable without the users' master passwords. Document store contents are not
+# end-to-end encrypted the same way - they are protected by disk encryption, HTTPS in transit, and
+# the admin-CIDR + login gate, which is the right tradeoff for files people need to browse and
+# preview in a browser rather than unlock one at a time.
 
 variable "vault_domain" {
   description = "Public address of the password manager."
@@ -27,6 +35,18 @@ variable "caddy_version" {
   description = "Pinned Caddy release (handles HTTPS certificates)."
   type        = string
   default     = "2.11.4"
+}
+
+variable "docs_domain" {
+  description = "Public address of the document store (bank statements, contracts, etc)."
+  type        = string
+  default     = "docs.missouristatelacrosse.com"
+}
+
+variable "nextcloud_version" {
+  description = "Pinned Nextcloud release. Change it deliberately to upgrade."
+  type        = string
+  default     = "35.0.1-apache"
 }
 
 data "aws_ami" "al2023_arm" {
@@ -123,7 +143,7 @@ resource "aws_iam_instance_profile" "vault" {
 
 resource "aws_instance" "vault" {
   ami                         = data.aws_ami.al2023_arm.id
-  instance_type               = "t4g.micro"
+  instance_type               = "t4g.small"
   subnet_id                   = aws_instance.backend.subnet_id
   vpc_security_group_ids      = [aws_security_group.vault.id]
   iam_instance_profile        = aws_iam_instance_profile.vault.name
@@ -149,10 +169,12 @@ resource "aws_instance" "vault" {
 
   user_data = templatefile("${path.module}/vault/cloud-init.sh.tpl", {
     domain              = var.vault_domain
+    docs_domain         = var.docs_domain
     admin_cidr          = var.admin_ssh_cidr
     backup_bucket       = aws_s3_bucket.backups.id
     vaultwarden_version = var.vaultwarden_version
     caddy_version       = var.caddy_version
+    nextcloud_version   = var.nextcloud_version
   })
 
   tags = {
@@ -163,6 +185,26 @@ resource "aws_instance" "vault" {
     # First-boot setup and OS image only matter when the server is created.
     ignore_changes = [ami, user_data, user_data_base64]
   }
+}
+
+# A separate disk for the document store (bank statements, contracts), so its data is never on
+# the same volume as the password vault's own database.
+resource "aws_ebs_volume" "vault_docs" {
+  availability_zone = aws_instance.vault.availability_zone
+  size               = 20
+  type               = "gp3"
+  encrypted          = true
+
+  tags = {
+    Name           = "mostatelax-prod-vault-docs"
+    SnapshotPolicy = "daily"
+  }
+}
+
+resource "aws_volume_attachment" "vault_docs" {
+  device_name = "/dev/sdf"
+  volume_id   = aws_ebs_volume.vault_docs.id
+  instance_id = aws_instance.vault.id
 }
 
 resource "aws_eip" "vault" {
