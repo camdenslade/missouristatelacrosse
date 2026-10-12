@@ -101,10 +101,24 @@ public class ComplianceController {
     private void applyPayload(ComplianceFiling filing, FilingRequest body) {
         if (body.type() != null) filing.setType(TextSanitizer.clean(body.type()));
         if (body.name() != null) filing.setName(TextSanitizer.clean(body.name()));
-        if (body.dueDate() != null) filing.setDueDate(body.dueDate());
         if (body.lastFiled() != null) filing.setLastFiled(body.lastFiled());
-        if (body.status() != null) filing.setStatus(TextSanitizer.clean(body.status()));
         if (body.notes() != null) filing.setNotes(TextSanitizer.clean(body.notes()));
+        if (body.link() != null) filing.setLink(TextSanitizer.clean(body.link()));
+        if (body.recurring() != null) filing.setRecurring(body.recurring());
+
+        // Marking a recurring filing "filed" rolls its due date forward a year instead of
+        // just sitting there - e.g. a Missouri annual report due every August 31 goes
+        // straight to next August 31 rather than needing the date re-entered by hand.
+        if (body.status() != null) {
+            String newStatus = TextSanitizer.clean(body.status());
+            if ("filed".equals(newStatus) && filing.isRecurring() && filing.getDueDate() != null) {
+                filing.setDueDate(filing.getDueDate().plusYears(1));
+                filing.setStatus("pending");
+            } else {
+                filing.setStatus(newStatus);
+            }
+        }
+        if (body.dueDate() != null) filing.setDueDate(body.dueDate());
     }
 
     public record FilingRequest(
@@ -113,6 +127,8 @@ public class ComplianceController {
         LocalDate dueDate,
         LocalDate lastFiled,
         String status,
-        String notes
+        String notes,
+        String link,
+        Boolean recurring
     ) {}
 }

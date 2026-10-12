@@ -27,6 +27,7 @@ import {
   extractTeamNameLabel,
   getRegistrationTeamName,
 } from "../../../../Global/Common/utils/teamNameHelpers";
+import { apiRequest } from "../../../../Services/API";
 import type {
   ApiEvent,
   ApiEventField,
@@ -217,7 +218,7 @@ function reducer(state: State, action: Action): State {
 
 export default function ManageEvents() {
   const confirm = useConfirm();
-  const program: Program = "women";
+  const program: Program = "men";
   const [state, dispatch] = useReducer(reducer, {
     view: "list",
     events: [],
@@ -814,6 +815,7 @@ function SubmissionsView({
   dispatch: Dispatch<Action>;
 }) {
   const isTeam = event.teamSize > 1;
+  const confirm = useConfirm();
   const [sendingReminders, setSendingReminders] = useState<Record<string, boolean>>({});
   const [pairingTeams, setPairingTeams] = useState<Record<string, boolean>>({});
   const [pairNameInputs, setPairNameInputs] = useState<Record<string, string>>({});
@@ -918,15 +920,76 @@ function SubmissionsView({
     return { map, solo };
   }, [parsed, isTeam, teamNameFieldId]);
 
+  const [creatingGroup, setCreatingGroup] = useState(false);
+  const [invoicing, setInvoicing] = useState(false);
+  const unpaidCount = registrations.filter((r) => !r.paid && r.payerEmail).length;
+
+  const handleCreateEmailGroup = async () => {
+    const emails = Array.from(
+      new Set(registrations.map((r) => r.payerEmail).filter(Boolean).map((e) => e!.trim().toLowerCase()))
+    );
+    if (emails.length === 0) {
+      toast.error("No registrant emails to add.");
+      return;
+    }
+    setCreatingGroup(true);
+    try {
+      const group = await apiRequest<{ name: string }>("/api/groups", {
+        method: "POST",
+        json: { name: `Event: ${event.name}`, members: emails },
+      });
+      toast.success(`Created group "${group.name}" with ${emails.length} emails - find it in Email Center.`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to create group.");
+    } finally {
+      setCreatingGroup(false);
+    }
+  };
+
+  const handleInvoiceUnpaid = async () => {
+    if (!(await confirm(`Send a Stripe invoice to all ${unpaidCount} unpaid registrant(s)?`))) return;
+    setInvoicing(true);
+    try {
+      const result = await apiRequest<{ invoicesSent: number; failures: string[] }>(
+        `/api/events/${event.id}/invoice-unpaid`,
+        { method: "POST" }
+      );
+      toast.success(`Sent ${result.invoicesSent} invoice(s).${result.failures.length ? ` ${result.failures.length} failed.` : ""}`);
+      if (result.failures.length) console.error("Invoice failures:", result.failures);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to send invoices.");
+    } finally {
+      setInvoicing(false);
+    }
+  };
+
   return (
     <div>
-      <div className="flex items-center gap-3 mb-5">
+      <div className="flex items-center gap-3 mb-5 flex-wrap">
         <button onClick={onBack} className="text-sm text-gray-500 hover:text-gray-700">
           Back to events
         </button>
         <div>
           <h2 className="text-lg font-bold text-gray-900">{event.name}</h2>
           <p className="text-sm text-gray-400">Submission audit - {registrations.length} registrations</p>
+        </div>
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={handleCreateEmailGroup}
+            disabled={creatingGroup}
+            className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 font-medium disabled:opacity-50"
+          >
+            {creatingGroup ? "Creating..." : "Create Email Group"}
+          </button>
+          <button
+            onClick={handleInvoiceUnpaid}
+            disabled={invoicing || unpaidCount === 0}
+            className="text-xs px-3 py-1.5 rounded-lg bg-[#5E0009]/10 text-[#5E0009] hover:bg-[#5E0009]/20 font-medium disabled:opacity-50"
+          >
+            {invoicing ? "Sending..." : `Invoice Unpaid (${unpaidCount})`}
+          </button>
         </div>
       </div>
 
@@ -975,32 +1038,32 @@ function SubmissionsView({
             return (
               <div key={teamId} className="border border-gray-200 rounded-lg overflow-hidden">
               <div className={`flex items-center gap-3 px-4 py-2 text-sm font-medium ${complete ? "bg-green-50 text-green-700" : "bg-yellow-50 text-yellow-700"}`}>
-                <div className="flex flex-col gap-0.5">
-                  <span>{complete ? "Team Complete" : "Incomplete"}</span>
-                  {teamLabel && (
-                    <span className="text-xs font-normal text-gray-500">Team: {teamLabel}</span>
-                  )}
-                  {primaryRegistrant && (
-                    <span className="text-xs font-normal text-gray-500">Lead: {primaryRegistrant}</span>
-                  )}
-                  <div className="flex flex-wrap gap-2 items-center">
-                    <input
-                      className="text-xs px-2 py-1 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-[#5E0009]"
-                      placeholder="Pair team name"
-                      value={pairNameInputs[teamId] ?? teamLabel ?? ""}
-                      onChange={(e) =>
-                        setPairNameInputs((prev) => ({ ...prev, [teamId]: e.target.value }))
-                      }
-                    />
-                    <button
-                      onClick={() => handlePairTeam(teamId, members)}
-                      disabled={pairingTeams[teamId]}
-                      className="text-xs px-2 py-1 rounded-lg border border-[#5E0009] text-[#5E0009] font-medium disabled:opacity-50"
-                    >
-                      {pairingTeams[teamId] ? "Pairing…" : "Pair team"}
-                    </button>
+                  <div className="flex flex-col gap-0.5">
+                    <span>{complete ? "Team Complete" : "Incomplete"}</span>
+                    {teamLabel && (
+                      <span className="text-xs font-normal text-gray-500">Team: {teamLabel}</span>
+                    )}
+                    {primaryRegistrant && (
+                      <span className="text-xs font-normal text-gray-500">Lead: {primaryRegistrant}</span>
+                    )}
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <input
+                        className="text-xs px-2 py-1 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-[#5E0009]"
+                        placeholder="Pair team name"
+                        value={pairNameInputs[teamId] ?? teamLabel ?? ""}
+                        onChange={(e) =>
+                          setPairNameInputs((prev) => ({ ...prev, [teamId]: e.target.value }))
+                        }
+                      />
+                      <button
+                        onClick={() => handlePairTeam(teamId, members)}
+                        disabled={pairingTeams[teamId]}
+                        className="text-xs px-2 py-1 rounded-lg border border-[#5E0009] text-[#5E0009] font-medium disabled:opacity-50"
+                      >
+                        {pairingTeams[teamId] ? "Pairing…" : "Pair team"}
+                      </button>
+                    </div>
                   </div>
-                </div>
                 {displayTeamId && (
                   <div className="ml-auto flex items-center gap-3">
                       <span className="text-xs font-normal text-gray-400">
@@ -1019,7 +1082,7 @@ function SubmissionsView({
                 </div>
                 <div className="divide-y divide-gray-100">
                   {members.map((r) => (
-                    <RegistrationRow key={r.id} reg={r} fields={event.fields} />
+                    <RegistrationRow key={r.id} reg={r} fields={event.fields} eventId={event.id} program={program} onChanged={reloadRegistrations} />
                   ))}
                 </div>
               </div>
@@ -1030,7 +1093,7 @@ function SubmissionsView({
               <p className="text-xs text-gray-400 mb-2">Unlinked / solo registrations:</p>
               <div className="border border-gray-200 rounded-lg divide-y divide-gray-100">
                 {grouped.solo.map((r) => (
-                  <RegistrationRow key={r.id} reg={r} fields={event.fields} />
+                  <RegistrationRow key={r.id} reg={r} fields={event.fields} eventId={event.id} program={program} onChanged={reloadRegistrations} />
                 ))}
               </div>
             </div>
@@ -1040,7 +1103,7 @@ function SubmissionsView({
         // Individual view
         <div className="border border-gray-200 rounded-lg divide-y divide-gray-100">
           {parsed.map((r) => (
-            <RegistrationRow key={r.id} reg={r} fields={event.fields} />
+            <RegistrationRow key={r.id} reg={r} fields={event.fields} eventId={event.id} program={program} onChanged={reloadRegistrations} />
           ))}
         </div>
       )}
@@ -1053,13 +1116,37 @@ function SubmissionsView({
 function RegistrationRow({
   reg,
   fields,
+  eventId,
+  program,
+  onChanged,
 }: {
   reg: ApiEventRegistration;
   fields: ApiEventField[];
+  eventId?: string;
+  program?: Program;
+  onChanged?: () => void;
 }) {
+  const [marking, setMarking] = useState(false);
   const formData = (typeof reg.formData === "string"
     ? (() => { try { return JSON.parse(reg.formData as unknown as string); } catch { return {}; } })()
     : reg.formData) as Record<string, unknown>;
+
+  const handleMarkPaid = async () => {
+    if (!eventId) return;
+    setMarking(true);
+    try {
+      await apiRequest(`/api/events/${eventId}/registrations/${reg.id}/mark-paid?program=${program ?? "men"}`, {
+        method: "PUT",
+      });
+      toast.success("Marked as paid.");
+      onChanged?.();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to mark as paid.");
+    } finally {
+      setMarking(false);
+    }
+  };
 
   return (
     <div className="px-4 py-3">
@@ -1081,6 +1168,15 @@ function RegistrationRow({
           >
             {reg.paid ? `Paid $${Number(reg.amountPaid ?? 0).toFixed(2)}` : "Unpaid"}
           </span>
+          {!reg.paid && eventId && (
+            <button
+              onClick={handleMarkPaid}
+              disabled={marking}
+              className="block mt-1 ml-auto text-xs text-[#5E0009] hover:underline disabled:opacity-50"
+            >
+              {marking ? "Marking..." : "Mark Paid"}
+            </button>
+          )}
           {reg.createdAt && (
             <p className="mt-1">{new Date(reg.createdAt).toLocaleDateString()}</p>
           )}

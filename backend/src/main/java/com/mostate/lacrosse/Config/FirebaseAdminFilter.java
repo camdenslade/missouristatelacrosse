@@ -106,7 +106,11 @@ public class FirebaseAdminFilter extends OncePerRequestFilter {
         "/api/todos",
         "/api/users",
         "/api/parents",
-        "/api/groups"
+        "/api/groups",
+        "/api/compliance-filings",
+        "/api/board-calendar",
+        "/api/budget",
+        "/api/order-forms"
     );
 
     /**
