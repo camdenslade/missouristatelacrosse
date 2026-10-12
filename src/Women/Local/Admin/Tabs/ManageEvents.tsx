@@ -10,6 +10,7 @@ import {
 } from "react";
 import toast from "react-hot-toast";
 
+import EventPosItemsModal from "./EventPosItemsModal";
 import { useConfirm } from "../../../../Global/Common/components/ConfirmModal";
 import { uploadCompressedImage } from "../../../../Global/Common/hooks/uploadHelper";
 import {
@@ -233,6 +234,7 @@ export default function ManageEvents() {
 
   const imageFileRef = useRef<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [posItemsEvent, setPosItemsEvent] = useState<ApiEvent | null>(null);
 
   useEffect(() => {
     fetchAdminEvents()
@@ -398,6 +400,12 @@ export default function ManageEvents() {
                         Submissions
                       </button>
                       <button
+                        onClick={() => setPosItemsEvent(event)}
+                        className="text-xs px-2 py-1 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 font-medium"
+                      >
+                        POS Items
+                      </button>
+                      <button
                         onClick={() => {
                           imageFileRef.current = null;
                           setImagePreview(event.image || null);
@@ -420,6 +428,13 @@ export default function ManageEvents() {
             </tbody>
           </table>
         </div>
+      )}
+      {posItemsEvent && (
+        <EventPosItemsModal
+          eventId={posItemsEvent.id}
+          eventName={posItemsEvent.name}
+          onClose={() => setPosItemsEvent(null)}
+        />
       )}
     </div>
   );

@@ -20,9 +20,9 @@ const PendingApproval = lazyPage(() => import("./Global/Authentication/PendingAp
 const ResetPassword = lazyPage(() => import("./Global/Authentication/ResetPassword"));
 const SetPassword = lazyPage(() => import("./Global/Authentication/SetPassword"));
 const PrivacyPolicy = lazyPage(() => import("./Global/PrivacyPolicy"));
+const Support = lazyPage(() => import("./Global/Support"));
 const TermsOfService = lazyPage(() => import("./Global/TermsOfService"));
 const AdminDashboard = lazyPage(() => import("./Men/Local/Admin/AdminDash"));
-const AlumniBudget = lazyPage(() => import("./Men/Local/Pages/AlumniBudget/AlumniBudget"));
 const Donate = lazyPage(() => import("./Men/Local/Pages/Donate/Donate"));
 const DonateSuccess = lazyPage(() => import("./Men/Local/Pages/Donate/DonateSuccess"));
 const Dues = lazyPage(() => import("./Men/Local/Pages/Dues/Dues"));
@@ -48,7 +48,6 @@ const CheckoutSuccess = lazyPage(() => import("./Men/Local/Pages/Store/Checkout/
 const OrderLookup = lazyPage(() => import("./Men/Local/Pages/Store/OrderLookup"));
 const Store = lazyPage(() => import("./Men/Local/Pages/Store/Store"));
 const WAdminDashboard = lazyPage(() => import("./Women/Local/Admin/AdminDash"));
-const WAlumniBudget = lazyPage(() => import("./Women/Local/Pages/AlumniBudget/AlumniBudget"));
 const WDonate = lazyPage(() => import("./Women/Local/Pages/Donate/Donate"));
 const WDonateSuccess = lazyPage(() => import("./Women/Local/Pages/Donate/DonateSuccess"));
 const WDues = lazyPage(() => import("./Women/Local/Pages/Dues/Dues"));
@@ -202,14 +201,6 @@ export default function App() {
               }
             />
             <Route
-              path="/alumni-budget"
-              element={
-                <ProtectedRoute allowedRoles={["admin", "alumni"]}>
-                  <AlumniBudget />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/dues"
               element={
                 <ProtectedRoute allowedRoles={["admin", "player", "parent"]}>
@@ -305,14 +296,6 @@ export default function App() {
             />
             <Route path="/women/checkout-success" element={<WCheckoutSuccess />} />
             <Route
-              path="/women/alumni-budget"
-              element={
-                <ProtectedRoute allowedRoles={["admin", "alumni"]}>
-                  <WAlumniBudget />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/women/dues"
               element={
                 <ProtectedRoute allowedRoles={["admin", "player", "parent"]}>
@@ -331,6 +314,7 @@ export default function App() {
             />
 
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/support" element={<Support />} />
             <Route path="/terms-of-service" element={<TermsOfService />} />
 
             <Route path="*" element={<NotFound />} />
