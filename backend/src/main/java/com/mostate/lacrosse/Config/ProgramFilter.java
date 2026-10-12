@@ -54,6 +54,13 @@ public class ProgramFilter extends OncePerRequestFilter {
             return;
         }
 
+        // Onsite Stripe Terminal (Tap to Pay) — the event-day iOS app, gated by its own
+        // shared secret, not tied to a program/tenant at all.
+        if (path != null && path.startsWith("/api/terminal/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         boolean isApiRequest = path != null && path.startsWith("/api");
         boolean isPreflight = "OPTIONS".equalsIgnoreCase(request.getMethod());
         String headerProgram = normalizeProgram(request.getHeader(headerName));

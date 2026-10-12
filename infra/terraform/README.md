@@ -99,3 +99,30 @@ person's browser, so the server and its backups never hold readable passwords.
   `admin_ssh_cidr`, so the first account can be created safely. Then close sign-ups by setting
   `SIGNUPS_ALLOWED=false` in `/etc/vault/vaultwarden.env`, drop the `remote_ip` rule from
   `/etc/vault/Caddyfile`, and restart the `vaultwarden` and `vault-caddy` services.
+
+## Document store (Nextcloud)
+
+Runs at https://docs.missouristatelacrosse.com on the same server as Vaultwarden
+(`mostatelax-prod-vault`, resized to `t4g.small` to fit both), in its own Docker container with its
+own login - a password leak or bug in one app can't reach the other's data. For bank statements,
+contracts, and other files officers need to browse and share, not individual secrets (that's what
+Vaultwarden is for). Its data lives on a separate encrypted EBS volume (`aws_ebs_volume.vault_docs`),
+mounted at `/opt/nextcloud/html`, never on the same disk as the password vault's database.
+
+- **Add an officer:** log in as `admin`, then Settings -> Users -> New user.
+- **The admin account:** created on first boot with a random password written to
+  `/etc/vault/nextcloud-admin-password.txt` on the server (root-only readable) - fetch it once
+  through Systems Manager, log in, and change it immediately. That file is not needed afterward.
+- **Server access:** through AWS Systems Manager, not SSH, same as Vaultwarden. The DNS record is
+  `docs` (A) pointing at the same `vault_public_ip` as the `vault` record.
+- **Backups:** nightly at 07:30 UTC to `s3://mostatelax-prod-backups/vault/` (kept 35 days, same
+  schedule and bucket as Vaultwarden's), plus the attached volume's own daily disk snapshot. To
+  restore, unpack a backup into `/opt/nextcloud/html` and restart the `nextcloud` service.
+- **Upgrade:** change `nextcloud_version` in `vault.tf`, then on the server run
+  `docker pull nextcloud:<version>` and `systemctl restart nextcloud`. As with Vaultwarden,
+  Terraform does not redeploy the server when versions change - this is a manual step on the
+  running box.
+- **No IP restriction:** unlike the aspirational (never-applied) Vaultwarden CIDR lock, this is
+  reachable from anywhere by design - officers change yearly and a technical successor is rare, so
+  a forgotten IP allowlist was judged more likely to lock everyone out than to stop an attacker.
+  The login itself, HTTPS, and disk encryption are the gate.

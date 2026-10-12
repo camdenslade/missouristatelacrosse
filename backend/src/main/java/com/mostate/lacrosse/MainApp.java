@@ -88,6 +88,8 @@ public class MainApp {
             setPropertyIfPresent(secretsMap, "DB_PASSWORD");
             setPropertyIfPresent(secretsMap, "S3_BUCKET");
             setPropertyIfPresent(secretsMap, "S3_PUBLIC_BASE_URL");
+            setPropertyIfPresent(secretsMap, "TERMINAL_SHARED_SECRET");
+            setPropertyIfPresent(secretsMap, "TERMINAL_LOCATION_ID");
 
             System.out.println("Secrets and base URLs loaded successfully from AWS Secrets Manager.");
 
