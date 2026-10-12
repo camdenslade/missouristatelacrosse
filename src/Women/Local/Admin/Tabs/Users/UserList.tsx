@@ -209,6 +209,10 @@ export default function UserList({ users, handleRoleChange, handleDisplayNameCha
               <option value="parent">Parent</option>
               <option value="coach">Coach</option>
               <option value="alumni">Alumni</option>
+              <option value="board">Board</option>
+              <option value="treasurer">Treasurer</option>
+              <option value="vp">VP</option>
+              <option value="president">President</option>
               <option value="admin">Admin</option>
             </select>
             {handleDelete && (

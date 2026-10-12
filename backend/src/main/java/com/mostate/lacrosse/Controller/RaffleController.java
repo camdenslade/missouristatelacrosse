@@ -66,6 +66,14 @@ public class RaffleController {
         return authorizationService.isAdmin(uid, program, token);
     }
 
+    // Raffle management (create/update/delete/draw/entries) doesn't expose player dues
+    // balances, so board members and up can run it, not just admins.
+    private boolean isBoard(HttpServletRequest request, String program) {
+        String uid = (String) request.getAttribute("firebaseUid");
+        FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
+        return authorizationService.isBoardOrAbove(uid, program, token);
+    }
+
     // Public: list published raffles
     @GetMapping
     public ResponseEntity<List<RaffleResponse>> listPublished() {
@@ -87,7 +95,7 @@ public class RaffleController {
     // Admin: list all
     @GetMapping("/admin")
     public ResponseEntity<?> listAll(HttpServletRequest request, @RequestParam(defaultValue = "men") String program) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         return ResponseEntity.ok(
@@ -104,7 +112,7 @@ public class RaffleController {
         @RequestParam(defaultValue = "men") String program,
         @RequestBody RafflePayload payload
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         Raffle raffle = new Raffle();
@@ -120,7 +128,7 @@ public class RaffleController {
         @RequestParam(defaultValue = "men") String program,
         @RequestBody RafflePayload payload
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         Raffle existing = raffleRepo.findById(id).orElse(null);
@@ -136,7 +144,7 @@ public class RaffleController {
         @PathVariable UUID id,
         @RequestParam(defaultValue = "men") String program
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         entryRepo.deleteAll(entryRepo.findAllByRaffleIdOrderByCreatedAtDesc(id));
@@ -151,7 +159,7 @@ public class RaffleController {
         @PathVariable UUID id,
         @RequestParam(defaultValue = "men") String program
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         List<RaffleEntry> entries = entryRepo.findAllByRaffleIdOrderByCreatedAtDesc(id);
@@ -166,7 +174,7 @@ public class RaffleController {
         @PathVariable UUID id,
         @RequestParam(defaultValue = "men") String program
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         Raffle raffle = raffleRepo.findById(id).orElse(null);
@@ -211,7 +219,7 @@ public class RaffleController {
         @PathVariable UUID id,
         @RequestParam(defaultValue = "men") String program
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         Raffle raffle = raffleRepo.findById(id).orElse(null);
@@ -227,7 +235,7 @@ public class RaffleController {
         @PathVariable UUID id,
         @RequestParam(defaultValue = "men") String program
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         Raffle raffle = raffleRepo.findById(id).orElse(null);
@@ -245,7 +253,7 @@ public class RaffleController {
         @PathVariable UUID id,
         @RequestParam(defaultValue = "men") String program
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         Raffle raffle = raffleRepo.findById(id).orElse(null);
@@ -271,7 +279,7 @@ public class RaffleController {
         @PathVariable UUID id,
         @RequestParam(defaultValue = "men") String program
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         Raffle raffle = raffleRepo.findById(id).orElse(null);
@@ -305,7 +313,7 @@ public class RaffleController {
         @RequestParam(defaultValue = "men") String program,
         @RequestBody EntryPayload payload
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         Raffle raffle = raffleRepo.findById(id).orElse(null);

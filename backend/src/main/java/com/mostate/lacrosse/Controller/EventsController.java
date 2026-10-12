@@ -85,6 +85,14 @@ public class EventsController {
         return authorizationService.isAdmin(uid, program, token);
     }
 
+    // Event management (create/update/delete/registrations) doesn't expose balances or
+    // other financial data, so board members and up can run it, not just admins.
+    private boolean isBoard(HttpServletRequest request, String program) {
+        String uid = (String) request.getAttribute("firebaseUid");
+        FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
+        return authorizationService.isBoardOrAbove(uid, program, token);
+    }
+
     // Public: list published events
     @GetMapping
     public ResponseEntity<List<EventResponse>> listPublished() {
@@ -106,7 +114,7 @@ public class EventsController {
     // Admin: list all events (including unpublished)
     @GetMapping("/admin")
     public ResponseEntity<?> listAll(HttpServletRequest request, @RequestParam(defaultValue = "men") String program) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         return ResponseEntity.ok(
@@ -123,7 +131,7 @@ public class EventsController {
         @RequestParam(defaultValue = "men") String program,
         @RequestBody EventPayload payload
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         Event event = new Event();
@@ -139,7 +147,7 @@ public class EventsController {
         @RequestParam(defaultValue = "men") String program,
         @RequestBody EventPayload payload
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         Event existing = eventRepo.findById(id).orElse(null);
@@ -155,7 +163,7 @@ public class EventsController {
         @PathVariable UUID id,
         @RequestParam(defaultValue = "men") String program
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         eventRepo.deleteById(id);
@@ -169,7 +177,7 @@ public class EventsController {
         @PathVariable UUID id,
         @RequestParam(defaultValue = "men") String program
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         List<EventRegistration> regs = registrationRepo.findAllByEventId(id);
@@ -294,7 +302,7 @@ public class EventsController {
         @RequestParam(defaultValue = "men") String program,
         @RequestBody BackfillTeamsRequest request
     ) {
-        if (!isAdmin(httpRequest, program)) {
+        if (!isBoard(httpRequest, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         List<UUID> eventIds = request.eventIds() != null ? new ArrayList<>(request.eventIds()) : new ArrayList<>();
@@ -333,7 +341,7 @@ public class EventsController {
         @RequestParam(defaultValue = "men") String program,
         @RequestBody PairTeamRequest request
     ) {
-        if (!isAdmin(httpRequest, program)) {
+        if (!isBoard(httpRequest, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         Event event = eventRepo.findById(eventId).orElse(null);
@@ -392,7 +400,7 @@ public class EventsController {
         @RequestParam(defaultValue = "men") String program,
         @RequestBody TeamReminderRequest request
     ) {
-        if (!isAdmin(httpRequest, program)) {
+        if (!isBoard(httpRequest, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         Event event = eventRepo.findById(eventId).orElse(null);

@@ -65,7 +65,7 @@ public class TodoController {
         @RequestParam String season,
         @RequestParam(defaultValue = "men") String program
     ) {
-        boolean admin = isAdmin(request, program);
+        boolean admin = isBoard(request, program);
         List<Todo> todos = admin
             ? todoRepo.findBySeason(season)
             : todoRepo.findBySeasonAndActiveTrue(season);
@@ -78,7 +78,7 @@ public class TodoController {
         @RequestParam(defaultValue = "men") String program,
         @RequestBody TodoRequest body
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         if (body.title() == null || body.title().isBlank() || body.season() == null || body.season().isBlank()) {
@@ -103,7 +103,7 @@ public class TodoController {
         @RequestParam(defaultValue = "men") String program,
         @RequestBody TodoRequest body
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         Todo todo = todoRepo.findById(id).orElse(null);
@@ -136,7 +136,7 @@ public class TodoController {
         @PathVariable UUID id,
         @RequestParam(defaultValue = "men") String program
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         statusRepo.deleteByTodoId(id);
@@ -194,7 +194,7 @@ public class TodoController {
         @PathVariable UUID id,
         @RequestParam(defaultValue = "men") String program
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         Todo todo = todoRepo.findById(id).orElse(null);
@@ -223,6 +223,14 @@ public class TodoController {
         String uid = (String) request.getAttribute("firebaseUid");
         FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
         return authorizationService.isAdmin(uid, program, token);
+    }
+
+    // Task management (create/update/delete/completions) doesn't expose balances, so board
+    // members and up can run it, not just admins.
+    private boolean isBoard(HttpServletRequest request, String program) {
+        String uid = (String) request.getAttribute("firebaseUid");
+        FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
+        return authorizationService.isBoardOrAbove(uid, program, token);
     }
 
     private boolean isSelfOrAdmin(HttpServletRequest request, Player player, String program) {
