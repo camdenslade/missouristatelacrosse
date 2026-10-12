@@ -32,9 +32,11 @@ import com.google.firebase.auth.FirebaseToken;
 import com.mostate.lacrosse.Config.FirebaseAdminFilter;
 import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Model.Event;
+import com.mostate.lacrosse.Model.EventPosItem;
 import com.mostate.lacrosse.Model.EventRegistration;
 import com.mostate.lacrosse.Model.EventTeam;
 import com.mostate.lacrosse.Model.PaymentReceipt;
+import com.mostate.lacrosse.Repository.EventPosItemRepository;
 import com.mostate.lacrosse.Repository.EventRegistrationRepository;
 import com.mostate.lacrosse.Repository.EventRepository;
 import com.mostate.lacrosse.Repository.EventTeamRepository;
@@ -54,6 +56,7 @@ public class EventsController {
     private final EventRegistrationRepository registrationRepo;
     private final EventTeamRepository teamRepo;
     private final PaymentReceiptRepository receiptRepo;
+    private final EventPosItemRepository posItemRepo;
     private final EmailService emailService;
     private final S3Service s3Service;
     private final AuthorizationService authorizationService;
@@ -66,6 +69,7 @@ public class EventsController {
         EventRegistrationRepository registrationRepo,
         EventTeamRepository teamRepo,
         PaymentReceiptRepository receiptRepo,
+        EventPosItemRepository posItemRepo,
         EmailService emailService,
         S3Service s3Service,
         AuthorizationService authorizationService
@@ -74,6 +78,7 @@ public class EventsController {
         this.registrationRepo = registrationRepo;
         this.teamRepo = teamRepo;
         this.receiptRepo = receiptRepo;
+        this.posItemRepo = posItemRepo;
         this.emailService = emailService;
         this.s3Service = s3Service;
         this.authorizationService = authorizationService;
@@ -911,4 +916,102 @@ public class EventsController {
         List<UUID> registrationIds,
         String teamName
     ) {}
+
+    // --- Onsite POS items + sales (Tap to Pay app) ---------------------------------------
+
+    @GetMapping("/{eventId}/pos-items")
+    public ResponseEntity<?> listPosItems(
+        HttpServletRequest request,
+        @PathVariable UUID eventId,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isBoard(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Board access required"));
+        }
+        return ResponseEntity.ok(posItemRepo.findAllByEventIdOrderBySortOrderAsc(eventId));
+    }
+
+    @PostMapping("/{eventId}/pos-items")
+    public ResponseEntity<?> addPosItem(
+        HttpServletRequest request,
+        @PathVariable UUID eventId,
+        @RequestParam(defaultValue = "men") String program,
+        @RequestBody PosItemRequest body
+    ) {
+        if (!isBoard(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Board access required"));
+        }
+        if (body.name() == null || body.name().isBlank() || body.price() == null || body.price().signum() <= 0) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("Name and a positive price are required"));
+        }
+        EventPosItem item = new EventPosItem();
+        item.setEventId(eventId);
+        item.setName(TextSanitizer.clean(body.name()));
+        item.setPrice(body.price());
+        return ResponseEntity.ok(posItemRepo.save(item));
+    }
+
+    @DeleteMapping("/pos-items/{itemId}")
+    public ResponseEntity<?> deletePosItem(
+        HttpServletRequest request,
+        @PathVariable UUID itemId,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isBoard(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Board access required"));
+        }
+        posItemRepo.deleteById(itemId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** What actually sold at this event's Tap to Pay register, itemized. */
+    @GetMapping("/{eventId}/pos-sales")
+    public ResponseEntity<?> posSales(
+        HttpServletRequest request,
+        @PathVariable UUID eventId,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isBoard(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Board access required"));
+        }
+        String source = "event-pos-" + eventId;
+        List<PaymentReceipt> receipts = receiptRepo.findAll().stream()
+            .filter(r -> source.equals(r.getSource()) && "COMPLETED".equalsIgnoreCase(r.getStatus()))
+            .toList();
+
+        Map<String, int[]> byItem = new LinkedHashMap<>(); // name -> [qty, totalCents]
+        BigDecimal grandTotal = BigDecimal.ZERO;
+        for (PaymentReceipt r : receipts) {
+            grandTotal = grandTotal.add(r.getAmount() != null ? r.getAmount() : BigDecimal.ZERO);
+            Map<String, Object> payload = JsonUtils.readMap(r.getPayload());
+            Object itemsObj = payload.get("items");
+            if (itemsObj instanceof List<?> items) {
+                for (Object o : items) {
+                    if (!(o instanceof Map<?, ?> itemMap)) continue;
+                    String name = String.valueOf(itemMap.get("name"));
+                    int qty = itemMap.get("qty") instanceof Number n ? n.intValue() : 1;
+                    int priceCents = itemMap.get("priceCents") instanceof Number n ? n.intValue() : 0;
+                    int[] agg = byItem.computeIfAbsent(name, k -> new int[2]);
+                    agg[0] += qty;
+                    agg[1] += qty * priceCents;
+                }
+            }
+        }
+
+        List<Map<String, Object>> breakdown = byItem.entrySet().stream()
+            .map(e -> Map.<String, Object>of(
+                "name", e.getKey(),
+                "quantitySold", e.getValue()[0],
+                "revenue", BigDecimal.valueOf(e.getValue()[1], 2)
+            ))
+            .toList();
+
+        return ResponseEntity.ok(Map.of(
+            "saleCount", receipts.size(),
+            "grandTotal", grandTotal,
+            "items", breakdown
+        ));
+    }
+
+    public record PosItemRequest(String name, BigDecimal price) {}
 }

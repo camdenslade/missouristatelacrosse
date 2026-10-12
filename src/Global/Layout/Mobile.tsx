@@ -38,10 +38,8 @@ export default function MobileMenu({
   const isAdmin = programRole === "admin";
   const isPlayer = programRole === "player";
   const isParent = programRole === "parent";
-  const isAlumni = programRole === "alumni";
   const canSeePayments = user && (isAdmin || isPlayer || isParent);
   const isAdminPlayer = isAdmin && !!playerId;
-  const canSeeAlumni = user && (isAdmin || isAlumni);
   const isGlobalAdmin = roles?.men === "admin" || roles?.women === "admin";
 
   return (
@@ -103,12 +101,6 @@ export default function MobileMenu({
         )
       )}
 
-      {/* Alumni */}
-      {canSeeAlumni && (
-        <Link to={programLink("/alumni-budget")} className={linkHover} onClick={() => setOpen(false)}>
-          Alumni Budget
-        </Link>
-      )}
 
       {/* Authenticated user options */}
       {user ? (

@@ -61,6 +61,12 @@ public class ProgramFilter extends OncePerRequestFilter {
             return;
         }
 
+        // The public support/contact page — one shared inbox, not program-specific.
+        if ("/api/contact".equals(path)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         boolean isApiRequest = path != null && path.startsWith("/api");
         boolean isPreflight = "OPTIONS".equalsIgnoreCase(request.getMethod());
         String headerProgram = normalizeProgram(request.getHeader(headerName));

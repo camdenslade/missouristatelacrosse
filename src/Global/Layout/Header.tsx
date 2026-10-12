@@ -52,10 +52,8 @@ export default function Header({ onAuthOpen }: HeaderProps) {
   const isAdmin = programRole === "admin";
   const isPlayer = programRole === "player";
   const isParent = programRole === "parent";
-  const isAlumni = programRole === "alumni";
   const canSeePayments = user && (isAdmin || isPlayer || isParent);
   const isAdminPlayer = isAdmin && !!playerId;
-  const canSeeAlumni = user && (isAdmin || isAlumni);
   const isGlobalAdmin = roles?.men === "admin" || roles?.women === "admin";
   
 
@@ -161,9 +159,6 @@ export default function Header({ onAuthOpen }: HeaderProps) {
                   {isAdmin ? "Manage" : "Portal"}
                 </Link>
               )
-            )}
-            {canSeeAlumni && (
-              <Link to={programLink("/alumni-budget")} className={linkHover}>Alumni</Link>
             )}
           </nav>
 

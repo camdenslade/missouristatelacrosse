@@ -21,6 +21,7 @@ import com.mostate.lacrosse.Utils.JsonUtils;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
 import com.stripe.model.EventDataObjectDeserializer;
+import com.stripe.model.PaymentIntent;
 import com.stripe.model.checkout.Session;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -161,7 +162,55 @@ public class StripeController {
                 return ResponseEntity.internalServerError().body(new ErrorResponse("Processing failed"));
             }
         }
+
+        // Onsite Stripe Terminal (Tap to Pay) sale - tagged by TerminalController when the
+        // PaymentIntent was created. Recorded as a payment_receipts row like any other
+        // payment, so it shows up in the budget ledger automatically.
+        if ("payment_intent.succeeded".equals(type)) {
+            try {
+                PaymentIntent intent = paymentIntentOf(event);
+                if (intent != null && "true".equals(intent.getMetadata().get("terminalSale"))) {
+                    String program = intent.getMetadata().getOrDefault("program", "men");
+                    String eventId = intent.getMetadata().get("eventId");
+                    String source = (eventId != null && !eventId.isBlank()) ? "event-pos-" + eventId : "pos-sale";
+
+                    Map<String, Object> receiptPayload = new java.util.LinkedHashMap<>(Map.of(
+                        "id", intent.getId(),
+                        "status", "COMPLETED",
+                        "payer", Map.of(),
+                        "purchase_units", java.util.List.of(Map.of(
+                            "amount", Map.of(
+                                "value", java.math.BigDecimal.valueOf(intent.getAmount(), 2).toPlainString(),
+                                "currency_code", intent.getCurrency().toUpperCase()
+                            )
+                        ))
+                    ));
+                    String itemsJson = intent.getMetadata().get("items");
+                    if (itemsJson != null && !itemsJson.isBlank()) {
+                        receiptPayload.put("items", com.mostate.lacrosse.Utils.JsonUtils.readList(itemsJson));
+                    }
+
+                    TenantContext.setTenant(program);
+                    try {
+                        receiptService.recordReceipt(receiptPayload, source, "stripe-terminal");
+                    } finally {
+                        TenantContext.clear();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return ResponseEntity.internalServerError().body(new ErrorResponse("Processing failed"));
+            }
+        }
         return ResponseEntity.ok(Map.of("received", true));
+    }
+
+    private static PaymentIntent paymentIntentOf(Event event) {
+        EventDataObjectDeserializer d = event.getDataObjectDeserializer();
+        if (d.getObject().isPresent() && d.getObject().get() instanceof PaymentIntent pi) {
+            return pi;
+        }
+        return null;
     }
 
     private static String sessionIdOf(Event event) {

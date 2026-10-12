@@ -1,7 +1,9 @@
 import { useMemo, useReducer } from "react";
 
 import AccountRequests from "./Tabs/AccountRequests";
+import BoardCalendar from "./Tabs/BoardCalendar";
 import EmailCenter from "./Tabs/EmailCenter";
+import ManageBudget from "./Tabs/ManageBudget";
 import ManageCompliance from "./Tabs/ManageCompliance";
 import ManageEvents from "./Tabs/ManageEvents";
 import ManageFundraisers from "./Tabs/ManageFundraisers";
@@ -52,6 +54,8 @@ export default function WAdminDashboard(){
       { id: "seasons", label: "Seasons", minRole: "president" },
       { id: "stream", label: "Stream Setup", minRole: "president" },
       { id: "compliance", label: "Compliance", minRole: "vp" },
+      { id: "calendar", label: "Board Calendar", minRole: "board" },
+      { id: "budget", label: "Budget", minRole: "treasurer" },
     ],
     []
   );
@@ -84,6 +88,10 @@ export default function WAdminDashboard(){
         return <StreamSetup />;
       case "compliance":
         return <ManageCompliance />;
+      case "calendar":
+        return <BoardCalendar />;
+      case "budget":
+        return <ManageBudget />;
       default:
         return null;
     }
