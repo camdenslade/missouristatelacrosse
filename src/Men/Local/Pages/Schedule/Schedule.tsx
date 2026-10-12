@@ -42,6 +42,48 @@ const isViewerStreamWindow = (g: ScheduleGame): boolean => {
   return isWithinInterval(now, { start: subMinutes(g.dateObj, 15), end: addHours(g.dateObj, 4) });
 };
 
+// Among several games that each independently qualify to be shown "live" right now (e.g. a
+// noon game and a 2pm game both on today's schedule), pick the one that actually started most
+// recently rather than whichever happens to be first in the array - otherwise an earlier game
+// never hands off to a later one once its own window also opens.
+//
+// A game's own display window ends either when the next same-day game in the list starts, or -
+// for the last game of the day - 3 hours after it started, whichever comes first.
+// `qualifies` is the non-time-based requirement for a game to ever be shown at all (e.g. a
+// stream being configured, for viewers); `preGameWindowTest` is the existing lead-in check used
+// as a fallback when nothing has started yet today.
+const pickCurrentGame = (
+  candidates: ScheduleGame[],
+  qualifies: (g: ScheduleGame) => boolean,
+  preGameWindowTest: (g: ScheduleGame) => boolean
+): ScheduleGame | null => {
+  const now = new Date();
+  const today = now.toISOString().substring(0, 10);
+  const todaysSorted = candidates
+    .filter((g) => g.dateObj && g.date?.substring(0, 10) === today && qualifies(g))
+    .sort((a, b) => (a.dateObj?.getTime() || 0) - (b.dateObj?.getTime() || 0));
+
+  let started: ScheduleGame | null = null;
+  for (let i = 0; i < todaysSorted.length; i++) {
+    const g = todaysSorted[i];
+    if (!g.dateObj || g.dateObj > now) break;
+    const next = todaysSorted[i + 1];
+    const windowEnd = next?.dateObj ?? addHours(g.dateObj, 3);
+    if (now < windowEnd) started = g;
+  }
+  if (started) return started;
+
+  // Nothing has started yet today - fall back to the normal pre-game lead-in window
+  // (e.g. "stream starts in 15 min") on whichever game qualifies for it.
+  return candidates.find(preGameWindowTest) || null;
+};
+
+const viewerQualifies = (g: ScheduleGame): boolean => {
+  if (g.status === "final") return false;
+  const gData = g.data as Record<string, unknown> | null | undefined;
+  return gData?.isLive === true || !!gData?.streamKey;
+};
+
 type ScheduleState = {
   games: ScheduleGame[];
   selectedSeason: string;
@@ -171,13 +213,14 @@ export default function Schedule({ userRole }: { userRole?: string | null }) {
   const { countdown, prev } = useCountdown(nextGame?.dateObj ?? null);
   const liveGame = (() => {
     if (userRole?.toLowerCase() === "admin") {
-      // Search all games (all seasons) - prefer explicitly-live, then fall back to today
+      // Search all games (all seasons) - prefer explicitly-live, then fall back to today,
+      // picking whichever of today's games most recently started if there's more than one.
       const explicitlyLive = allSeasonGames.find(
         (g) => (g.data as Record<string, unknown> | null | undefined)?.isLive === true
       );
-      return explicitlyLive || allSeasonGames.find(isAdminStreamWindow) || null;
+      return explicitlyLive || pickCurrentGame(allSeasonGames, () => true, isAdminStreamWindow);
     }
-    return games.find(isViewerStreamWindow) || null;
+    return pickCurrentGame(games, viewerQualifies, isViewerStreamWindow);
   })();
 
   const handleSaveScore = async (updated: ScheduleGame) => {

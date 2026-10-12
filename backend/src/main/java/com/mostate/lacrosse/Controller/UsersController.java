@@ -35,6 +35,9 @@ import jakarta.validation.constraints.Email;
 @RequestMapping("/api/users")
 @Validated
 public class UsersController {
+    private static final java.util.Set<String> ELEVATED_ROLES =
+        java.util.Set.of("board", "treasurer", "vp", "president", "admin");
+
     private final UserAccountRepository repository;
     private final PlayerRepository playerRepository;
     private final PlayerProfileService profileService;
@@ -205,11 +208,12 @@ public class UsersController {
             return ResponseEntity.status(403).body(new ErrorResponse("Not authorized"));
         }
         // Self-service accounts (first login, profile edits, auto-link) are allowed to touch
-        // roles/programs — but never to grant themselves admin. Only an existing admin may
-        // promote anyone to admin.
+        // roles/programs — but never to grant themselves an elevated role. Only an existing
+        // admin/president may promote anyone to board, treasurer, vp, president, or admin.
         if (!callerIsAdmin && payload.roles() != null
-                && payload.roles().values().stream().anyMatch(v -> "admin".equalsIgnoreCase(String.valueOf(v)))) {
-            return ResponseEntity.status(403).body(new ErrorResponse("Cannot self-assign admin role"));
+                && payload.roles().values().stream().anyMatch(v ->
+                    ELEVATED_ROLES.contains(String.valueOf(v).toLowerCase()))) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Cannot self-assign this role"));
         }
 
         String sanitizedUid = TextSanitizer.clean(uid);

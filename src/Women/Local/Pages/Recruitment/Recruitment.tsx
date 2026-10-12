@@ -126,8 +126,9 @@ export default function WRecruitmentForm({ userRole }) {
         </div>
         <h1 className="text-4xl md:text-5xl font-extrabold">Recruitment Form</h1>
         <p className="text-white/80 mt-3 max-w-lg mx-auto">
-          Interested in playing for Missouri State Lacrosse? Tell us about yourself and
-          we'll be in touch.
+          Interested in playing for Missouri State Lacrosse? We're a club program, not
+          NCAA-sponsored athletics, open to any Missouri State student. Tell us about
+          yourself and we'll be in touch.
         </p>
 
         {(userRole === "admin" || userRole === "player") && (
@@ -150,7 +151,7 @@ export default function WRecruitmentForm({ userRole }) {
             { name: "name", placeholder: "Full Name", type: "text" },
             { name: "email", placeholder: "Email", type: "email" },
             { name: "phone", placeholder: "Phone Number", type: "text" },
-            { name: "classYear", placeholder: "Class Year", type: "text" },
+            { name: "classYear", placeholder: "High School Graduation Year", type: "number" },
             { name: "position", placeholder: "Position", type: "text" },
             { name: "hometown", placeholder: "Hometown", type: "text" },
             { name: "highSchool", placeholder: "High School", type: "text" },

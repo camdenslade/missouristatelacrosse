@@ -7,6 +7,8 @@ import { apiRequest } from "../../../../Services/API";
 const initialState = {
   submissions: [],
   loading: false,
+  assigneeEmail: "",
+  assigneeSaving: false,
 };
 
 function reducer(state, action){
@@ -20,6 +22,10 @@ function reducer(state, action){
         ...state,
         submissions: state.submissions.filter((s) => s.id !== action.payload),
       };
+    case "SET_ASSIGNEE_EMAIL":
+      return { ...state, assigneeEmail: action.payload };
+    case "SET_ASSIGNEE_SAVING":
+      return { ...state, assigneeSaving: action.payload };
     default:
       return state;
   }
@@ -29,6 +35,7 @@ export default function WRecruitmentSubmissions({ userRole }) {
   const confirm = useConfirm();
   const [state, dispatch] = useReducer(reducer, initialState);
   const canDelete = ["admin", "player"].includes(userRole);
+  const isAdmin = userRole === "admin";
 
   useEffect(() => {
     const fetchSubmissions = async () => {
@@ -44,6 +51,29 @@ export default function WRecruitmentSubmissions({ userRole }) {
 
     fetchSubmissions();
   }, []);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    apiRequest<{ data?: { email?: string } }>("/api/site-content/recruitmentAssignee")
+      .then((res) => dispatch({ type: "SET_ASSIGNEE_EMAIL", payload: res?.data?.email || "" }))
+      .catch(() => {});
+  }, [isAdmin]);
+
+  const handleSaveAssignee = async () => {
+    dispatch({ type: "SET_ASSIGNEE_SAVING", payload: true });
+    try {
+      await apiRequest("/api/site-content/recruitmentAssignee", {
+        method: "PUT",
+        json: { email: state.assigneeEmail.trim() },
+      });
+      toast.success("Recruitment contact updated.");
+    } catch (err) {
+      console.error("Error saving recruitment contact:", err);
+      toast.error("Failed to save.");
+    } finally {
+      dispatch({ type: "SET_ASSIGNEE_SAVING", payload: false });
+    }
+  };
 
   const handleDelete = async (id) => {
     if (!await confirm("Are you sure you want to delete this submission?"))
@@ -70,6 +100,28 @@ export default function WRecruitmentSubmissions({ userRole }) {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 -mt-8 pb-16">
+        {isAdmin && (
+          <div className="bg-white rounded-2xl shadow-lg p-5 mb-6 flex flex-col sm:flex-row sm:items-center gap-3">
+            <label className="text-sm font-semibold text-gray-700 shrink-0">
+              Email new submissions to:
+            </label>
+            <input
+              type="email"
+              value={state.assigneeEmail}
+              onChange={(e) => dispatch({ type: "SET_ASSIGNEE_EMAIL", payload: e.target.value })}
+              placeholder="recruiting@missouristatelacrosse.com"
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30"
+            />
+            <button
+              onClick={handleSaveAssignee}
+              disabled={state.assigneeSaving}
+              className="px-4 py-2 bg-[#5E0009] text-white text-sm font-semibold rounded-lg hover:bg-[#7a0012] transition disabled:opacity-60 shrink-0"
+            >
+              {state.assigneeSaving ? "Saving..." : "Save"}
+            </button>
+          </div>
+        )}
+
         {state.loading && (
           <p className="text-center text-gray-500 animate-pulse py-8">
             Loading submissions...
@@ -91,7 +143,7 @@ export default function WRecruitmentSubmissions({ userRole }) {
                       <th className="px-4 py-3 text-left font-semibold">Name</th>
                       <th className="px-4 py-3 text-left font-semibold">Email</th>
                       <th className="px-4 py-3 text-left font-semibold">Phone</th>
-                      <th className="px-4 py-3 text-left font-semibold">Class Year</th>
+                      <th className="px-4 py-3 text-left font-semibold">Grad Year</th>
                       <th className="px-4 py-3 text-left font-semibold">Position</th>
                       <th className="px-4 py-3 text-left font-semibold">High School</th>
                       <th className="px-4 py-3 text-left font-semibold">Hometown</th>
@@ -139,7 +191,7 @@ export default function WRecruitmentSubmissions({ userRole }) {
                   <p className="font-bold text-gray-900 text-lg mb-1">{sub.name}</p>
                   <div className="text-sm text-gray-600"><span className="font-semibold text-gray-800">Email:</span> {sub.email}</div>
                   <div className="text-sm text-gray-600"><span className="font-semibold text-gray-800">Phone:</span> {sub.phone}</div>
-                  <div className="text-sm text-gray-600"><span className="font-semibold text-gray-800">Class Year:</span> {sub.classYear}</div>
+                  <div className="text-sm text-gray-600"><span className="font-semibold text-gray-800">Grad Year:</span> {sub.classYear}</div>
                   <div className="text-sm text-gray-600"><span className="font-semibold text-gray-800">Position:</span> {sub.position}</div>
                   <div className="text-sm text-gray-600"><span className="font-semibold text-gray-800">High School:</span> {sub.highSchool}</div>
                   <div className="text-sm text-gray-600"><span className="font-semibold text-gray-800">Hometown:</span> {sub.hometown}</div>

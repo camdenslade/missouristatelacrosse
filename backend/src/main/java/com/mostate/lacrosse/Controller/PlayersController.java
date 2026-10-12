@@ -458,6 +458,11 @@ public class PlayersController {
         if (authorizationService.isAdmin(uid, program, token)) {
             return true;
         }
+        // Treasurer and up can see balances (this is the only field here that's actually
+        // sensitive to them - board members do not get this).
+        if (authorizationService.isTreasurerOrAbove(uid, program, token)) {
+            return true;
+        }
         if (profileService.isSelf(player, uid)) {
             return true;
         }

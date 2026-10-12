@@ -2,6 +2,7 @@ import { useMemo, useReducer } from "react";
 
 import AccountRequests from "./Tabs/AccountRequests";
 import EmailCenter from "./Tabs/EmailCenter";
+import ManageCompliance from "./Tabs/ManageCompliance";
 import ManageCustomListings from "./Tabs/ManageCustomListings";
 import ManageEvents from "./Tabs/ManageEvents";
 import ManageFundraisers from "./Tabs/ManageFundraisers";
@@ -10,6 +11,12 @@ import ManageRaffles from "./Tabs/ManageRaffles";
 import ManageSeasons from "./Tabs/ManageSeasons";
 import ManageSponsors from "./Tabs/ManageSponsors";
 import StreamSetup from "./Tabs/StreamSetup";
+import { useAuth } from "../../../Global/Context/AuthContext";
+
+// Mirrors the backend's AuthorizationService.ROLE_LADDER - each role includes everything
+// below it. Keep in sync if the ladder ever changes.
+const ROLE_LADDER = ["user", "parent", "alumni", "player", "board", "treasurer", "vp", "president", "admin"];
+const roleRank = (role) => Math.max(ROLE_LADDER.indexOf((role || "").toLowerCase()), 0);
 
 function getInitialTab() {
   if (typeof window === "undefined") return "players";
@@ -29,21 +36,28 @@ function reducer(state, action){
 export default function AdminDashboard(){
   const [state, dispatch] = useReducer(reducer, undefined, () => ({ activeTab: getInitialTab() }));
   const { activeTab } = state;
+  const { roles } = useAuth();
+  const myRank = roleRank(roles?.men);
 
-  const tabs = useMemo(
+  const allTabs = useMemo(
     () => [
-      { id: "players", label: "Manage Players" },
-      { id: "requests", label: "Account Requests" },
-      { id: "email", label: "Email Center" },
-      { id: "sponsors", label: "Sponsors" },
-      { id: "events", label: "Events" },
-      { id: "raffles", label: "Raffles" },
-      { id: "fundraisers", label: "Fundraisers" },
-      { id: "custom-listings", label: "Custom Listings" },
-      { id: "seasons", label: "Seasons" },
-      { id: "stream", label: "Stream Setup" },
+      { id: "players", label: "Manage Players", minRole: "president" },
+      { id: "requests", label: "Account Requests", minRole: "president" },
+      { id: "email", label: "Email Center", minRole: "president" },
+      { id: "sponsors", label: "Sponsors", minRole: "president" },
+      { id: "events", label: "Events", minRole: "board" },
+      { id: "raffles", label: "Raffles", minRole: "board" },
+      { id: "fundraisers", label: "Fundraisers", minRole: "president" },
+      { id: "custom-listings", label: "Custom Listings", minRole: "president" },
+      { id: "seasons", label: "Seasons", minRole: "president" },
+      { id: "stream", label: "Stream Setup", minRole: "president" },
+      { id: "compliance", label: "Compliance", minRole: "vp" },
     ],
     []
+  );
+  const tabs = useMemo(
+    () => allTabs.filter((t) => myRank >= roleRank(t.minRole)),
+    [allTabs, myRank]
   );
 
   const renderActiveTab = useMemo(() => {
@@ -68,6 +82,8 @@ export default function AdminDashboard(){
         return <ManageSeasons />;
       case "stream":
         return <StreamSetup />;
+      case "compliance":
+        return <ManageCompliance />;
       default:
         return null;
     }
