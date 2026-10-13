@@ -1,11 +1,9 @@
 import {
-  Bold, Italic, Underline, List, ListOrdered,
-  AlignLeft, AlignCenter, AlignRight,
-  Link2, Link2Off, RotateCcw, Trash2,
-  Plus, Send, ChevronRight, ChevronDown,
+  Trash2, Plus, Send, ChevronRight, ChevronDown,
   Search, X, Mail, Users, UserMinus,
 } from "lucide-react";
-import { useEffect, useReducer, useRef, useCallback } from "react";
+import { useEffect, useReducer, useRef } from "react";
+import { EmailEditor, type EditorRef } from "react-email-editor";
 import toast from "react-hot-toast";
 
 import { apiRequest } from "../../../../Services/API";
@@ -81,30 +79,6 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-function ToolbarBtn({
-  onAction,
-  title,
-  children,
-}: {
-  onAction: () => void;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onMouseDown={(e) => {
-        e.preventDefault();
-        onAction();
-      }}
-      title={title}
-      className="p-1.5 rounded-lg hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition-colors"
-    >
-      {children}
-    </button>
-  );
-}
-
 export default function EmailCenter() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const {
@@ -123,7 +97,7 @@ export default function EmailCenter() {
     importing,
   } = state;
 
-  const editorRef = useRef<HTMLDivElement>(null);
+  const emailEditorRef = useRef<EditorRef>(null);
   const set = (field: keyof State, value: unknown) =>
     dispatch({ type: "SET_FIELD", field, value });
 
@@ -134,22 +108,6 @@ export default function EmailCenter() {
         e.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : [];
-
-  // Rich text commands
-  const execCmd = useCallback((cmd: string, value?: string) => {
-    document.execCommand(cmd, false, value);
-    editorRef.current?.focus();
-  }, []);
-
-  const insertLink = () => {
-    const url = prompt("Enter URL (include https://):");
-    if (url) execCmd("createLink", url);
-  };
-
-  const formatBlock = (tag: string) => {
-    document.execCommand("formatBlock", false, tag);
-    editorRef.current?.focus();
-  };
 
   // Data
   useEffect(() => {
@@ -247,32 +205,37 @@ export default function EmailCenter() {
     }
   };
 
-  const handleSend = async () => {
+  const handleSend = () => {
     if (!selectedGroup) return toast.error("Select a recipient group");
     if (!selectedGroup.members.length)
       return toast.error("This group has no members");
     if (!subject.trim()) return toast.error("Subject is required");
-    const bodyHtml = editorRef.current?.innerHTML ?? "";
-    if (!bodyHtml || editorRef.current?.textContent?.trim() === "")
-      return toast.error("Email body cannot be empty");
 
-    set("sending", true);
-    set("showConfirm", false);
-    try {
-      await apiRequest("/api/email/group", {
-        method: "POST",
-        json: { recipients: selectedGroup.members, subject, body: bodyHtml },
-      });
-      toast.success(
-        `Sent to "${selectedGroup.name}" (${selectedGroup.members.length} recipients)`
-      );
-      set("subject", "");
-      if (editorRef.current) editorRef.current.innerHTML = "";
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Send failed");
-    } finally {
-      set("sending", false);
-    }
+    const editor = emailEditorRef.current?.editor;
+    if (!editor) return toast.error("Editor isn't ready yet - try again in a moment.");
+
+    editor.exportHtml(async (data) => {
+      const bodyHtml = data?.html ?? "";
+      if (!bodyHtml.trim()) return toast.error("Email body cannot be empty");
+
+      set("sending", true);
+      set("showConfirm", false);
+      try {
+        await apiRequest("/api/email/group", {
+          method: "POST",
+          json: { recipients: selectedGroup.members, subject, body: bodyHtml },
+        });
+        toast.success(
+          `Sent to "${selectedGroup.name}" (${selectedGroup.members.length} recipients)`
+        );
+        set("subject", "");
+        editor.loadBlank();
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : "Send failed");
+      } finally {
+        set("sending", false);
+      }
+    });
   };
 
   // Render
@@ -566,93 +529,10 @@ export default function EmailCenter() {
           </div>
         </div>
 
-        {/* Formatting toolbar */}
-        <div className="bg-gray-50 border-b border-gray-200 px-3 py-1.5 flex items-center gap-0.5 flex-wrap">
-          <ToolbarBtn onAction={() => execCmd("bold")} title="Bold (Ctrl+B)">
-            <Bold size={13} />
-          </ToolbarBtn>
-          <ToolbarBtn onAction={() => execCmd("italic")} title="Italic (Ctrl+I)">
-            <Italic size={13} />
-          </ToolbarBtn>
-          <ToolbarBtn onAction={() => execCmd("underline")} title="Underline (Ctrl+U)">
-            <Underline size={13} />
-          </ToolbarBtn>
-
-          <div className="w-px h-4 bg-gray-300 mx-1" />
-
-          <ToolbarBtn onAction={() => execCmd("insertUnorderedList")} title="Bullet List">
-            <List size={13} />
-          </ToolbarBtn>
-          <ToolbarBtn onAction={() => execCmd("insertOrderedList")} title="Numbered List">
-            <ListOrdered size={13} />
-          </ToolbarBtn>
-
-          <div className="w-px h-4 bg-gray-300 mx-1" />
-
-          <ToolbarBtn onAction={() => execCmd("justifyLeft")} title="Align Left">
-            <AlignLeft size={13} />
-          </ToolbarBtn>
-          <ToolbarBtn onAction={() => execCmd("justifyCenter")} title="Align Center">
-            <AlignCenter size={13} />
-          </ToolbarBtn>
-          <ToolbarBtn onAction={() => execCmd("justifyRight")} title="Align Right">
-            <AlignRight size={13} />
-          </ToolbarBtn>
-
-          <div className="w-px h-4 bg-gray-300 mx-1" />
-
-          <ToolbarBtn onAction={insertLink} title="Insert Link">
-            <Link2 size={13} />
-          </ToolbarBtn>
-          <ToolbarBtn onAction={() => execCmd("unlink")} title="Remove Link">
-            <Link2Off size={13} />
-          </ToolbarBtn>
-
-          <div className="w-px h-4 bg-gray-300 mx-1" />
-
-          {/* Block format select */}
-          <select
-            onMouseDown={(e) => e.stopPropagation()}
-            onChange={(e) => {
-              formatBlock(e.target.value);
-              e.target.value = "p";
-            }}
-            defaultValue="p"
-            className="text-xs border border-gray-300 rounded-lg px-1.5 py-0.5 bg-white focus:outline-none cursor-pointer text-gray-600"
-          >
-            <option value="p">Normal</option>
-            <option value="h1">Heading 1</option>
-            <option value="h2">Heading 2</option>
-            <option value="h3">Heading 3</option>
-          </select>
-
-          <div className="w-px h-4 bg-gray-300 mx-1" />
-
-          <ToolbarBtn onAction={() => execCmd("removeFormat")} title="Clear Formatting">
-            <RotateCcw size={13} />
-          </ToolbarBtn>
-        </div>
-
-        {/* Editor area */}
-        <div className="flex-1 overflow-y-auto bg-white">
-          <div
-            ref={editorRef}
-            contentEditable
-            suppressContentEditableWarning
-            className="h-full min-h-[220px] px-4 sm:px-8 py-5 text-sm text-gray-800 leading-relaxed focus:outline-none"
-            style={{
-              // Placeholder via CSS trick
-              "--placeholder": '"Write your email here..."',
-            } as React.CSSProperties}
-            onFocus={(e) => {
-              if (
-                e.currentTarget.innerHTML === "" ||
-                e.currentTarget.innerHTML === "<br>"
-              ) {
-                e.currentTarget.innerHTML = "";
-              }
-            }}
-          />
+        {/* Drag-and-drop template builder (Unlayer) - exportHtml() in handleSend() pulls
+            the finished HTML out of this at send time, no manual sync needed. */}
+        <div className="flex-1 min-h-[480px]">
+          <EmailEditor ref={emailEditorRef} minHeight="100%" />
         </div>
 
         {/* Footer */}
