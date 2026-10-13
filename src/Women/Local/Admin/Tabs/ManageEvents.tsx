@@ -412,7 +412,7 @@ export default function ManageEvents() {
                           setImagePreview(event.image || null);
                           dispatch({ type: "OPEN_EDIT", event });
                         }}
-                        className="text-xs px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium"
+                        className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
                       >
                         Edit
                       </button>
@@ -1127,6 +1127,8 @@ function RegistrationRow({
   onChanged?: () => void;
 }) {
   const [marking, setMarking] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const confirm = useConfirm();
   const formData = (typeof reg.formData === "string"
     ? (() => { try { return JSON.parse(reg.formData as unknown as string); } catch { return {}; } })()
     : reg.formData) as Record<string, unknown>;
@@ -1145,6 +1147,24 @@ function RegistrationRow({
       toast.error("Failed to mark as paid.");
     } finally {
       setMarking(false);
+    }
+  };
+
+  const handleRemove = async () => {
+    if (!eventId) return;
+    if (!(await confirm(`Remove ${reg.payerName || reg.payerEmail || "this registrant"} from this event?`))) return;
+    setRemoving(true);
+    try {
+      await apiRequest(`/api/events/${eventId}/registrations/${reg.id}?program=${program ?? "men"}`, {
+        method: "DELETE",
+      });
+      toast.success("Removed.");
+      onChanged?.();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to remove registrant.");
+    } finally {
+      setRemoving(false);
     }
   };
 
@@ -1175,6 +1195,15 @@ function RegistrationRow({
               className="block mt-1 ml-auto text-xs text-gray-600 hover:text-gray-900 hover:underline disabled:opacity-50"
             >
               {marking ? "Marking..." : "Mark Paid"}
+            </button>
+          )}
+          {eventId && (
+            <button
+              onClick={handleRemove}
+              disabled={removing}
+              className="block mt-1 ml-auto text-xs text-gray-500 hover:text-gray-800 hover:underline disabled:opacity-50"
+            >
+              {removing ? "Removing..." : "Remove"}
             </button>
           )}
           {reg.createdAt && (

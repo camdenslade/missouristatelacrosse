@@ -1059,6 +1059,42 @@ public class EventsController {
     }
 
     /**
+     * Removes a registrant entirely (they bailed, double-signed-up, etc.) - not the same as
+     * marking unpaid, which keeps their spot on the list. If they were on a team, re-checks
+     * whether the team still has enough paid members to count as complete.
+     */
+    @DeleteMapping("/{eventId}/registrations/{regId}")
+    public ResponseEntity<?> removeRegistration(
+        HttpServletRequest request,
+        @PathVariable UUID eventId,
+        @PathVariable UUID regId,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isBoard(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Board access required"));
+        }
+        EventRegistration reg = registrationRepo.findById(regId).orElse(null);
+        if (reg == null || !eventId.equals(reg.getEventId())) {
+            return ResponseEntity.notFound().build();
+        }
+        UUID teamId = reg.getTeamId();
+        registrationRepo.delete(reg);
+
+        if (teamId != null) {
+            Event event = eventRepo.findById(eventId).orElse(null);
+            EventTeam team = teamRepo.findById(teamId).orElse(null);
+            if (team != null && event != null) {
+                long paidCount = registrationRepo.countByTeamIdAndPaidTrue(teamId);
+                if (paidCount < event.getTeamSize() && team.isComplete()) {
+                    team.setComplete(false);
+                    teamRepo.save(team);
+                }
+            }
+        }
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * Sends a real Stripe Invoice (not a Checkout Session - this is Stripe's separate
      * invoicing product, emailed directly by Stripe with its own pay link) to every unpaid
      * registrant with an email on file.

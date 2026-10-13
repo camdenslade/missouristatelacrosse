@@ -332,7 +332,7 @@ export default function StreamSetup() {
               <button
                 onClick={handleToggleLive}
                 className={`px-5 py-2 rounded-lg text-sm font-medium text-white transition ${
-                  isLive ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"
+                  isLive ? "bg-red-600 hover:bg-red-700" : "bg-gray-700 hover:bg-gray-800"
                 }`}
               >
                 {isLive ? "End Stream" : "Go Live"}
