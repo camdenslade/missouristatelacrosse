@@ -240,13 +240,15 @@ public class EventsController {
         String teamNameFieldId = findTeamNameFieldId(event);
         String normalizedTeamName = getNormalizedTeamName(payload.formData(), teamNameFieldId);
 
-        // Validate that the PayPal order was actually captured, for the right amount,
-        // and hasn't already been used for another registration (free events pass null).
+        // Payment at registration is optional, even for priced events - registering with
+        // no paypalOrderId just means "pay later" (paid=false, amountPaid=0 below), so an
+        // admin can invoice or collect in person afterward. If a paypalOrderId IS given,
+        // it's validated exactly as before: real, completed, unused, and matching the
+        // event's price.
         boolean isFree = event.getPrice() == null || event.getPrice().compareTo(BigDecimal.ZERO) == 0;
-        if (!isFree) {
-            if (payload.paypalOrderId() == null || payload.paypalOrderId().isBlank()) {
-                return ResponseEntity.badRequest().body("paypalOrderId required for paid events");
-            }
+        boolean hasPaymentRef = payload.paypalOrderId() != null && !payload.paypalOrderId().isBlank();
+        boolean willBePaid = isFree || hasPaymentRef;
+        if (hasPaymentRef) {
             if (registrationRepo.existsByPaypalOrderId(payload.paypalOrderId())) {
                 return ResponseEntity.status(409).body("This payment has already been used for a registration.");
             }
@@ -286,9 +288,9 @@ public class EventsController {
         String normalizedPayerEmail = payload.payerEmail() != null ? payload.payerEmail().trim().toLowerCase() : null;
         reg.setPayerEmail(normalizedPayerEmail);
         reg.setPaypalOrderId(payload.paypalOrderId());
-        reg.setAmountPaid(isFree ? BigDecimal.ZERO : event.getPrice());
-        reg.setPaid(true);
-        reg.setPaidAt(Instant.now());
+        reg.setAmountPaid(willBePaid && !isFree ? event.getPrice() : BigDecimal.ZERO);
+        reg.setPaid(willBePaid);
+        reg.setPaidAt(willBePaid ? Instant.now() : null);
         reg.setFormData(payload.formData() != null ? payload.formData() : "{}");
         reg.setTeamId(resolvedTeamId);
 
@@ -1106,6 +1108,11 @@ public class EventsController {
                     .setCollectionMethod(InvoiceCreateParams.CollectionMethod.SEND_INVOICE)
                     .setDaysUntilDue(14L)
                     .setDescription("Missouri State Lacrosse - " + event.getName())
+                    // Lets the webhook (StripeController, "invoice.paid") mark exactly this
+                    // registration paid once Stripe tells us the customer actually paid it.
+                    .putMetadata("registrationId", reg.getId().toString())
+                    .putMetadata("eventId", eventId.toString())
+                    .putMetadata("program", program)
                     .build();
                 Invoice invoice = Invoice.create(invoiceParams);
                 invoice.finalizeInvoice();

@@ -4,8 +4,14 @@ import SockJS from "sockjs-client";
 
 import KeyGate from "../../../../../Global/Common/components/KeyGate";
 import LiveChat from "../../../../../Global/Common/components/LiveChat";
+import LiveScoreEditor from "../../../../../Global/Common/components/LiveScoreEditor";
 import StreamPlayer from "../../../../../Global/Common/components/StreamPlayer";
+import { useAuth } from "../../../../../Global/Context/AuthContext";
 import API_BASE from "../../../../../Services/API";
+
+// Matches the backend's AuthorizationService.ROLE_LADDER - anyone at "parent" or above
+// can keep the live score current (see GamesController.isScoreEditor).
+const SCORE_EDIT_ROLES = ["parent", "alumni", "player", "board", "treasurer", "vp", "president", "admin"];
 
 const PROGRAM = "men";
 const MSU_LOGO = "/assets/bears.png";
@@ -39,6 +45,7 @@ type GameState = {
   priceTwoScreen: number;
   streamKey: string;
   gameId: string;
+  statsAssigneeUid: string;
 };
 
 const parseBoxScore = (bs: any): BoxScoreMap => {
@@ -65,6 +72,7 @@ const buildInitialState = (g: any): GameState => ({
   priceTwoScreen: g?.priceTwoScreen ?? 10,
   streamKey: g?.streamKey || "",
   gameId: g?.id || "",
+  statsAssigneeUid: g?.statsAssigneeUid || "",
 });
 
 function reducer(state: GameState, action: any): GameState {

@@ -15,12 +15,15 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.validation.annotation.Validated;
 import com.mostate.lacrosse.Config.TenantContext;
 import com.mostate.lacrosse.Dto.ErrorResponse;
+import com.mostate.lacrosse.Model.EventRegistration;
+import com.mostate.lacrosse.Repository.EventRegistrationRepository;
 import com.mostate.lacrosse.Service.PaymentReceiptService;
 import com.mostate.lacrosse.Service.StripeService;
 import com.mostate.lacrosse.Utils.JsonUtils;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
 import com.stripe.model.EventDataObjectDeserializer;
+import com.stripe.model.Invoice;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.checkout.Session;
 import jakarta.validation.Valid;
@@ -41,10 +44,16 @@ public class StripeController {
 
     private final StripeService stripeService;
     private final PaymentReceiptService receiptService;
+    private final EventRegistrationRepository registrationRepository;
 
-    public StripeController(StripeService stripeService, PaymentReceiptService receiptService) {
+    public StripeController(
+        StripeService stripeService,
+        PaymentReceiptService receiptService,
+        EventRegistrationRepository registrationRepository
+    ) {
         this.stripeService = stripeService;
         this.receiptService = receiptService;
+        this.registrationRepository = registrationRepository;
     }
 
     @GetMapping("/config")
@@ -172,7 +181,10 @@ public class StripeController {
                 if (intent != null && "true".equals(intent.getMetadata().get("terminalSale"))) {
                     String program = intent.getMetadata().getOrDefault("program", "men");
                     String eventId = intent.getMetadata().get("eventId");
-                    String source = (eventId != null && !eventId.isBlank()) ? "event-pos-" + eventId : "pos-sale";
+                    String registrationId = intent.getMetadata().get("registrationId");
+                    String source = registrationId != null && !registrationId.isBlank()
+                        ? "event-registration-" + eventId
+                        : (eventId != null && !eventId.isBlank()) ? "event-pos-" + eventId : "pos-sale";
 
                     Map<String, Object> receiptPayload = new java.util.LinkedHashMap<>(Map.of(
                         "id", intent.getId(),
@@ -193,6 +205,12 @@ public class StripeController {
                     TenantContext.setTenant(program);
                     try {
                         receiptService.recordReceipt(receiptPayload, source, "stripe-terminal");
+                        // Registration mode (vs generic POS): this charge was for one
+                        // specific unpaid registrant, picked off a list in the app - mark
+                        // that exact registration paid now that Stripe confirms it went through.
+                        if (registrationId != null && !registrationId.isBlank()) {
+                            markRegistrationPaid(registrationId, intent);
+                        }
                     } finally {
                         TenantContext.clear();
                     }
@@ -202,7 +220,65 @@ public class StripeController {
                 return ResponseEntity.internalServerError().body(new ErrorResponse("Processing failed"));
             }
         }
+
+        // A Stripe Invoice sent via the bulk "Invoice Unpaid" button (EventsController)
+        // was actually paid - mark that registration paid too, same as a Checkout/Terminal
+        // payment would. This is the only way we find out an invoice got paid.
+        if ("invoice.paid".equals(type)) {
+            try {
+                Invoice invoice = invoiceOf(event);
+                if (invoice != null) {
+                    Map<String, String> metadata = invoice.getMetadata();
+                    String registrationId = metadata != null ? metadata.get("registrationId") : null;
+                    if (registrationId != null && !registrationId.isBlank()) {
+                        String program = metadata.getOrDefault("program", "men");
+                        String eventId = metadata.get("eventId");
+                        TenantContext.setTenant(program);
+                        try {
+                            markRegistrationPaidFromInvoice(registrationId, eventId, invoice);
+                        } finally {
+                            TenantContext.clear();
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return ResponseEntity.internalServerError().body(new ErrorResponse("Processing failed"));
+            }
+        }
         return ResponseEntity.ok(Map.of("received", true));
+    }
+
+    private void markRegistrationPaid(String registrationId, PaymentIntent intent) {
+        registrationRepository.findById(java.util.UUID.fromString(registrationId)).ifPresent(reg -> {
+            if (reg.isPaid()) return;
+            reg.setPaid(true);
+            reg.setPaidAt(java.time.Instant.now());
+            BigDecimal current = reg.getAmountPaid() != null ? reg.getAmountPaid() : BigDecimal.ZERO;
+            reg.setAmountPaid(current.add(BigDecimal.valueOf(intent.getAmount(), 2)));
+            reg.setPaypalOrderId(intent.getId());
+            registrationRepository.save(reg);
+        });
+    }
+
+    private void markRegistrationPaidFromInvoice(String registrationId, String eventId, Invoice invoice) {
+        registrationRepository.findById(java.util.UUID.fromString(registrationId)).ifPresent(reg -> {
+            if (reg.isPaid()) return;
+            reg.setPaid(true);
+            reg.setPaidAt(java.time.Instant.now());
+            BigDecimal current = reg.getAmountPaid() != null ? reg.getAmountPaid() : BigDecimal.ZERO;
+            reg.setAmountPaid(current.add(BigDecimal.valueOf(invoice.getAmountPaid(), 2)));
+            reg.setPaypalOrderId(invoice.getId());
+            registrationRepository.save(reg);
+        });
+    }
+
+    private static Invoice invoiceOf(Event event) {
+        EventDataObjectDeserializer d = event.getDataObjectDeserializer();
+        if (d.getObject().isPresent() && d.getObject().get() instanceof Invoice inv) {
+            return inv;
+        }
+        return null;
     }
 
     private static PaymentIntent paymentIntentOf(Event event) {
