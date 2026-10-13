@@ -402,7 +402,7 @@ export default function ManageEvents() {
                       </button>
                       <button
                         onClick={() => setPosItemsEvent(event)}
-                        className="text-xs px-2 py-1 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 font-medium"
+                        className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
                       >
                         POS Items
                       </button>
@@ -986,7 +986,7 @@ function SubmissionsView({
           <button
             onClick={handleInvoiceUnpaid}
             disabled={invoicing || unpaidCount === 0}
-            className="text-xs px-3 py-1.5 rounded-lg bg-[#5E0009]/10 text-[#5E0009] hover:bg-[#5E0009]/20 font-medium disabled:opacity-50"
+            className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium disabled:opacity-50"
           >
             {invoicing ? "Sending..." : `Invoice Unpaid (${unpaidCount})`}
           </button>
@@ -1172,7 +1172,7 @@ function RegistrationRow({
             <button
               onClick={handleMarkPaid}
               disabled={marking}
-              className="block mt-1 ml-auto text-xs text-[#5E0009] hover:underline disabled:opacity-50"
+              className="block mt-1 ml-auto text-xs text-gray-600 hover:text-gray-900 hover:underline disabled:opacity-50"
             >
               {marking ? "Marking..." : "Mark Paid"}
             </button>

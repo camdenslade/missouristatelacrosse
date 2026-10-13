@@ -468,6 +468,21 @@ export default function EventDetail() {
                 {canPay && !paymentReady && (
                   <p className="text-xs text-gray-400 text-center mt-2">Loading payment options...</p>
                 )}
+                <div className="flex items-center gap-2 my-3">
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <span className="text-xs text-gray-400">or</span>
+                  <div className="flex-1 h-px bg-gray-200" />
+                </div>
+                <button
+                  onClick={handleFreeSubmit}
+                  disabled={!canPay || state.submitting}
+                  className="w-full py-3 bg-white border border-gray-300 text-gray-700 rounded-full font-semibold text-sm hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {state.submitting ? "Submitting..." : "Register Now, Pay Later"}
+                </button>
+                <p className="text-xs text-gray-400 text-center mt-2">
+                  You'll owe ${Number(event.price || 0).toFixed(2)} - we'll invoice you or collect it in person.
+                </p>
               </>
             )}
           </div>

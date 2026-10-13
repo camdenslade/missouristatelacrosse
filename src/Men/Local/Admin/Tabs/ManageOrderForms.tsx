@@ -211,7 +211,7 @@ export default function ManageOrderForms() {
                       dispatch({ type: "TOGGLE_EXPANDED", id: form.id });
                       if (state.expandedFormId !== form.id) loadSubmissions(form.id);
                     }}
-                    className="text-xs px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium"
+                    className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
                   >
                     {expanded ? "Hide" : "Manage"}
                   </button>

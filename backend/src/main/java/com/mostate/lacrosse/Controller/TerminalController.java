@@ -15,7 +15,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.mostate.lacrosse.Config.TenantContext;
 import com.mostate.lacrosse.Dto.ErrorResponse;
+import com.mostate.lacrosse.Model.Event;
+import com.mostate.lacrosse.Model.EventRegistration;
 import com.mostate.lacrosse.Repository.EventPosItemRepository;
+import com.mostate.lacrosse.Repository.EventRegistrationRepository;
 import com.mostate.lacrosse.Repository.EventRepository;
 import com.mostate.lacrosse.Service.EmailService;
 import com.mostate.lacrosse.Utils.EmailTemplate;
@@ -44,15 +47,18 @@ public class TerminalController {
 
     private final EventRepository eventRepository;
     private final EventPosItemRepository posItemRepository;
+    private final EventRegistrationRepository registrationRepository;
     private final EmailService emailService;
 
     public TerminalController(
         EventRepository eventRepository,
         EventPosItemRepository posItemRepository,
+        EventRegistrationRepository registrationRepository,
         EmailService emailService
     ) {
         this.eventRepository = eventRepository;
         this.posItemRepository = posItemRepository;
+        this.registrationRepository = registrationRepository;
         this.emailService = emailService;
     }
 
@@ -125,6 +131,127 @@ public class TerminalController {
         }
     }
 
+    /**
+     * Registration mode: the list of people who registered for this event but haven't
+     * paid yet, so the person running the register can tap to charge them one at a time
+     * and check them off, instead of taking generic POS sales.
+     */
+    @GetMapping("/events/{eventId}/unpaid-registrants")
+    public ResponseEntity<?> unpaidRegistrants(
+        @RequestHeader(name = "X-Terminal-Secret", required = false) String secret,
+        @PathVariable UUID eventId,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isAuthorized(secret)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Not authorized"));
+        }
+        try {
+            TenantContext.setTenant("women".equalsIgnoreCase(program) ? "women" : "men");
+            Event event = eventRepository.findById(eventId).orElse(null);
+            if (event == null) return ResponseEntity.notFound().build();
+            java.math.BigDecimal price = event.getPrice() != null ? event.getPrice() : java.math.BigDecimal.ZERO;
+            List<Map<String, Object>> rows = registrationRepository.findAllByEventId(eventId).stream()
+                .filter(r -> !r.isPaid())
+                .map(r -> {
+                    java.math.BigDecimal alreadyPaid = r.getAmountPaid() != null ? r.getAmountPaid() : java.math.BigDecimal.ZERO;
+                    java.math.BigDecimal due = price.subtract(alreadyPaid);
+                    return Map.<String, Object>of(
+                        "id", r.getId().toString(),
+                        "payerName", r.getPayerName() != null ? r.getPayerName() : "",
+                        "payerEmail", r.getPayerEmail() != null ? r.getPayerEmail() : "",
+                        "amountDueCents", due.movePointRight(2).intValueExact()
+                    );
+                })
+                .toList();
+            return ResponseEntity.ok(rows);
+        } finally {
+            TenantContext.clear();
+        }
+    }
+
+    /**
+     * Registration mode: charge one specific unpaid registrant for exactly what they owe.
+     * The webhook (StripeController) marks that registration paid when this succeeds -
+     * see its "registrationId" metadata branch.
+     */
+    @PostMapping("/registrations/{registrationId}/payment-intent")
+    public ResponseEntity<?> createRegistrationPaymentIntent(
+        @RequestHeader(name = "X-Terminal-Secret", required = false) String secret,
+        @PathVariable UUID registrationId,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isAuthorized(secret)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Not authorized"));
+        }
+        try {
+            TenantContext.setTenant("women".equalsIgnoreCase(program) ? "women" : "men");
+            EventRegistration reg = registrationRepository.findById(registrationId).orElse(null);
+            if (reg == null) return ResponseEntity.notFound().build();
+            if (reg.isPaid()) {
+                return ResponseEntity.badRequest().body(new ErrorResponse("This registrant is already marked paid"));
+            }
+            Event event = eventRepository.findById(reg.getEventId()).orElse(null);
+            if (event == null) return ResponseEntity.notFound().build();
+            java.math.BigDecimal price = event.getPrice() != null ? event.getPrice() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal alreadyPaid = reg.getAmountPaid() != null ? reg.getAmountPaid() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal due = price.subtract(alreadyPaid);
+            if (due.signum() <= 0) {
+                return ResponseEntity.badRequest().body(new ErrorResponse("Nothing owed on this registration"));
+            }
+            long amountCents = due.movePointRight(2).longValueExact();
+
+            PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
+                .setAmount(amountCents)
+                .setCurrency("usd")
+                .addPaymentMethodType("card_present")
+                .setCaptureMethod(PaymentIntentCreateParams.CaptureMethod.AUTOMATIC)
+                .putMetadata("terminalSale", "true")
+                .putMetadata("registrationId", registrationId.toString())
+                .putMetadata("eventId", reg.getEventId().toString())
+                .putMetadata("program", "women".equalsIgnoreCase(program) ? "women" : "men")
+                .build();
+            PaymentIntent intent = PaymentIntent.create(params);
+            return ResponseEntity.ok(Map.of(
+                "clientSecret", intent.getClientSecret(),
+                "id", intent.getId(),
+                "payerEmail", reg.getPayerEmail() != null ? reg.getPayerEmail() : ""
+            ));
+        } catch (StripeException e) {
+            return ResponseEntity.internalServerError().body(new ErrorResponse(e.getMessage()));
+        } finally {
+            TenantContext.clear();
+        }
+    }
+
+    /**
+     * Registration mode's "send receipt" button - no typed-in email, just sends to
+     * whatever email the registrant gave when they signed up.
+     */
+    @PostMapping("/registrations/{registrationId}/receipt")
+    public ResponseEntity<?> sendRegistrationReceipt(
+        @RequestHeader(name = "X-Terminal-Secret", required = false) String secret,
+        @PathVariable UUID registrationId,
+        @RequestBody ReceiptRequest body,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isAuthorized(secret)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Not authorized"));
+        }
+        if (body.paymentIntentId() == null || body.paymentIntentId().isBlank()) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("paymentIntentId is required"));
+        }
+        try {
+            TenantContext.setTenant("women".equalsIgnoreCase(program) ? "women" : "men");
+            EventRegistration reg = registrationRepository.findById(registrationId).orElse(null);
+            if (reg == null || reg.getPayerEmail() == null || reg.getPayerEmail().isBlank()) {
+                return ResponseEntity.badRequest().body(new ErrorResponse("No email on file for this registrant"));
+            }
+            return sendReceiptTo(reg.getPayerEmail(), body.paymentIntentId());
+        } finally {
+            TenantContext.clear();
+        }
+    }
+
     @PostMapping("/payment-intent")
     public ResponseEntity<?> createPaymentIntent(
         @RequestHeader(name = "X-Terminal-Secret", required = false) String secret,
@@ -183,8 +310,12 @@ public class TerminalController {
                 || body.email() == null || body.email().isBlank()) {
             return ResponseEntity.badRequest().body(new ErrorResponse("paymentIntentId and email are required"));
         }
+        return sendReceiptTo(body.email(), body.paymentIntentId());
+    }
+
+    private ResponseEntity<?> sendReceiptTo(String email, String paymentIntentId) {
         try {
-            PaymentIntent intent = PaymentIntent.retrieve(body.paymentIntentId());
+            PaymentIntent intent = PaymentIntent.retrieve(paymentIntentId);
             if (!"succeeded".equals(intent.getStatus())) {
                 return ResponseEntity.badRequest().body(new ErrorResponse("Payment has not succeeded"));
             }
@@ -210,7 +341,7 @@ public class TerminalController {
                 + EmailTemplate.paragraph("<b>Total: $" + amount + "</b>");
 
             emailService.sendEmail(
-                body.email(),
+                email,
                 "Missouri State Lacrosse - Receipt",
                 EmailTemplate.wrap(programLabel, body_)
             );

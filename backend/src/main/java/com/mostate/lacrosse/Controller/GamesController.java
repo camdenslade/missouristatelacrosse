@@ -21,8 +21,10 @@ import com.mostate.lacrosse.Config.FirebaseAdminFilter;
 import com.mostate.lacrosse.Config.TenantContext;
 import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Model.Game;
+import com.mostate.lacrosse.Model.UserAccount;
 import com.mostate.lacrosse.Repository.GameRepository;
 import com.mostate.lacrosse.Repository.TeamRepository;
+import com.mostate.lacrosse.Repository.UserAccountRepository;
 import com.mostate.lacrosse.Model.Team;
 import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Service.S3Service;
@@ -35,6 +37,7 @@ import jakarta.servlet.http.HttpServletRequest;
 public class GamesController {
     private final GameRepository gameRepository;
     private final TeamRepository teamRepository;
+    private final UserAccountRepository userRepository;
     private final S3Service s3Service;
     private final SimpMessagingTemplate broker;
     private final AuthorizationService authorizationService;
@@ -42,12 +45,14 @@ public class GamesController {
     public GamesController(
         GameRepository gameRepository,
         TeamRepository teamRepository,
+        UserAccountRepository userRepository,
         S3Service s3Service,
         SimpMessagingTemplate broker,
         AuthorizationService authorizationService
     ) {
         this.gameRepository = gameRepository;
         this.teamRepository = teamRepository;
+        this.userRepository = userRepository;
         this.s3Service = s3Service;
         this.broker = broker;
         this.authorizationService = authorizationService;
@@ -57,6 +62,18 @@ public class GamesController {
         String uid = (String) request.getAttribute("firebaseUid");
         FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
         return authorizationService.isAdmin(uid, program, token);
+    }
+
+    // Score/box-score editing is open to any player/parent/alumni account (and everyone
+    // above them in the ladder) so parents can keep a live score current - see update().
+    private boolean isScoreEditor(HttpServletRequest request, String program) {
+        String uid = (String) request.getAttribute("firebaseUid");
+        FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
+        return authorizationService.hasAtLeast(uid, program, token, "parent");
+    }
+
+    private String currentUid(HttpServletRequest request) {
+        return (String) request.getAttribute("firebaseUid");
     }
 
     @GetMapping
@@ -89,14 +106,40 @@ public class GamesController {
     @PutMapping("/{id}")
     public ResponseEntity<?> update(HttpServletRequest request, @PathVariable UUID id, @RequestBody GamePayload payload) {
         String program = TenantContext.getTenant();
-        if (!isAdmin(request, program)) {
+        boolean admin = isAdmin(request, program);
+        if (!admin && !isScoreEditor(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         Game existing = gameRepository.findById(id).orElse(null);
         if (existing == null) {
             return ResponseEntity.notFound().build();
         }
-        applyPayload(existing, payload);
+
+        GamePayload effectivePayload = payload;
+        if (!admin) {
+            // Non-admin score editors (player/parent/alumni and up) can only touch the
+            // score/box-score/clock - never roster fields, and never stats unless they're
+            // specifically the assigned stats-enterer for this game.
+            String assignedUid = (String) JsonUtils.readMap(existing.getData()).get("statsAssigneeUid");
+            boolean canEditStats = assignedUid != null && assignedUid.equals(currentUid(request));
+            Map<String, Object> allowedData = payload.data() != null
+                ? new HashMap<>(payload.data())
+                : new HashMap<>();
+            if (!canEditStats) {
+                allowedData.remove("stats");
+                allowedData.remove("playerStats");
+            }
+            // Only these keys are ever accepted from a non-admin caller.
+            allowedData.keySet().retainAll(java.util.Set.of(
+                "msuScore", "oppScore", "boxScore", "currentQuarter", "timeInQuarter",
+                "stats", "playerStats", "status"
+            ));
+            effectivePayload = new GamePayload(
+                null, null, null, null, null, null, null, allowedData
+            );
+        }
+
+        applyPayload(existing, effectivePayload);
         Game saved = gameRepository.save(existing);
         syncTeamFromGame(saved);
         GameResponse response = toResponse(saved, S3Service.IMAGE_TTL);
@@ -115,6 +158,46 @@ public class GamesController {
         gameRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Lets an admin hand off live stats entry for this game to a specific account (by
+     * email) - that person (and admins) can then fill in player stats; everyone else with
+     * score-edit access still only touches the score/box-score. Pass an empty/blank email
+     * to un-assign.
+     */
+    @PutMapping("/{id}/stats-assignee")
+    public ResponseEntity<?> setStatsAssignee(
+        HttpServletRequest request,
+        @PathVariable UUID id,
+        @RequestBody StatsAssigneeRequest body
+    ) {
+        String program = TenantContext.getTenant();
+        if (!isAdmin(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
+        Game existing = gameRepository.findById(id).orElse(null);
+        if (existing == null) {
+            return ResponseEntity.notFound().build();
+        }
+        Map<String, Object> data = new HashMap<>(JsonUtils.readMap(existing.getData()));
+        String email = body.email() != null ? body.email().trim() : "";
+        if (email.isEmpty()) {
+            data.remove("statsAssigneeUid");
+            data.remove("statsAssigneeEmail");
+        } else {
+            UserAccount assignee = userRepository.findByEmailIgnoreCase(email).orElse(null);
+            if (assignee == null) {
+                return ResponseEntity.badRequest().body(new ErrorResponse("No account found for that email"));
+            }
+            data.put("statsAssigneeUid", assignee.getFirebaseUid());
+            data.put("statsAssigneeEmail", email.toLowerCase());
+        }
+        existing.setData(JsonUtils.toJson(data));
+        Game saved = gameRepository.save(existing);
+        return ResponseEntity.ok(toResponse(saved, S3Service.IMAGE_TTL));
+    }
+
+    public record StatsAssigneeRequest(String email) {}
 
     private void applyPayload(Game game, GamePayload payload) {
         String opponent = TextSanitizer.clean(payload.opponent());
