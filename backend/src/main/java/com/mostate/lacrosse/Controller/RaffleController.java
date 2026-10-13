@@ -321,7 +321,7 @@ public class RaffleController {
 
         RaffleEntry entry = new RaffleEntry();
         entry.setRaffleId(id);
-        entry.setPayerName(payload.payerName() != null ? TextSanitizer.clean(payload.payerName()) : null);
+        entry.setPayerName(payload.payerName() != null ? TextSanitizer.titleCaseName(payload.payerName()) : null);
         entry.setPayerEmail(payload.payerEmail() != null ? payload.payerEmail().trim().toLowerCase() : null);
         entry.setPayerPhone(payload.payerPhone() != null ? payload.payerPhone().trim() : null);
         entry.setPaid(true);
@@ -392,7 +392,7 @@ public class RaffleController {
 
         RaffleEntry entry = new RaffleEntry();
         entry.setRaffleId(id);
-        entry.setPayerName(payload.payerName() != null ? TextSanitizer.clean(payload.payerName()) : null);
+        entry.setPayerName(payload.payerName() != null ? TextSanitizer.titleCaseName(payload.payerName()) : null);
         entry.setPayerEmail(payload.payerEmail() != null ? payload.payerEmail().trim().toLowerCase() : null);
         entry.setPayerPhone(payload.payerPhone() != null ? payload.payerPhone().trim() : null);
         entry.setPaypalOrderId(payload.paypalOrderId());
@@ -427,7 +427,7 @@ public class RaffleController {
         if (p.status() != null) raffle.setStatus(p.status());
         if (p.endTime() != null) raffle.setEndTime(Instant.parse(p.endTime()));
         if (p.clearEndTime() != null && p.clearEndTime()) raffle.setEndTime(null);
-        if (p.winnerName() != null) raffle.setWinnerName(p.winnerName().isBlank() ? null : p.winnerName());
+        if (p.winnerName() != null) raffle.setWinnerName(p.winnerName().isBlank() ? null : TextSanitizer.titleCaseName(p.winnerName()));
         if (p.winnerEmail() != null) raffle.setWinnerEmail(p.winnerEmail().isBlank() ? null : p.winnerEmail());
     }
 

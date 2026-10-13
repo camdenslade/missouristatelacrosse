@@ -28,6 +28,7 @@ import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Service.EmailService;
 import com.mostate.lacrosse.Service.PaymentReceiptService;
 import com.mostate.lacrosse.Service.PlayerProfileService;
+import com.mostate.lacrosse.Utils.EmailTemplate;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
@@ -237,51 +238,27 @@ public class DuesPaymentController {
                 .formatted(balance.setScale(2, java.math.RoundingMode.HALF_UP))
             : "<tr><td style=\"padding:6px 0;color:#1a7f37;font-weight:bold;\">Remaining Balance</td><td style=\"padding:6px 0;text-align:right;color:#1a7f37;font-weight:bold;\">$0.00 &mdash; Paid in full</td></tr>";
 
-        return """
-            <!DOCTYPE html>
-            <html lang="en">
-            <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-            <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
-              <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 0;">
-                <tr><td align="center">
-                  <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1);">
-                    <tr>
-                      <td style="background:#5E0009;padding:28px 40px;text-align:center;">
-                        <h1 style="color:#fff;margin:0;font-size:22px;letter-spacing:1px;">MISSOURI STATE %s LACROSSE</h1>
-                        <p style="color:#f0d0d3;margin:6px 0 0;font-size:13px;letter-spacing:2px;">PAYMENT RECEIPT</p>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="padding:40px;">
-                        <p style="font-size:16px;color:#333;margin:0 0 16px;">Hi %s,</p>
-                        <p style="font-size:15px;color:#555;margin:0 0 24px;">Thanks for your payment! Here's your receipt.</p>
-                        <table width="100%%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#333;border-top:1px solid #eee;border-bottom:1px solid #eee;padding:8px 0;margin:0 0 16px;">
-                          <tr><td style="padding:6px 0;color:#777;">Player</td><td style="padding:6px 0;text-align:right;">%s</td></tr>
-                          <tr><td style="padding:6px 0;color:#777;">Date</td><td style="padding:6px 0;text-align:right;">%s</td></tr>
-                          <tr><td style="padding:6px 0;color:#777;">Payment Reference</td><td style="padding:6px 0;text-align:right;font-family:monospace;font-size:12px;">%s</td></tr>
-                          <tr><td style="padding:10px 0 6px;color:#333;font-weight:bold;border-top:1px solid #eee;">Amount Paid</td><td style="padding:10px 0 6px;text-align:right;font-weight:bold;border-top:1px solid #eee;">$%s</td></tr>
-                          %s
-                        </table>
-                        <p style="font-size:12px;color:#999;margin:24px 0 0;">Keep this email as your receipt for this transaction. If anything looks wrong, reply to this email or contact your program admin.</p>
-                        <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
-                        <p style="font-size:13px;color:#999;margin:0;">Go Bears! &mdash; Missouri State %s Lacrosse</p>
-                      </td>
-                    </tr>
-                  </table>
-                </td></tr>
-              </table>
-            </body>
-            </html>
+        String receiptTable = """
+            <p style="font-size:12px;color:#5E0009;font-weight:bold;letter-spacing:2px;margin:0 0 16px;">PAYMENT RECEIPT</p>
+            <p style="font-size:16px;color:#333;margin:0 0 16px;">Hi %s,</p>
+            <p style="font-size:15px;color:#555;margin:0 0 24px;">Thanks for your payment! Here's your receipt.</p>
+            <table width="100%%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#333;border-top:1px solid #eee;border-bottom:1px solid #eee;padding:8px 0;margin:0 0 16px;">
+              <tr><td style="padding:6px 0;color:#777;">Player</td><td style="padding:6px 0;text-align:right;">%s</td></tr>
+              <tr><td style="padding:6px 0;color:#777;">Date</td><td style="padding:6px 0;text-align:right;">%s</td></tr>
+              <tr><td style="padding:6px 0;color:#777;">Payment Reference</td><td style="padding:6px 0;text-align:right;font-family:monospace;font-size:12px;">%s</td></tr>
+              <tr><td style="padding:10px 0 6px;color:#333;font-weight:bold;border-top:1px solid #eee;">Amount Paid</td><td style="padding:10px 0 6px;text-align:right;font-weight:bold;border-top:1px solid #eee;">$%s</td></tr>
+              %s
+            </table>
+            <p style="font-size:12px;color:#999;margin:24px 0 0;">Keep this email as your receipt for this transaction. If anything looks wrong, reply to this email or contact your program admin.</p>
             """.formatted(
-                program.toUpperCase(),
                 payerName,
                 playerName != null ? playerName : "—",
                 dateStr,
                 payPalOrderId != null ? payPalOrderId : "—",
                 amountPaid.setScale(2, java.math.RoundingMode.HALF_UP),
-                balanceRow,
-                program
+                balanceRow
             );
+        return EmailTemplate.wrap(program, receiptTable);
     }
 
     private boolean isAuthorized(HttpServletRequest request, Player player, String program) {

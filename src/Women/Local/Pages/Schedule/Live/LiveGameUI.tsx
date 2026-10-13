@@ -6,7 +6,7 @@ import LiveChat from "../../../../../Global/Common/components/LiveChat";
 import StreamPlayer from "../../../../../Global/Common/components/StreamPlayer";
 import type { Player } from "../../../../../types/roster";
 import type { PlayerStat } from "../../../../../types/schedule";
-import { updateLiveGame } from "../hooks/LiveGameUpdater";
+import { setStatsAssignee, updateLiveGame } from "../hooks/LiveGameUpdater";
 
 const QUARTERS = ["Q1", "Q2", "Q3", "Q4"];
 const FIELD_KEYS = [
@@ -146,6 +146,8 @@ export default function LiveGameUI({
   program?: string;
 }) {
   const [showStream, setShowStream] = useState(false);
+  const [assigneeEmail, setAssigneeEmail] = useState("");
+  const [assigningStats, setAssigningStats] = useState(false);
   const [state, dispatch] = useReducer(
     reducer,
     undefined,
@@ -309,6 +311,20 @@ export default function LiveGameUI({
   );
 
   const isFinal = game.status === "final";
+
+  const handleAssignStats = async (emailOverride?: string) => {
+    const email = (emailOverride ?? assigneeEmail).trim();
+    setAssigningStats(true);
+    try {
+      await setStatsAssignee(game.id as string, email);
+      toast.success(email ? "Stats entry assigned!" : "Stats assignment cleared.");
+    } catch (err) {
+      console.error("Error assigning stats entry:", err);
+      toast.error("Could not assign stats entry. Check the email and try again.");
+    } finally {
+      setAssigningStats(false);
+    }
+  };
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-lg mt-4 max-w-5xl mx-auto overflow-hidden">
@@ -479,6 +495,48 @@ export default function LiveGameUI({
               )}
             </>
           )}
+        </div>
+
+        {/* Stats Entry Assignment */}
+        <div className="mt-6 pt-4 border-t border-gray-100">
+          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
+            Stats Entry Assignment
+          </h3>
+          <p className="text-xs text-gray-500 mb-2">
+            Lets a specific player/parent/alumni account enter player stats on the public live
+            page while the game is going on - everyone else with score-edit access still only
+            touches the score and clock.
+            {game.statsAssigneeEmail ? (
+              <span className="block mt-1 font-medium text-gray-700">
+                Currently assigned to: {game.statsAssigneeEmail as string}
+              </span>
+            ) : null}
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="email"
+              value={assigneeEmail}
+              onChange={(e) => setAssigneeEmail(e.target.value)}
+              placeholder="email@example.com"
+              className="flex-1 border border-gray-200 bg-gray-50 rounded px-2 py-1.5 text-sm text-gray-800 focus:ring-1 focus:ring-[#5E0009] focus:outline-none"
+            />
+            <button
+              onClick={() => handleAssignStats()}
+              disabled={assigningStats}
+              className="bg-gray-100 text-gray-700 text-sm font-semibold px-4 py-1.5 rounded hover:bg-gray-200 disabled:opacity-50 transition-colors"
+            >
+              {assigningStats ? "Saving…" : "Assign"}
+            </button>
+            {game.statsAssigneeEmail ? (
+              <button
+                onClick={() => { setAssigneeEmail(""); handleAssignStats(""); }}
+                disabled={assigningStats}
+                className="text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50"
+              >
+                Clear
+              </button>
+            ) : null}
+          </div>
         </div>
 
         {/* Actions */}

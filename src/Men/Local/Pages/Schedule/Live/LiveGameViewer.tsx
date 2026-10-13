@@ -103,8 +103,14 @@ export default function LiveGameViewer({ game }: { game: any }) {
     msuScore, oppScore, boxScore,
     stats, awayLogo, liveLink,
     isLive, isPaywalled, priceOneScreen, priceTwoScreen,
-    streamKey, gameId,
+    streamKey, gameId, statsAssigneeUid,
   } = state;
+
+  const { user, roles } = useAuth();
+  const myRole = (roles?.[PROGRAM] || "").toLowerCase();
+  const canEditScore = SCORE_EDIT_ROLES.includes(myRole);
+  const isAdmin = myRole === "admin" || myRole === "president";
+  const canEditStats = isAdmin || (!!user?.uid && user.uid === statsAssigneeUid);
 
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
@@ -258,6 +264,24 @@ export default function LiveGameViewer({ game }: { game: any }) {
             </div>
           )}
         </div>
+
+        {canEditScore && (
+          <div className="mb-6">
+            <LiveScoreEditor
+              gameId={gameId}
+              program={PROGRAM}
+              opponent={opponent}
+              msuScore={msuScore}
+              oppScore={oppScore}
+              boxScore={boxScore}
+              currentQuarter={currentQuarter}
+              timeInQuarter={timeInQuarter}
+              canEditStats={canEditStats}
+              stats={stats}
+              onSaved={(data) => dispatch({ type: "REFRESH_GAME", payload: data })}
+            />
+          </div>
+        )}
 
         {/* Donate */}
         <div className="flex items-center justify-between bg-[#5E0009]/5 border border-[#5E0009]/15 rounded-lg px-4 py-3 mb-6">

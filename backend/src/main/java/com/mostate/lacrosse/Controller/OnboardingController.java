@@ -32,6 +32,7 @@ import com.mostate.lacrosse.Service.EmailService;
 import com.mostate.lacrosse.Service.IdentityService;
 import com.mostate.lacrosse.Service.PlayerProfileService;
 import com.mostate.lacrosse.Service.SeasonService;
+import com.mostate.lacrosse.Utils.EmailTemplate;
 import com.mostate.lacrosse.Utils.JsonUtils;
 import com.mostate.lacrosse.Utils.TextSanitizer;
 import jakarta.servlet.http.HttpServletRequest;
@@ -439,108 +440,35 @@ public class OnboardingController {
         return seasonService.getActiveCode();
     }
 
+    private static final String TROUBLE_LOGGING_IN =
+        "<p style=\"font-size:11px;color:#bbb;margin:8px 0 0;\">Trouble logging in? "
+        + "<a href=\"mailto:support@missouristatelacrosse.com\" style=\"color:#bbb;\">support@missouristatelacrosse.com</a></p>";
+
     private static String playerWelcomeEmail(String name, String program, String resetLink, String portalUrl) {
-        return """
-            <!DOCTYPE html>
-            <html lang="en">
-            <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-            <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
-              <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 0;">
-                <tr><td align="center">
-                  <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1);">
-                    <tr>
-                      <td style="background:#5E0009;padding:28px 40px;text-align:center;">
-                        <h1 style="color:#fff;margin:0;font-size:22px;letter-spacing:1px;">MISSOURI STATE %s LACROSSE</h1>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="padding:40px;">
-                        <p style="font-size:16px;color:#333;margin:0 0 16px;">Hey %s,</p>
-                        <p style="font-size:15px;color:#555;margin:0 0 24px;">Welcome to the team! Your account has been created. Set your password using the button below to get access to the player portal.</p>
-                        <div style="text-align:center;margin:32px 0;">
-                          <a href="%s" style="background:#5E0009;color:#fff;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:15px;font-weight:bold;display:inline-block;">Set My Password</a>
-                        </div>
-                        <p style="font-size:15px;color:#555;margin:0 0 12px;">Once logged in, your player portal is here - dues balance and team to-dos:</p>
-                        <div style="text-align:center;margin:0 0 32px;">
-                          <a href="%s" style="background:#f0f0f0;color:#5E0009;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:14px;font-weight:bold;display:inline-block;">Go to My Portal</a>
-                        </div>
-                        <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
-                        <p style="font-size:13px;color:#999;margin:0;">Go Bears! Missouri State %s Lacrosse</p>
-                        <p style="font-size:11px;color:#bbb;margin:8px 0 0;">Trouble logging in? <a href="mailto:support@missouristatelacrosse.com" style="color:#bbb;">support@missouristatelacrosse.com</a></p>
-                      </td>
-                    </tr>
-                  </table>
-                </td></tr>
-              </table>
-            </body>
-            </html>
-            """.formatted(program.toUpperCase(), name, resetLink, portalUrl, program);
+        String body = EmailTemplate.paragraph("Hey " + name + ",")
+            + EmailTemplate.paragraph("Welcome to the team! Your account has been created. Set your password using the button below to get access to the player portal.")
+            + EmailTemplate.button(resetLink, "Set My Password")
+            + EmailTemplate.paragraph("Once logged in, your player portal is here - dues balance and team to-dos:")
+            + EmailTemplate.button(portalUrl, "Go to My Portal")
+            + TROUBLE_LOGGING_IN;
+        return EmailTemplate.wrap(program, body);
     }
 
     private static String parentWelcomeEmail(String parentName, String playerName, String program, String resetLink) {
-        return """
-            <!DOCTYPE html>
-            <html lang="en">
-            <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-            <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
-              <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 0;">
-                <tr><td align="center">
-                  <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1);">
-                    <tr>
-                      <td style="background:#5E0009;padding:28px 40px;text-align:center;">
-                        <h1 style="color:#fff;margin:0;font-size:22px;letter-spacing:1px;">MISSOURI STATE %s LACROSSE</h1>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="padding:40px;">
-                        <p style="font-size:16px;color:#333;margin:0 0 16px;">Hello %s,</p>
-                        <p style="font-size:15px;color:#555;margin:0 0 12px;"><strong>%s</strong> has added you as a parent contact for Missouri State %s Lacrosse.</p>
-                        <p style="font-size:15px;color:#555;margin:0 0 24px;">Set your password using the button below to view your player&rsquo;s payment information and stay up to date with the team.</p>
-                        <div style="text-align:center;margin:32px 0;">
-                          <a href="%s" style="background:#5E0009;color:#fff;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:15px;font-weight:bold;display:inline-block;">Set My Password</a>
-                        </div>
-                        <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
-                        <p style="font-size:13px;color:#999;margin:0;">Go Bears! Missouri State %s Lacrosse</p>
-                        <p style="font-size:11px;color:#bbb;margin:8px 0 0;">Trouble logging in? <a href="mailto:support@missouristatelacrosse.com" style="color:#bbb;">support@missouristatelacrosse.com</a></p>
-                      </td>
-                    </tr>
-                  </table>
-                </td></tr>
-              </table>
-            </body>
-            </html>
-            """.formatted(program.toUpperCase(), parentName, playerName, program, resetLink, program);
+        String body = EmailTemplate.paragraph("Hello " + parentName + ",")
+            + EmailTemplate.paragraph("<strong>" + playerName + "</strong> has added you as a parent contact for Missouri State " + program + " Lacrosse.")
+            + EmailTemplate.paragraph("Set your password using the button below to view your player&rsquo;s payment information and stay up to date with the team.")
+            + EmailTemplate.button(resetLink, "Set My Password")
+            + TROUBLE_LOGGING_IN;
+        return EmailTemplate.wrap(program, body);
     }
 
     private static String parentLinkedNotificationEmail(String parentName, String playerName, String program) {
-        return """
-            <!DOCTYPE html>
-            <html lang="en">
-            <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-            <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
-              <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 0;">
-                <tr><td align="center">
-                  <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1);">
-                    <tr>
-                      <td style="background:#5E0009;padding:28px 40px;text-align:center;">
-                        <h1 style="color:#fff;margin:0;font-size:22px;letter-spacing:1px;">MISSOURI STATE %s LACROSSE</h1>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="padding:40px;">
-                        <p style="font-size:16px;color:#333;margin:0 0 16px;">Hello %s,</p>
-                        <p style="font-size:15px;color:#555;margin:0 0 24px;">You've been added as a parent contact for <strong>%s</strong> at Missouri State %s Lacrosse. Log in with your existing account to view their payment information and stay up to date with the team.</p>
-                        <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
-                        <p style="font-size:13px;color:#999;margin:0;">Go Bears! Missouri State %s Lacrosse</p>
-                        <p style="font-size:11px;color:#bbb;margin:8px 0 0;">Trouble logging in? <a href="mailto:support@missouristatelacrosse.com" style="color:#bbb;">support@missouristatelacrosse.com</a></p>
-                      </td>
-                    </tr>
-                  </table>
-                </td></tr>
-              </table>
-            </body>
-            </html>
-            """.formatted(program.toUpperCase(), parentName, playerName, program, program);
+        String body = EmailTemplate.paragraph("Hello " + parentName + ",")
+            + EmailTemplate.paragraph("You've been added as a parent contact for <strong>" + playerName + "</strong> at Missouri State " + program
+                + " Lacrosse. Log in with your existing account to view their payment information and stay up to date with the team.")
+            + TROUBLE_LOGGING_IN;
+        return EmailTemplate.wrap(program, body);
     }
 
     public record ConsumeInviteRequest(
@@ -599,72 +527,20 @@ public class OnboardingController {
     }
 
     private static String alumniWelcomeEmail(String name, String program, String resetLink) {
-        return """
-            <!DOCTYPE html>
-            <html lang="en">
-            <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-            <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
-              <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 0;">
-                <tr><td align="center">
-                  <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1);">
-                    <tr>
-                      <td style="background:#5E0009;padding:28px 40px;text-align:center;">
-                        <h1 style="color:#fff;margin:0;font-size:22px;letter-spacing:1px;">MISSOURI STATE %s LACROSSE</h1>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="padding:40px;">
-                        <p style="font-size:16px;color:#333;margin:0 0 16px;">Hey %s,</p>
-                        <p style="font-size:15px;color:#555;margin:0 0 16px;">Thank you for your continued support of Missouri State %s Lacrosse, alumni like you are what keep this program going.</p>
-                        <p style="font-size:15px;color:#555;margin:0 0 24px;">Your alumni account has been created. Set your password using the button below to access the alumni portal.</p>
-                        <div style="text-align:center;margin:32px 0;">
-                          <a href="%s" style="background:#5E0009;color:#fff;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:15px;font-weight:bold;display:inline-block;">Set My Password</a>
-                        </div>
-                        <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
-                        <p style="font-size:13px;color:#999;margin:0;">Go Bears! Missouri State %s Lacrosse</p>
-                        <p style="font-size:11px;color:#bbb;margin:8px 0 0;">Trouble logging in? <a href="mailto:support@missouristatelacrosse.com" style="color:#bbb;">support@missouristatelacrosse.com</a></p>
-                      </td>
-                    </tr>
-                  </table>
-                </td></tr>
-              </table>
-            </body>
-            </html>
-            """.formatted(program.toUpperCase(), name, program, resetLink, program);
+        String body = EmailTemplate.paragraph("Hey " + name + ",")
+            + EmailTemplate.paragraph("Thank you for your continued support of Missouri State " + program + " Lacrosse, alumni like you are what keep this program going.")
+            + EmailTemplate.paragraph("Your alumni account has been created. Set your password using the button below to access the alumni portal.")
+            + EmailTemplate.button(resetLink, "Set My Password")
+            + TROUBLE_LOGGING_IN;
+        return EmailTemplate.wrap(program, body);
     }
 
     private static String resendInviteEmail(String name, String resetLink) {
-        return """
-            <!DOCTYPE html>
-            <html lang="en">
-            <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-            <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
-              <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 0;">
-                <tr><td align="center">
-                  <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1);">
-                    <tr>
-                      <td style="background:#5E0009;padding:28px 40px;text-align:center;">
-                        <h1 style="color:#fff;margin:0;font-size:22px;letter-spacing:1px;">MISSOURI STATE LACROSSE</h1>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="padding:40px;">
-                        <p style="font-size:16px;color:#333;margin:0 0 16px;">Hey %s,</p>
-                        <p style="font-size:15px;color:#555;margin:0 0 24px;">An admin sent you a new link to set your password. Click the button below to choose one.</p>
-                        <div style="text-align:center;margin:32px 0;">
-                          <a href="%s" style="background:#5E0009;color:#fff;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:15px;font-weight:bold;display:inline-block;">Set My Password</a>
-                        </div>
-                        <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
-                        <p style="font-size:13px;color:#999;margin:0;">Go Bears! Missouri State Lacrosse</p>
-                        <p style="font-size:11px;color:#bbb;margin:8px 0 0;">Trouble logging in? <a href="mailto:support@missouristatelacrosse.com" style="color:#bbb;">support@missouristatelacrosse.com</a></p>
-                      </td>
-                    </tr>
-                  </table>
-                </td></tr>
-              </table>
-            </body>
-            </html>
-            """.formatted(name, resetLink);
+        String body = EmailTemplate.paragraph("Hey " + name + ",")
+            + EmailTemplate.paragraph("An admin sent you a new link to set your password. Click the button below to choose one.")
+            + EmailTemplate.button(resetLink, "Set My Password")
+            + TROUBLE_LOGGING_IN;
+        return EmailTemplate.wrap(null, body);
     }
 
 

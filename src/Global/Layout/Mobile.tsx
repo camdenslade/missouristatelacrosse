@@ -38,7 +38,13 @@ export default function MobileMenu({
   const isAdmin = programRole === "admin";
   const isPlayer = programRole === "player";
   const isParent = programRole === "parent";
-  const canSeePayments = user && (isAdmin || isPlayer || isParent);
+  // Mirrors the backend's AuthorizationService.ROLE_LADDER - treasurer/vp/president also
+  // land on /manage (dues ledger + ManageTodos), same as admin. Not board - that page shows
+  // everyone's money situation, which is treasurer-and-up territory, not ordinary board members.
+  const ROLE_LADDER = ["user", "parent", "alumni", "player", "board", "treasurer", "vp", "president", "admin"];
+  const myRank = ROLE_LADDER.indexOf((programRole || "").toLowerCase());
+  const isTreasurerOrAbove = myRank >= ROLE_LADDER.indexOf("treasurer");
+  const canSeePayments = user && (isAdmin || isPlayer || isParent || isTreasurerOrAbove);
   const isAdminPlayer = isAdmin && !!playerId;
   const isGlobalAdmin = roles?.men === "admin" || roles?.women === "admin";
 
@@ -92,11 +98,11 @@ export default function MobileMenu({
           </>
         ) : (
           <Link
-            to={programLink(isAdmin ? "/manage" : "/portal")}
+            to={programLink(isAdmin || isTreasurerOrAbove ? "/manage" : "/portal")}
             className={linkHover}
             onClick={() => setOpen(false)}
           >
-            {isAdmin ? "Manage" : "Portal"}
+            {isAdmin || isTreasurerOrAbove ? "Manage" : "Portal"}
           </Link>
         )
       )}
