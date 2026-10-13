@@ -45,6 +45,7 @@ import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Service.EmailService;
 import com.mostate.lacrosse.Service.S3Service;
 import com.mostate.lacrosse.Service.StripeService;
+import com.mostate.lacrosse.Utils.EmailTemplate;
 import com.mostate.lacrosse.Utils.JsonUtils;
 import com.mostate.lacrosse.Utils.TextSanitizer;
 import com.stripe.exception.StripeException;
@@ -284,7 +285,7 @@ public class EventsController {
         // Save registration
         EventRegistration reg = new EventRegistration();
         reg.setEventId(id);
-        reg.setPayerName(payload.payerName() != null ? TextSanitizer.clean(payload.payerName()) : null);
+        reg.setPayerName(payload.payerName() != null ? TextSanitizer.titleCaseName(payload.payerName()) : null);
         String normalizedPayerEmail = payload.payerEmail() != null ? payload.payerEmail().trim().toLowerCase() : null;
         reg.setPayerEmail(normalizedPayerEmail);
         reg.setPaypalOrderId(payload.paypalOrderId());
@@ -778,17 +779,14 @@ public class EventsController {
             ? "<p>Have questions? Reply to " + captainEmail + ".</p>"
             : "";
 
-        return "<div style='font-family:sans-serif;max-width:500px'>"
-            + "<h2 style='color:#5E0009'>Missouri State Lacrosse</h2>"
-            + "<p>Hi there,</p>"
-            + "<p>" + identity + " has invited you to join Missouri State " + programLabel + " Lacrosse for "
-            + "<strong>" + event.getName() + "</strong>.</p>"
-            + "<p>" + teamText + "</p>"
-            + "<p>The link below will pre-fill the team-specific info we already captured so you can finish fast:</p>"
-            + "<p><a href='" + link + "'>Complete your registration</a></p>"
-            + contact
-            + "<p>Go Bears!</p>"
-            + "</div>";
+        String body = EmailTemplate.paragraph("Hi there,")
+            + EmailTemplate.paragraph(identity + " has invited you to join Missouri State " + programLabel
+                + " Lacrosse for <strong>" + event.getName() + "</strong>.")
+            + EmailTemplate.paragraph(teamText)
+            + EmailTemplate.paragraph("The link below will pre-fill the team-specific info we already captured so you can finish fast:")
+            + EmailTemplate.button(link, "Complete Your Registration")
+            + contact;
+        return EmailTemplate.wrap(programLabel, body);
     }
 
     private void notifyTeammates(

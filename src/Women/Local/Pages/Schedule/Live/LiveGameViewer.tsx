@@ -4,8 +4,14 @@ import SockJS from "sockjs-client";
 
 import KeyGate from "../../../../../Global/Common/components/KeyGate";
 import LiveChat from "../../../../../Global/Common/components/LiveChat";
+import LiveScoreEditor from "../../../../../Global/Common/components/LiveScoreEditor";
 import StreamPlayer from "../../../../../Global/Common/components/StreamPlayer";
+import { useAuth } from "../../../../../Global/Context/AuthContext";
 import API_BASE from "../../../../../Services/API";
+
+// Matches the backend's AuthorizationService.ROLE_LADDER - anyone at "parent" or above
+// can keep the live score current (see GamesController.isScoreEditor).
+const SCORE_EDIT_ROLES = ["parent", "alumni", "player", "board", "treasurer", "vp", "president", "admin"];
 
 const PROGRAM = "women";
 const MSU_LOGO = "/assets/bears.png";
@@ -39,6 +45,7 @@ type GameState = {
   priceTwoScreen: number;
   streamKey: string;
   gameId: string;
+  statsAssigneeUid: string;
 };
 
 const parseBoxScore = (bs: any): BoxScoreMap => {
@@ -64,6 +71,7 @@ const buildInitialState = (g: any): GameState => ({
   priceTwoScreen: g?.priceTwoScreen ?? 10,
   streamKey: g?.streamKey || "",
   gameId: g?.id || "",
+  statsAssigneeUid: g?.statsAssigneeUid || "",
 });
 
 function reducer(state: GameState, action: any): GameState {
@@ -94,8 +102,14 @@ export default function LiveGameViewer({ game }: { game: any }) {
     msuScore, oppScore, boxScore,
     stats, awayLogo, liveLink,
     isLive, isPaywalled, priceOneScreen, priceTwoScreen,
-    streamKey, gameId,
+    streamKey, gameId, statsAssigneeUid,
   } = state;
+
+  const { user, roles } = useAuth();
+  const myRole = (roles?.[PROGRAM] || "").toLowerCase();
+  const canEditScore = SCORE_EDIT_ROLES.includes(myRole);
+  const isAdmin = myRole === "admin" || myRole === "president";
+  const canEditStats = isAdmin || (!!user?.uid && user.uid === statsAssigneeUid);
 
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
@@ -249,6 +263,24 @@ export default function LiveGameViewer({ game }: { game: any }) {
             </div>
           )}
         </div>
+
+        {canEditScore && (
+          <div className="mb-6">
+            <LiveScoreEditor
+              gameId={gameId}
+              program={PROGRAM}
+              opponent={opponent}
+              msuScore={msuScore}
+              oppScore={oppScore}
+              boxScore={boxScore}
+              currentQuarter={currentQuarter}
+              timeInQuarter={timeInQuarter}
+              canEditStats={canEditStats}
+              stats={stats}
+              onSaved={(data) => dispatch({ type: "REFRESH_GAME", payload: data })}
+            />
+          </div>
+        )}
 
         {/* Donate */}
         <div className="flex items-center justify-between bg-[#5E0009]/5 border border-[#5E0009]/15 rounded-lg px-4 py-3 mb-6">

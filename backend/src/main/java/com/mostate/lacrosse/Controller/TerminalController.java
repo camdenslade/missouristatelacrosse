@@ -313,12 +313,16 @@ public class TerminalController {
         return sendReceiptTo(body.email(), body.paymentIntentId());
     }
 
+    /**
+     * Sends a receipt regardless of whether the charge actually succeeded - the person
+     * running the register may want to hand over a record of a declined/failed attempt
+     * too (e.g. for their own books, or because the customer asked "can you email me what
+     * just happened"). The email wording just reflects whatever Stripe says the outcome was.
+     */
     private ResponseEntity<?> sendReceiptTo(String email, String paymentIntentId) {
         try {
             PaymentIntent intent = PaymentIntent.retrieve(paymentIntentId);
-            if (!"succeeded".equals(intent.getStatus())) {
-                return ResponseEntity.badRequest().body(new ErrorResponse("Payment has not succeeded"));
-            }
+            boolean succeeded = "succeeded".equals(intent.getStatus());
 
             String amount = java.math.BigDecimal.valueOf(intent.getAmount(), 2).toPlainString();
             StringBuilder itemsHtml = new StringBuilder();
@@ -336,16 +340,27 @@ public class TerminalController {
             }
 
             String programLabel = "women".equals(intent.getMetadata().get("program")) ? "Women's" : "Men's";
-            String body_ = EmailTemplate.paragraph("Thank you for your purchase!")
-                + (itemsHtml.length() > 0 ? EmailTemplate.paragraph(itemsHtml.toString()) : "")
-                + EmailTemplate.paragraph("<b>Total: $" + amount + "</b>");
+            String subject;
+            String body_;
+            if (succeeded) {
+                subject = "Missouri State Lacrosse - Receipt";
+                body_ = EmailTemplate.paragraph("Thank you for your purchase!")
+                    + (itemsHtml.length() > 0 ? EmailTemplate.paragraph(itemsHtml.toString()) : "")
+                    + EmailTemplate.paragraph("<b>Total: $" + amount + "</b>");
+            } else {
+                String reason = intent.getLastPaymentError() != null && intent.getLastPaymentError().getMessage() != null
+                    ? intent.getLastPaymentError().getMessage()
+                    : "the card was not charged";
+                subject = "Missouri State Lacrosse - Payment Not Completed";
+                body_ = EmailTemplate.paragraph("This payment attempt did not go through.")
+                    + (itemsHtml.length() > 0 ? EmailTemplate.paragraph(itemsHtml.toString()) : "")
+                    + EmailTemplate.paragraph("Attempted amount: $" + amount)
+                    + EmailTemplate.paragraph("Reason: " + reason)
+                    + EmailTemplate.paragraph("No charge was made to your card. Please see someone at the register to try again.");
+            }
 
-            emailService.sendEmail(
-                email,
-                "Missouri State Lacrosse - Receipt",
-                EmailTemplate.wrap(programLabel, body_)
-            );
-            return ResponseEntity.ok(Map.of("sent", true));
+            emailService.sendEmail(email, subject, EmailTemplate.wrap(programLabel, body_));
+            return ResponseEntity.ok(Map.of("sent", true, "succeeded", succeeded));
         } catch (StripeException e) {
             return ResponseEntity.internalServerError().body(new ErrorResponse(e.getMessage()));
         }

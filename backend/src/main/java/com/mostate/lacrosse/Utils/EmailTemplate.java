@@ -24,15 +24,20 @@ public final class EmailTemplate {
 
         return String.format("""
             <html lang="en">
-            <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width,initial-scale=1">
+              <meta name="color-scheme" content="light only">
+              <meta name="supported-color-schemes" content="light only">
+            </head>
             <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
               <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 0;">
                 <tr>
                   <td align="center">
                     <table width="480" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
                       <tr>
-                        <td style="background:#5E0009;padding:28px 40px;text-align:center;">
-                          <h1 style="color:#fff;margin:0;font-size:22px;letter-spacing:1px;">%s</h1>
+                        <td bgcolor="#5E0009" style="background-color:#5E0009;padding:28px 40px;text-align:center;">
+                          <h1 style="color:#ffffff;margin:0;font-size:22px;letter-spacing:1px;">%s</h1>
                         </td>
                       </tr>
                       <tr>

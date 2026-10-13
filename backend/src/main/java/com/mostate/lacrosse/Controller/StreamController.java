@@ -431,18 +431,15 @@ public class StreamController {
     private void sendKeyEmail(String to, String name, String keyCode, String tier, String gameLabel) {
         String tierLabel = "TWO_SCREEN".equals(tier) ? "2-Screen" : "1-Screen";
         String subject   = "Your Missouri State Lacrosse Stream Key — " + gameLabel;
-        String body      = "<div style='font-family:sans-serif;max-width:500px'>"
-                + "<h2 style='color:#5E0009'>Missouri State Lacrosse</h2>"
-                + "<p>Hi " + name + ",</p>"
-                + "<p>Here is your stream access key for <strong>" + gameLabel + "</strong>:</p>"
-                + "<div style='font-size:24px;font-weight:bold;letter-spacing:3px;"
-                + "background:#f5f5f5;padding:16px;border-radius:8px;text-align:center'>"
-                + keyCode + "</div>"
-                + "<p><strong>Tier:</strong> " + tierLabel + "</p>"
-                + "<p>Your key is valid for 10 hours from when you first use it. "
-                + "Save this email in case you need to re-enter your key.</p>"
-                + "<p>Go Bears!</p>"
-                + "</div>";
+        String keyBlock  = "<div style=\"font-size:24px;font-weight:bold;letter-spacing:3px;"
+                + "background:#f5f5f5;padding:16px;border-radius:8px;text-align:center;margin:0 0 16px;\">"
+                + keyCode + "</div>";
+        String body = com.mostate.lacrosse.Utils.EmailTemplate.paragraph("Hi " + name + ",")
+                + com.mostate.lacrosse.Utils.EmailTemplate.paragraph("Here is your stream access key for <strong>" + gameLabel + "</strong>:")
+                + keyBlock
+                + com.mostate.lacrosse.Utils.EmailTemplate.paragraph("<strong>Tier:</strong> " + tierLabel)
+                + com.mostate.lacrosse.Utils.EmailTemplate.paragraph("Your key is valid for 10 hours from when you first use it. Save this email in case you need to re-enter your key.");
+        body = com.mostate.lacrosse.Utils.EmailTemplate.wrap(null, body);
 
         try {
             emailService.sendEmail(to, subject, body);

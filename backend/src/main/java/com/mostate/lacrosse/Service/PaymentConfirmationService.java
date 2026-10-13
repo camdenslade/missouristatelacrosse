@@ -103,14 +103,11 @@ public class PaymentConfirmationService {
                 detail = "Your support helps our athletes, staff, and program grow stronger every day.";
             }
         }
-        String footer = "Questions? Write to billing@missouristatelacrosse.com. Go Bears!";
-        return "<div style=\"font-family:Arial,sans-serif;font-size:15px;color:#333;max-width:560px;\">"
-            + "<p>Hi " + name + ",</p>"
-            + "<p>" + lead + "</p>"
-            + "<p>" + detail + "</p>"
-            + "<p style=\"color:#777;font-size:13px;\">" + footer + "</p>"
-            + "<p style=\"color:#5E0009;font-weight:bold;\">Missouri State Lacrosse</p>"
-            + "</div>";
+        String body = com.mostate.lacrosse.Utils.EmailTemplate.paragraph("Hi " + name + ",")
+            + com.mostate.lacrosse.Utils.EmailTemplate.paragraph(lead)
+            + com.mostate.lacrosse.Utils.EmailTemplate.paragraph(detail)
+            + "<p style=\"color:#777;font-size:13px;margin:16px 0 0;\">Questions? Write to billing@missouristatelacrosse.com.</p>";
+        return com.mostate.lacrosse.Utils.EmailTemplate.wrap(null, body);
     }
 
     private static String amountText(BigDecimal amount) {

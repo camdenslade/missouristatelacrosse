@@ -21,3 +21,14 @@ export async function updateLiveGame(gameId, updates = {}){
   }
 }
 
+export async function setStatsAssignee(gameId, email) {
+  if (!gameId) {
+    console.error("Missing gameId for stats assignee update");
+    return;
+  }
+  await apiRequest(`/api/games/${gameId}/stats-assignee`, {
+    method: "PUT",
+    json: { email },
+  });
+}
+

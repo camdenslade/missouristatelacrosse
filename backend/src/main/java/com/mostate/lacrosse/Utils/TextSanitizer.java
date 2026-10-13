@@ -46,6 +46,57 @@ public final class TextSanitizer {
         return out.toString();
     }
 
+    /**
+     * "tyler cole" / "TYLER COLE" -> "Tyler Cole" - fixes up free-typed person names so
+     * things like event registrant lists and raffle winner names display consistently,
+     * regardless of how someone capitalized it in the form. Leaves names that already have
+     * mixed case alone where a word has an uppercase letter after the first (e.g. "McCole",
+     * "O'Brien") since forcing those to plain title case would make them wrong.
+     */
+    public static String titleCaseName(String input) {
+        String cleaned = clean(input);
+        if (cleaned == null || cleaned.isEmpty()) {
+            return cleaned;
+        }
+        StringBuilder out = new StringBuilder(cleaned.length());
+        boolean startOfWord = true;
+        for (int i = 0; i < cleaned.length(); i++) {
+            char c = cleaned.charAt(i);
+            if (Character.isLetter(c)) {
+                out.append(startOfWord ? Character.toUpperCase(c) : Character.toLowerCase(c));
+                startOfWord = false;
+            } else {
+                out.append(c);
+                // Hyphens and apostrophes start a new capitalized segment ("Smith-Jones",
+                // "O'Brien"); everything else (spaces, periods) does too.
+                startOfWord = true;
+            }
+        }
+        String result = out.toString();
+        // If the original already had a capital letter past a word's first character
+        // (e.g. "McCole", "DeShawn"), trust the author's casing instead of flattening it.
+        if (hasInteriorCapital(cleaned)) {
+            return cleaned;
+        }
+        return result;
+    }
+
+    private static boolean hasInteriorCapital(String s) {
+        boolean startOfWord = true;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (Character.isLetter(c)) {
+                if (!startOfWord && Character.isUpperCase(c)) {
+                    return true;
+                }
+                startOfWord = false;
+            } else {
+                startOfWord = true;
+            }
+        }
+        return false;
+    }
+
     public static List<String> cleanStringList(List<String> input) {
         if (input == null) {
             return null;
