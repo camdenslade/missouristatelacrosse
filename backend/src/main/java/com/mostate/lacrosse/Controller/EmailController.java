@@ -17,6 +17,7 @@ import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Service.EmailService;
 import com.mostate.lacrosse.Service.PaymentConfirmationService;
+import com.mostate.lacrosse.Utils.EmailTemplate;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -68,11 +69,19 @@ public class EmailController {
         if (!isAdmin(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
+        // "Simple" mode in EmailCenter.tsx sends plain text here instead of a full custom
+        // template, so it gets wrapped in our usual maroon-header/footer look instead of
+        // going out as an unstyled, unbranded email.
+        String programLabel = "women".equalsIgnoreCase(program) ? "Women's" : "Men's";
+        String finalBody = Boolean.TRUE.equals(req.getUseBranding())
+            ? EmailTemplate.wrap(programLabel, EmailTemplate.paragraph(htmlText(req.getBody())))
+            : req.getBody();
+
         int success = 0;
         int failures = 0;
         for (String to : req.getRecipients()) {
             try {
-                emailService.sendEmail(to, req.getSubject(), req.getBody());
+                emailService.sendEmail(to, req.getSubject(), finalBody);
                 success++;
             } catch (Exception e) {
                 failures++;
@@ -212,12 +221,15 @@ public class EmailController {
         private String subject;
         @NotBlank
         private String body;
+        private Boolean useBranding;
         public List<String> getRecipients() { return recipients; }
         public void setRecipients(List<String> recipients) { this.recipients = recipients; }
         public String getSubject() { return subject; }
         public void setSubject(String subject) { this.subject = subject; }
         public String getBody() { return body; }
         public void setBody(String body) { this.body = body; }
+        public Boolean getUseBranding() { return useBranding; }
+        public void setUseBranding(Boolean useBranding) { this.useBranding = useBranding; }
     }
 
     public record SponsorEmailRequest(

@@ -11,6 +11,8 @@ import { apiRequest } from "../../../../Services/API";
 type Group = { id: string; name: string; members: string[] };
 type ApiUser = { email?: string | null; roles?: Record<string, string> };
 
+type ComposeMode = "simple" | "custom";
+
 type State = {
   groups: Group[];
   selectedGroupId: string;
@@ -25,6 +27,8 @@ type State = {
   showConfirm: boolean;
   importRole: string;
   importing: boolean;
+  composeMode: ComposeMode;
+  simpleBody: string;
 };
 
 type Action =
@@ -48,6 +52,8 @@ const initialState: State = {
   showConfirm: false,
   importRole: "alumni",
   importing: false,
+  composeMode: "simple",
+  simpleBody: "",
 };
 
 function reducer(state: State, action: Action): State {
@@ -95,6 +101,8 @@ export default function EmailCenter() {
     showConfirm,
     importRole,
     importing,
+    composeMode,
+    simpleBody,
   } = state;
 
   const emailEditorRef = useRef<EditorRef>(null);
@@ -205,36 +213,50 @@ export default function EmailCenter() {
     }
   };
 
+  const sendPayload = async (body: string, useBranding: boolean) => {
+    if (!selectedGroup) return;
+    set("sending", true);
+    set("showConfirm", false);
+    try {
+      await apiRequest("/api/email/group", {
+        method: "POST",
+        json: { recipients: selectedGroup.members, subject, body, useBranding },
+      });
+      toast.success(
+        `Sent to "${selectedGroup.name}" (${selectedGroup.members.length} recipients)`
+      );
+      set("subject", "");
+      if (composeMode === "simple") {
+        set("simpleBody", "");
+      } else {
+        emailEditorRef.current?.editor?.loadBlank();
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Send failed");
+    } finally {
+      set("sending", false);
+    }
+  };
+
   const handleSend = () => {
     if (!selectedGroup) return toast.error("Select a recipient group");
     if (!selectedGroup.members.length)
       return toast.error("This group has no members");
     if (!subject.trim()) return toast.error("Subject is required");
 
+    if (composeMode === "simple") {
+      if (!simpleBody.trim()) return toast.error("Email body cannot be empty");
+      sendPayload(simpleBody, true);
+      return;
+    }
+
     const editor = emailEditorRef.current?.editor;
     if (!editor) return toast.error("Editor isn't ready yet - try again in a moment.");
 
-    editor.exportHtml(async (data) => {
+    editor.exportHtml((data) => {
       const bodyHtml = data?.html ?? "";
       if (!bodyHtml.trim()) return toast.error("Email body cannot be empty");
-
-      set("sending", true);
-      set("showConfirm", false);
-      try {
-        await apiRequest("/api/email/group", {
-          method: "POST",
-          json: { recipients: selectedGroup.members, subject, body: bodyHtml },
-        });
-        toast.success(
-          `Sent to "${selectedGroup.name}" (${selectedGroup.members.length} recipients)`
-        );
-        set("subject", "");
-        editor.loadBlank();
-      } catch (err: unknown) {
-        toast.error(err instanceof Error ? err.message : "Send failed");
-      } finally {
-        set("sending", false);
-      }
+      sendPayload(bodyHtml, false);
     });
   };
 
@@ -515,7 +537,7 @@ export default function EmailCenter() {
           </div>
 
           {/* Subject field */}
-          <div className="flex items-center px-4 sm:px-6 py-2.5">
+          <div className="flex items-center px-4 sm:px-6 py-2.5 border-b border-gray-100">
             <span className="w-16 text-sm font-medium text-gray-400 shrink-0">
               Subject:
             </span>
@@ -527,13 +549,52 @@ export default function EmailCenter() {
               className="flex-1 min-w-0 text-sm focus:outline-none text-gray-800 placeholder-gray-300 bg-transparent"
             />
           </div>
+
+          {/* Compose mode */}
+          <div className="flex items-center gap-1 px-4 sm:px-6 py-2">
+            <button
+              onClick={() => set("composeMode", "simple")}
+              className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
+                composeMode === "simple"
+                  ? "bg-gray-700 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              Simple Branded Email
+            </button>
+            <button
+              onClick={() => set("composeMode", "custom")}
+              className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
+                composeMode === "custom"
+                  ? "bg-gray-700 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              Custom Template
+            </button>
+          </div>
         </div>
 
-        {/* Drag-and-drop template builder (Unlayer) - exportHtml() in handleSend() pulls
-            the finished HTML out of this at send time, no manual sync needed. */}
-        <div className="flex-1 min-h-[480px]">
-          <EmailEditor ref={emailEditorRef} minHeight="100%" />
-        </div>
+        {composeMode === "simple" ? (
+          <div className="flex-1 min-h-[480px] bg-white flex flex-col">
+            <p className="px-4 sm:px-6 pt-3 text-xs text-gray-400">
+              Write your message below - it'll go out with our usual maroon header and footer,
+              not as a plain unstyled email.
+            </p>
+            <textarea
+              value={simpleBody}
+              onChange={(e) => set("simpleBody", e.target.value)}
+              placeholder="Write your email here..."
+              className="flex-1 w-full px-4 sm:px-8 py-4 text-sm text-gray-800 leading-relaxed focus:outline-none resize-none"
+            />
+          </div>
+        ) : (
+          /* Drag-and-drop template builder (Unlayer) - exportHtml() in handleSend() pulls
+             the finished HTML out of this at send time, no manual sync needed. */
+          <div className="flex-1 min-h-[480px]">
+            <EmailEditor ref={emailEditorRef} minHeight="100%" />
+          </div>
+        )}
 
         {/* Footer */}
         <div className="bg-white border-t border-gray-200 px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
