@@ -312,7 +312,7 @@ export default function EmailCenter() {
               />
               <button
                 onClick={handleAddGroup}
-                className="text-xs bg-blue-600 text-white px-2.5 py-1 rounded-lg hover:bg-blue-700"
+                className="text-xs bg-gray-700 text-white px-2.5 py-1 rounded-lg hover:bg-gray-800"
               >
                 Add
               </button>
@@ -404,7 +404,7 @@ export default function EmailCenter() {
                       />
                       <button
                         onClick={handleAddEmail}
-                        className="text-xs bg-green-600 text-white px-2.5 py-1 rounded-lg hover:bg-green-700 font-medium"
+                        className="text-xs bg-gray-700 text-white px-2.5 py-1 rounded-lg hover:bg-gray-800 font-medium"
                       >
                         Add
                       </button>

@@ -303,7 +303,7 @@ export default function ManageFundraisers() {
                     <button
                       onClick={() => handleToggleActive(f)}
                       className={`text-xs px-2 py-1 rounded-full font-semibold uppercase tracking-wide ${
-                        f.active ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        f.active ? "bg-gray-700 text-white hover:bg-gray-800" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                       }`}
                     >
                       {f.active ? "Active" : "Activate"}
@@ -313,7 +313,7 @@ export default function ManageFundraisers() {
                     <button
                       onClick={() => handleTogglePublished(f)}
                       className={`text-xs px-2 py-1 rounded-full font-semibold uppercase tracking-wide ${
-                        f.published ? "bg-blue-50 text-blue-700 hover:bg-blue-100" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                        f.published ? "bg-gray-700 text-white hover:bg-gray-800" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                       }`}
                     >
                       {f.published ? "Published" : "Draft"}
@@ -326,7 +326,7 @@ export default function ManageFundraisers() {
                           setImageItem(fundraiserToImage(f)[0] ?? null);
                           dispatch({ type: "OPEN_EDIT", fundraiser: f });
                         }}
-                        className="text-xs px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium"
+                        className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
                       >
                         Edit
                       </button>

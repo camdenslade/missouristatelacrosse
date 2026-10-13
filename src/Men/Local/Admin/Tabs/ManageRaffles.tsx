@@ -486,7 +486,7 @@ export default function ManageRaffles() {
                       {(raffle.status === "closed" || raffle.status === "drawn") && (
                         <button
                           onClick={() => handleReopen(raffle)}
-                          className="text-xs px-2 py-1 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 font-medium"
+                          className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
                         >
                           Reopen
                         </button>
@@ -496,7 +496,7 @@ export default function ManageRaffles() {
                           setImageItems(raffleToImages(raffle));
                           dispatch({ type: "OPEN_EDIT", raffle });
                         }}
-                        className="text-xs px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium"
+                        className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
                       >
                         Edit
                       </button>
@@ -807,7 +807,7 @@ function EntriesView({
             </div>
             <button
               onClick={onToggleLive}
-              className={`mt-1 px-3 py-1.5 text-sm rounded-lg font-medium text-white ${raffle.isLive ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}`}
+              className={`mt-1 px-3 py-1.5 text-sm rounded-lg font-medium text-white ${raffle.isLive ? "bg-red-600 hover:bg-red-700" : "bg-gray-700 hover:bg-gray-800"}`}
             >
               {raffle.isLive ? "End Stream" : "Go Live"}
             </button>
@@ -847,7 +847,7 @@ function EntriesView({
         {(raffle.status === "closed" || raffle.status === "drawn") && (
           <button
             onClick={() => onReopen(raffle)}
-            className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+            className="px-3 py-1.5 text-sm bg-gray-700 text-white rounded-lg hover:bg-gray-800 font-medium"
           >
             Reopen
           </button>

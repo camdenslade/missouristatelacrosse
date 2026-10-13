@@ -419,7 +419,7 @@ export default function ManageCustomListings() {
                               className={`text-xs px-2.5 py-1 rounded-lg font-medium transition ${
                                 editingVariantId === v.id
                                   ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                                  : "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                               }`}
                             >
                               {editingVariantId === v.id ? "Cancel" : "Edit"}

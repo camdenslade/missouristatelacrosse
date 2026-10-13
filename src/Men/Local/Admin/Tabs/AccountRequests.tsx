@@ -278,7 +278,7 @@ export default function ManageAccountRequests() {
             <button
               onClick={handleOnboardAlumni}
               disabled={onboardingAlumni}
-              className="px-5 py-2 bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-800 transition disabled:opacity-60"
+              className="px-5 py-2 bg-gray-700 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition disabled:opacity-60"
             >
               {onboardingAlumni ? "Sending…" : "Send Alumni Invite"}
             </button>
@@ -356,7 +356,7 @@ export default function ManageAccountRequests() {
                     ))}
                   </select>
                   <button onClick={() => approveRequest(req.id)}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition">
+                    className="px-4 py-2 bg-gray-700 text-white rounded-lg text-sm hover:bg-gray-800 transition">
                     Approve
                   </button>
                   <button onClick={() => rejectRequest(req.id)}
