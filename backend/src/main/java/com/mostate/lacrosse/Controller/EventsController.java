@@ -505,6 +505,9 @@ public class EventsController {
         if (payload.price() != null) {
             event.setPrice(payload.price());
         }
+        if (payload.acceptsCash() != null) {
+            event.setAcceptsCash(payload.acceptsCash());
+        }
         if (payload.teamSize() != null) {
             event.setTeamSize(payload.teamSize());
         }
@@ -525,7 +528,7 @@ public class EventsController {
             e.getId(), e.getName(), e.getSlug(), e.getAddress(), e.getMapsLink(),
             e.getStartTime(), e.getEndTime(), e.getDescription(),
             s3Service.toPresignedUrl(e.getImage(), IMAGE_TTL),
-            e.getFields(), e.getPrice(), e.getTeamSize(), e.isPublished(),
+            e.getFields(), e.getPrice(), e.isAcceptsCash(), e.getTeamSize(), e.isPublished(),
             regCount, e.getCreatedAt(), e.getUpdatedAt()
         );
     }
@@ -861,6 +864,7 @@ public class EventsController {
         String description,
         String fields,
         BigDecimal price,
+        Boolean acceptsCash,
         Integer teamSize,
         Boolean published,
         String image
@@ -878,6 +882,7 @@ public class EventsController {
         String image,
         String fields,
         BigDecimal price,
+        boolean acceptsCash,
         int teamSize,
         boolean published,
         long registrationCount,
