@@ -21,6 +21,7 @@ import com.mostate.lacrosse.Repository.EventPosItemRepository;
 import com.mostate.lacrosse.Repository.EventRegistrationRepository;
 import com.mostate.lacrosse.Repository.EventRepository;
 import com.mostate.lacrosse.Service.EmailService;
+import com.mostate.lacrosse.Service.PaymentReceiptService;
 import com.mostate.lacrosse.Utils.EmailTemplate;
 import com.mostate.lacrosse.Utils.JsonUtils;
 import com.stripe.exception.StripeException;
@@ -49,17 +50,20 @@ public class TerminalController {
     private final EventPosItemRepository posItemRepository;
     private final EventRegistrationRepository registrationRepository;
     private final EmailService emailService;
+    private final PaymentReceiptService receiptService;
 
     public TerminalController(
         EventRepository eventRepository,
         EventPosItemRepository posItemRepository,
         EventRegistrationRepository registrationRepository,
-        EmailService emailService
+        EmailService emailService,
+        PaymentReceiptService receiptService
     ) {
         this.eventRepository = eventRepository;
         this.posItemRepository = posItemRepository;
         this.registrationRepository = registrationRepository;
         this.emailService = emailService;
+        this.receiptService = receiptService;
     }
 
     private boolean isAuthorized(String provided) {
@@ -222,6 +226,118 @@ public class TerminalController {
             TenantContext.clear();
         }
     }
+
+    /**
+     * Registration mode's cash option: marks a registrant paid immediately, no Stripe
+     * webhook involved since there's no card charge to wait on. Recorded with provider
+     * "cash" (see PaymentReceiptService.recordReceipt) so reporting can tell it apart from
+     * a card payment even though both land in payment_receipts the same way.
+     */
+    @PostMapping("/registrations/{registrationId}/cash-payment")
+    public ResponseEntity<?> recordCashRegistrationPayment(
+        @RequestHeader(name = "X-Terminal-Secret", required = false) String secret,
+        @PathVariable UUID registrationId,
+        @RequestBody CashPaymentRequest body,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isAuthorized(secret)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Not authorized"));
+        }
+        if (body.amountCents() == null || body.amountCents() <= 0) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("Invalid amount"));
+        }
+        try {
+            TenantContext.setTenant("women".equalsIgnoreCase(program) ? "women" : "men");
+            EventRegistration reg = registrationRepository.findById(registrationId).orElse(null);
+            if (reg == null) return ResponseEntity.notFound().build();
+            if (reg.isPaid()) {
+                return ResponseEntity.badRequest().body(new ErrorResponse("This registrant is already marked paid"));
+            }
+            Event event = eventRepository.findById(reg.getEventId()).orElse(null);
+            if (event == null) return ResponseEntity.notFound().build();
+            java.math.BigDecimal price = event.getPrice() != null ? event.getPrice() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal alreadyPaid = reg.getAmountPaid() != null ? reg.getAmountPaid() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal due = price.subtract(alreadyPaid);
+            if (due.signum() <= 0) {
+                return ResponseEntity.badRequest().body(new ErrorResponse("Nothing owed on this registration"));
+            }
+
+            String cashId = "cash-" + UUID.randomUUID();
+            java.math.BigDecimal amount = java.math.BigDecimal.valueOf(body.amountCents(), 2);
+
+            reg.setPaid(true);
+            reg.setPaidAt(java.time.Instant.now());
+            reg.setAmountPaid(alreadyPaid.add(amount));
+            reg.setPaypalOrderId(cashId);
+            registrationRepository.save(reg);
+
+            Map<String, Object> payload = Map.of(
+                "id", cashId,
+                "status", "COMPLETED",
+                "payer", Map.of(),
+                "purchase_units", List.of(Map.of(
+                    "amount", Map.of("value", amount.toPlainString(), "currency_code", "USD")
+                ))
+            );
+            receiptService.recordReceipt(payload, "event-registration-" + reg.getEventId(), "cash");
+
+            return ResponseEntity.ok(Map.of("id", cashId));
+        } finally {
+            TenantContext.clear();
+        }
+    }
+
+    /**
+     * POS mode's cash option: records a cash sale against an event the same way a card
+     * sale would, just without a Stripe PaymentIntent in the middle.
+     */
+    @PostMapping("/cash-sale")
+    public ResponseEntity<?> recordCashSale(
+        @RequestHeader(name = "X-Terminal-Secret", required = false) String secret,
+        @RequestBody CashSaleRequest body
+    ) {
+        if (!isAuthorized(secret)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Not authorized"));
+        }
+        if (body.amountCents() == null || body.amountCents() <= 0) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("Invalid amount"));
+        }
+        String program = "women".equalsIgnoreCase(body.program()) ? "women" : "men";
+        try {
+            TenantContext.setTenant(program);
+            String cashId = "cash-" + UUID.randomUUID();
+            java.math.BigDecimal amount = java.math.BigDecimal.valueOf(body.amountCents(), 2);
+            String source = (body.eventId() != null && !body.eventId().isBlank())
+                ? "event-pos-" + body.eventId()
+                : "pos-sale";
+
+            Map<String, Object> payload = new java.util.LinkedHashMap<>(Map.of(
+                "id", cashId,
+                "status", "COMPLETED",
+                "payer", Map.of(),
+                "purchase_units", List.of(Map.of(
+                    "amount", Map.of("value", amount.toPlainString(), "currency_code", "USD")
+                ))
+            ));
+            if (body.items() != null && !body.items().isEmpty()) {
+                payload.put("items", body.items());
+            }
+            receiptService.recordReceipt(payload, source, "cash");
+
+            return ResponseEntity.ok(Map.of("id", cashId));
+        } finally {
+            TenantContext.clear();
+        }
+    }
+
+    public record CashPaymentRequest(@NotNull Long amountCents) {}
+
+    public record CashSaleRequest(
+        @NotNull Long amountCents,
+        String eventId,
+        String program,
+        List<SoldItem> items
+    ) {}
 
     /**
      * Registration mode's "send receipt" button - no typed-in email, just sends to
