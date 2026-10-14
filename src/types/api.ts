@@ -283,6 +283,7 @@ export interface ApiEvent {
   image?: string | null;
   fields: ApiEventField[];
   price?: number | null;
+  acceptsCash?: boolean;
   teamSize: number;
   published: boolean;
   registrationCount?: number;

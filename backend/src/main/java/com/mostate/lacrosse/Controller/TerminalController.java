@@ -97,11 +97,12 @@ public class TerminalController {
         }
         try {
             TenantContext.setTenant("women".equalsIgnoreCase(program) ? "women" : "men");
-            List<Map<String, String>> events = eventRepository.findAllByOrderByStartTimeAsc().stream()
-                .map(e -> Map.of(
+            List<Map<String, Object>> events = eventRepository.findAllByOrderByStartTimeAsc().stream()
+                .map(e -> Map.<String, Object>of(
                     "id", e.getId().toString(),
                     "name", e.getName(),
-                    "startTime", e.getStartTime() != null ? e.getStartTime().toString() : ""
+                    "startTime", e.getStartTime() != null ? e.getStartTime().toString() : "",
+                    "acceptsCash", e.isAcceptsCash()
                 ))
                 .toList();
             return ResponseEntity.ok(events);
@@ -255,6 +256,9 @@ public class TerminalController {
             }
             Event event = eventRepository.findById(reg.getEventId()).orElse(null);
             if (event == null) return ResponseEntity.notFound().build();
+            if (!event.isAcceptsCash()) {
+                return ResponseEntity.badRequest().body(new ErrorResponse("Cash payments are not enabled for this event"));
+            }
             java.math.BigDecimal price = event.getPrice() != null ? event.getPrice() : java.math.BigDecimal.ZERO;
             java.math.BigDecimal alreadyPaid = reg.getAmountPaid() != null ? reg.getAmountPaid() : java.math.BigDecimal.ZERO;
             java.math.BigDecimal due = price.subtract(alreadyPaid);
@@ -302,14 +306,20 @@ public class TerminalController {
         if (body.amountCents() == null || body.amountCents() <= 0) {
             return ResponseEntity.badRequest().body(new ErrorResponse("Invalid amount"));
         }
+        if (body.eventId() == null || body.eventId().isBlank()) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("Select an event that accepts cash"));
+        }
         String program = "women".equalsIgnoreCase(body.program()) ? "women" : "men";
         try {
             TenantContext.setTenant(program);
+            Event event = eventRepository.findById(UUID.fromString(body.eventId())).orElse(null);
+            if (event == null) return ResponseEntity.notFound().build();
+            if (!event.isAcceptsCash()) {
+                return ResponseEntity.badRequest().body(new ErrorResponse("Cash payments are not enabled for this event"));
+            }
             String cashId = "cash-" + UUID.randomUUID();
             java.math.BigDecimal amount = java.math.BigDecimal.valueOf(body.amountCents(), 2);
-            String source = (body.eventId() != null && !body.eventId().isBlank())
-                ? "event-pos-" + body.eventId()
-                : "pos-sale";
+            String source = "event-pos-" + body.eventId();
 
             Map<String, Object> payload = new java.util.LinkedHashMap<>(Map.of(
                 "id", cashId,

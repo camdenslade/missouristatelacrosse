@@ -53,6 +53,7 @@ type FormState = {
   endTime: string;
   description: string;
   price: string;
+  acceptsCash: boolean;
   teamSize: string;
   published: boolean;
   image: string;
@@ -67,6 +68,7 @@ function emptyForm(): FormState {
     endTime: "",
     description: "",
     price: "",
+    acceptsCash: false,
     teamSize: "1",
     published: false,
     image: "",
@@ -82,6 +84,7 @@ function eventToForm(e: ApiEvent): FormState {
     endTime: e.endTime ? toLocalInput(e.endTime) : "",
     description: e.description ?? "",
     price: e.price != null ? String(e.price) : "",
+    acceptsCash: e.acceptsCash ?? false,
     teamSize: String(e.teamSize ?? 1),
     published: e.published ?? false,
     image: e.image ?? "",
@@ -268,6 +271,7 @@ export default function ManageEvents() {
       description: f.description.trim() || undefined,
       image: imageUrl || undefined,
       price: f.price ? parseFloat(f.price) : null,
+      acceptsCash: f.acceptsCash,
       teamSize: parseInt(f.teamSize, 10) || 1,
       published: f.published,
       fields: f.fields,
@@ -606,6 +610,21 @@ function EventForm({
           />
           <span className="text-sm font-medium text-gray-700">Published (visible to public)</span>
         </label>
+
+        {/* Accept Cash */}
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={f.acceptsCash}
+            onChange={(e) => dispatch({ type: "SET_FORM_FIELD", key: "acceptsCash", value: e.target.checked })}
+            className="w-4 h-4 accent-[#5E0009]"
+          />
+          <span className="text-sm font-medium text-gray-700">Accept Cash (Tap to Pay app)</span>
+        </label>
+        <p className="text-xs text-gray-400 -mt-2 ml-6">
+          Lets the register app offer "Paid in Cash" as an option for this event, alongside
+          card payment.
+        </p>
 
         {/* Field Builder */}
         <div>

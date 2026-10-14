@@ -41,6 +41,9 @@ public class Event {
 
     private BigDecimal price;
 
+    @Column(name = "accepts_cash")
+    private boolean acceptsCash = false;
+
     @Column(name = "team_size")
     private int teamSize = 1;
 
@@ -95,6 +98,9 @@ public class Event {
 
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
+
+    public boolean isAcceptsCash() { return acceptsCash; }
+    public void setAcceptsCash(boolean acceptsCash) { this.acceptsCash = acceptsCash; }
 
     public int getTeamSize() { return teamSize; }
     public void setTeamSize(int teamSize) { this.teamSize = teamSize; }
