@@ -21,7 +21,7 @@ import java.util.Optional;
 @Service
 public class PaymentConfirmationService {
 
-    public enum Kind { ORDER, DONATION, FUNDRAISER }
+    public enum Kind { ORDER, DONATION, FUNDRAISER, EVENT }
 
     public enum Result { SENT, ALREADY_SENT, NOT_FOUND, NOT_COMPLETED, NO_EMAIL, FAILED }
 
@@ -75,6 +75,7 @@ public class PaymentConfirmationService {
             case ORDER -> "Order Receipt - Missouri State Lacrosse";
             case DONATION -> "Thank You for Supporting Missouri State Lacrosse";
             case FUNDRAISER -> "Thank You for Supporting Missouri State Lacrosse";
+            case EVENT -> "Receipt - Missouri State Lacrosse";
         };
     }
 
@@ -97,6 +98,10 @@ public class PaymentConfirmationService {
                 detail = "Your support makes a real difference for our athletes. We are a non-scholarship organization "
                     + "supported by player dues and fundraising. All donations are tax deductible: Missouri State Lacrosse "
                     + "is a registered 501(c)(3) organization.";
+            }
+            case EVENT -> {
+                lead = "Thank you for your payment" + (amount.isEmpty() ? "" : " of " + amount) + "!";
+                detail = "Your registration/payment reference is <strong>" + orderId + "</strong>.";
             }
             default -> {
                 lead = "Thank you for your generous donation" + (amount.isEmpty() ? "" : " of " + amount) + " to Missouri State Lacrosse.";

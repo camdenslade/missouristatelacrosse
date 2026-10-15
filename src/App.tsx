@@ -26,6 +26,7 @@ const AdminDashboard = lazyPage(() => import("./Men/Local/Admin/AdminDash"));
 const Donate = lazyPage(() => import("./Men/Local/Pages/Donate/Donate"));
 const DonateSuccess = lazyPage(() => import("./Men/Local/Pages/Donate/DonateSuccess"));
 const Dues = lazyPage(() => import("./Men/Local/Pages/Dues/Dues"));
+const EventCheckIn = lazyPage(() => import("./Men/Local/Pages/EventSignup/EventCheckIn"));
 const EventDetail = lazyPage(() => import("./Men/Local/Pages/EventSignup/EventDetail"));
 const EventSignup = lazyPage(() => import("./Men/Local/Pages/EventSignup/EventSignup"));
 const Fundraiser = lazyPage(() => import("./Men/Local/Pages/Fundraiser/Fundraiser"));
@@ -51,6 +52,7 @@ const WAdminDashboard = lazyPage(() => import("./Women/Local/Admin/AdminDash"));
 const WDonate = lazyPage(() => import("./Women/Local/Pages/Donate/Donate"));
 const WDonateSuccess = lazyPage(() => import("./Women/Local/Pages/Donate/DonateSuccess"));
 const WDues = lazyPage(() => import("./Women/Local/Pages/Dues/Dues"));
+const WEventCheckIn = lazyPage(() => import("./Women/Local/Pages/EventSignup/EventCheckIn"));
 const WEventDetail = lazyPage(() => import("./Women/Local/Pages/EventSignup/EventDetail"));
 const WEventSignup = lazyPage(() => import("./Women/Local/Pages/EventSignup/EventSignup"));
 const WFundraiser = lazyPage(() => import("./Women/Local/Pages/Fundraiser/Fundraiser"));
@@ -146,7 +148,7 @@ export default function App() {
             <Route
               path="/manage"
               element={
-                <ProtectedRoute allowedRoles={["admin", "president", "vp", "treasurer"]}>
+                <ProtectedRoute allowedRoles={["admin", "president", "vp", "treasurer", "board"]}>
                   <Manage />
                 </ProtectedRoute>
               }
@@ -186,6 +188,7 @@ export default function App() {
             />
             <Route path="/event-signup" element={<EventSignup />} />
             <Route path="/event-signup/:slug" element={<EventDetail />} />
+            <Route path="/checkin/:eventId" element={<EventCheckIn />} />
             <Route path="/raffles" element={<Raffles />} />
             <Route path="/raffles/:slug" element={<RaffleDetail />} />
             <Route path="/checkout" element={<Checkout />} />
@@ -245,7 +248,7 @@ export default function App() {
             <Route
               path="/women/manage"
               element={
-                <ProtectedRoute allowedRoles={["admin", "president", "vp", "treasurer"]}>
+                <ProtectedRoute allowedRoles={["admin", "president", "vp", "treasurer", "board"]}>
                   <WManage />
                 </ProtectedRoute>
               }
@@ -286,6 +289,7 @@ export default function App() {
             />
             <Route path="/women/event-signup" element={<WEventSignup />} />
             <Route path="/women/event-signup/:slug" element={<WEventDetail />} />
+            <Route path="/women/checkin/:eventId" element={<WEventCheckIn />} />
             <Route path="/women/fundraiser/:slug" element={<WFundraiser />} />
             <Route path="/women/fundraiser/:slug/success" element={<WFundraiserSuccess />} />
             <Route path="/women/raffles" element={<WRaffles />} />

@@ -57,7 +57,7 @@ export default function WAdminDashboard(){
       { id: "compliance", label: "Compliance", minRole: "vp" },
       { id: "calendar", label: "Board Calendar", minRole: "board" },
       { id: "budget", label: "Budget", minRole: "treasurer" },
-      { id: "order-forms", label: "Order Forms", minRole: "president" },
+      { id: "order-forms", label: "Order Forms", minRole: "board" },
     ],
     []
   );

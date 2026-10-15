@@ -54,8 +54,13 @@ function manageReducer(state: ManageState, action: ManageAction): ManageState {
   }
 }
 
+// Mirrors the backend's AuthorizationService.ROLE_LADDER - board members land here too
+// (for ManageTodos below), but the dues ledger itself - balances, PayPal/Stripe charges,
+// parent linking - stays treasurer-and-up.
+const ROLE_LADDER = ["user", "parent", "alumni", "player", "board", "treasurer", "vp", "president", "admin"];
+
 export default function Manage() {
-  const { user } = useAuth();
+  const { user, roles } = useAuth();
   const [state, dispatch] = useReducer(manageReducer, initialState);
   const [ledger, setLedger] = useState<DuesPayment[]>([]);
 
@@ -68,6 +73,8 @@ export default function Manage() {
 
   const isWomenSite = window.location.pathname.toLowerCase().includes("/women");
   const program: Program = isWomenSite ? "women" : "men";
+  const programRole = (roles?.[program] || "").toLowerCase();
+  const isTreasurerOrAbove = ROLE_LADDER.indexOf(programRole) >= ROLE_LADDER.indexOf("treasurer");
 
   const paymentProvider = resolvePaymentProvider();
 
@@ -306,7 +313,7 @@ export default function Manage() {
         <p className="text-gray-600 animate-pulse">Loading roster...</p>
       ) : (
         <div className="space-y-8">
-          {seasonPlayers.length > 0 && (
+          {isTreasurerOrAbove && seasonPlayers.length > 0 && (
             <PlayerTable
               players={seasonPlayers}
               setPlayers={setPlayers}
@@ -316,7 +323,7 @@ export default function Manage() {
             />
           )}
 
-          {state.selectedPlayer && (
+          {isTreasurerOrAbove && state.selectedPlayer && (
             <div className={paymentProvider === "stripe" ? "max-w-xl" : "max-w-lg"}>
               <PlayerPaymentDetails
                 userRole="admin"
