@@ -8,6 +8,7 @@ export type TodoPayload = {
   link?: string;
   image?: string;
   active?: boolean;
+  notifyPlayers?: boolean;
 };
 
 export async function fetchTodos(season: string): Promise<ApiTodo[]> {
@@ -39,4 +40,8 @@ export async function setPlayerTodoStatus(todoId: string, playerId: string, done
 
 export async function fetchTodoCompletions(todoId: string): Promise<ApiTodoCompletion[]> {
   return apiRequest<ApiTodoCompletion[]>(`/api/todos/${todoId}/completions`);
+}
+
+export async function remindTodo(todoId: string): Promise<{ remindedCount: number }> {
+  return apiRequest<{ remindedCount: number }>(`/api/todos/${todoId}/remind`, { method: "POST" });
 }

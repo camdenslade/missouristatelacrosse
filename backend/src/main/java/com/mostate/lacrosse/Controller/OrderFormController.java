@@ -31,8 +31,11 @@ import com.mostate.lacrosse.Repository.OrderFormRepository;
 import com.mostate.lacrosse.Repository.OrderFormSubmissionRepository;
 import com.mostate.lacrosse.Repository.PlayerRepository;
 import com.mostate.lacrosse.Service.AuthorizationService;
+import com.mostate.lacrosse.Service.EmailService;
 import com.mostate.lacrosse.Service.PlayerProfileService;
 import com.mostate.lacrosse.Service.S3Service;
+import com.mostate.lacrosse.Service.SeasonService;
+import com.mostate.lacrosse.Utils.EmailTemplate;
 import com.mostate.lacrosse.Utils.JsonUtils;
 import com.mostate.lacrosse.Utils.TextSanitizer;
 import jakarta.servlet.http.HttpServletRequest;
@@ -54,6 +57,8 @@ public class OrderFormController {
     private final AuthorizationService authorizationService;
     private final PlayerProfileService profileService;
     private final S3Service s3Service;
+    private final EmailService emailService;
+    private final SeasonService seasonService;
 
     public OrderFormController(
         OrderFormRepository formRepo,
@@ -63,7 +68,9 @@ public class OrderFormController {
         DuesPaymentRepository duesRepo,
         AuthorizationService authorizationService,
         PlayerProfileService profileService,
-        S3Service s3Service
+        S3Service s3Service,
+        EmailService emailService,
+        SeasonService seasonService
     ) {
         this.formRepo = formRepo;
         this.itemRepo = itemRepo;
@@ -73,12 +80,23 @@ public class OrderFormController {
         this.authorizationService = authorizationService;
         this.profileService = profileService;
         this.s3Service = s3Service;
+        this.emailService = emailService;
+        this.seasonService = seasonService;
     }
 
     private boolean isAdmin(HttpServletRequest request, String program) {
         String uid = (String) request.getAttribute("firebaseUid");
         FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
         return authorizationService.isAdmin(uid, program, token);
+    }
+
+    // Managing forms/items doesn't expose balances or move money by itself (submit() is
+    // the money-moving endpoint, gated separately below), so board members and up can run
+    // it, same precedent as TodoController and EventsController's board-gated endpoints.
+    private boolean isBoard(HttpServletRequest request, String program) {
+        String uid = (String) request.getAttribute("firebaseUid");
+        FirebaseToken token = (FirebaseToken) request.getAttribute(FirebaseAdminFilter.FIREBASE_TOKEN_ATTR);
+        return authorizationService.isBoardOrAbove(uid, program, token);
     }
 
     private boolean isSelfOrAdmin(HttpServletRequest request, Player player, String program) {
@@ -92,7 +110,7 @@ public class OrderFormController {
 
     @GetMapping
     public ResponseEntity<?> listAll(HttpServletRequest request, @RequestParam(defaultValue = "men") String program) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         return ResponseEntity.ok(formRepo.findAll().stream().map(this::toFormResponse).toList());
@@ -110,7 +128,7 @@ public class OrderFormController {
         @RequestParam(defaultValue = "men") String program,
         @RequestBody FormRequest body
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         if (body.title() == null || body.title().isBlank()) {
@@ -120,7 +138,65 @@ public class OrderFormController {
         form.setTitle(TextSanitizer.clean(body.title()));
         form.setDescription(TextSanitizer.clean(body.description()));
         form.setActive(body.active() == null || body.active());
-        return ResponseEntity.ok(toFormResponse(formRepo.save(form)));
+        OrderForm saved = formRepo.save(form);
+
+        if (Boolean.TRUE.equals(body.notifyPlayers())) {
+            List<Player> players = playerRepo.findAllBySeason(seasonService.getActiveCode());
+            notifyPlayers(saved, players, false);
+        }
+
+        return ResponseEntity.ok(toFormResponse(saved));
+    }
+
+    /**
+     * Emails current-season players about an order form - either everyone (new form,
+     * isReminder=false) or just whoever hasn't submitted yet (isReminder=true). Silently
+     * skips players with no email on file rather than failing the whole batch over one.
+     */
+    private int notifyPlayers(OrderForm form, List<Player> players, boolean isReminder) {
+        String subject = isReminder ? "Reminder: " + form.getTitle() : "New Order Form: " + form.getTitle();
+        String body = EmailTemplate.paragraph(isReminder
+            ? "This is a reminder that you still need to submit an order for:"
+            : "A new order form is open:")
+            + EmailTemplate.paragraph("<strong>" + form.getTitle() + "</strong>")
+            + (form.getDescription() != null && !form.getDescription().isBlank()
+                ? EmailTemplate.paragraph(form.getDescription())
+                : "")
+            + EmailTemplate.paragraph("Log in to your player portal to place your order.");
+        String html = EmailTemplate.wrap(null, body);
+
+        int sent = 0;
+        for (Player p : players) {
+            if (p.getEmail() == null || p.getEmail().isBlank()) continue;
+            if (emailService.sendEmail(p.getEmail(), subject, html)) sent++;
+        }
+        return sent;
+    }
+
+    /** Emails only the current-season players who haven't submitted an order for this form yet. */
+    @PostMapping("/{id}/remind")
+    public ResponseEntity<?> remind(
+        HttpServletRequest request,
+        @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isBoard(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
+        OrderForm form = formRepo.findById(id).orElse(null);
+        if (form == null) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("Order form not found"));
+        }
+        List<Player> seasonPlayers = playerRepo.findAllBySeason(seasonService.getActiveCode());
+        var submittedByPlayer = submissionRepo.findAllByFormIdOrderByCreatedAtDesc(id).stream()
+            .map(OrderFormSubmission::getPlayerId)
+            .collect(java.util.stream.Collectors.toSet());
+        List<Player> notSubmitted = seasonPlayers.stream()
+            .filter(p -> !submittedByPlayer.contains(p.getId()))
+            .toList();
+
+        int sent = notifyPlayers(form, notSubmitted, true);
+        return ResponseEntity.ok(Map.of("remindedCount", sent));
     }
 
     @PutMapping("/{id}")
@@ -130,7 +206,7 @@ public class OrderFormController {
         @RequestParam(defaultValue = "men") String program,
         @RequestBody FormRequest body
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         OrderForm form = formRepo.findById(id).orElse(null);
@@ -148,7 +224,7 @@ public class OrderFormController {
         @PathVariable UUID id,
         @RequestParam(defaultValue = "men") String program
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         itemRepo.deleteAll(itemRepo.findAllByFormIdOrderBySortOrderAsc(id));
@@ -165,7 +241,7 @@ public class OrderFormController {
         @RequestParam(defaultValue = "men") String program,
         @RequestBody ItemRequest body
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         if (body.name() == null || body.name().isBlank()) {
@@ -189,7 +265,7 @@ public class OrderFormController {
         @RequestParam(defaultValue = "men") String program,
         @RequestBody ItemRequest body
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         OrderFormItem item = itemRepo.findById(itemId).orElse(null);
@@ -209,7 +285,7 @@ public class OrderFormController {
         @PathVariable UUID itemId,
         @RequestParam(defaultValue = "men") String program
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         itemRepo.deleteById(itemId);
@@ -301,7 +377,7 @@ public class OrderFormController {
         @PathVariable UUID formId,
         @RequestParam(defaultValue = "men") String program
     ) {
-        if (!isAdmin(request, program)) {
+        if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         List<Map<String, Object>> results = submissionRepo.findAllByFormIdOrderByCreatedAtDesc(formId).stream()
@@ -346,7 +422,7 @@ public class OrderFormController {
         return m;
     }
 
-    public record FormRequest(String title, String description, Boolean active) {}
+    public record FormRequest(String title, String description, Boolean active, Boolean notifyPlayers) {}
 
     public record ItemRequest(String name, BigDecimal price, String image, List<String> options) {}
 

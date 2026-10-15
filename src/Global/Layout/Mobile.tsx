@@ -39,12 +39,13 @@ export default function MobileMenu({
   const isPlayer = programRole === "player";
   const isParent = programRole === "parent";
   // Mirrors the backend's AuthorizationService.ROLE_LADDER - treasurer/vp/president also
-  // land on /manage (dues ledger + ManageTodos), same as admin. Not board - that page shows
-  // everyone's money situation, which is treasurer-and-up territory, not ordinary board members.
+  // land on /manage (dues ledger + ManageTodos), same as admin. Board gets /todos instead -
+  // just the to-do list, not everyone's money situation, which is treasurer-and-up territory.
   const ROLE_LADDER = ["user", "parent", "alumni", "player", "board", "treasurer", "vp", "president", "admin"];
   const myRank = ROLE_LADDER.indexOf((programRole || "").toLowerCase());
   const isTreasurerOrAbove = myRank >= ROLE_LADDER.indexOf("treasurer");
-  const canSeePayments = user && (isAdmin || isPlayer || isParent || isTreasurerOrAbove);
+  const isBoardOrAbove = myRank >= ROLE_LADDER.indexOf("board");
+  const canSeePayments = user && (isAdmin || isPlayer || isParent || isBoardOrAbove);
   const isAdminPlayer = isAdmin && !!playerId;
   const isGlobalAdmin = roles?.men === "admin" || roles?.women === "admin";
 

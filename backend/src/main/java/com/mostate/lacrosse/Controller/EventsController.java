@@ -5,6 +5,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -227,6 +228,131 @@ public class EventsController {
 
         return ResponseEntity.ok(new TeamCheckResponse(false, null, null, null));
     }
+
+    /**
+     * Public, for the self-serve QR check-in page: fuzzy-suggests this event's unpaid
+     * registrants as someone types their name, so they can find their own existing
+     * registration and pay instead of accidentally creating a duplicate one. Only returns
+     * name + amount owed - never email, since this is reachable by anyone who scans the
+     * event's QR code.
+     */
+    @GetMapping("/{id}/registrant-search")
+    public ResponseEntity<?> registrantSearch(
+        @PathVariable UUID id,
+        @RequestParam String q
+    ) {
+        String query = normalizeForSearch(q);
+        if (query.isEmpty()) {
+            return ResponseEntity.ok(List.of());
+        }
+        Event event = eventRepo.findById(id).orElse(null);
+        if (event == null) return ResponseEntity.notFound().build();
+        BigDecimal price = event.getPrice() != null ? event.getPrice() : BigDecimal.ZERO;
+
+        List<Map<String, Object>> matches = registrationRepo.findAllByEventId(id).stream()
+            .filter(r -> !r.isPaid() && r.getPayerName() != null)
+            .filter(r -> isLikelyNameMatch(query, normalizeForSearch(r.getPayerName())))
+            .sorted(Comparator.comparingInt(r -> levenshtein(query, normalizeForSearch(r.getPayerName()))))
+            .limit(5)
+            .map(r -> {
+                BigDecimal alreadyPaid = r.getAmountPaid() != null ? r.getAmountPaid() : BigDecimal.ZERO;
+                BigDecimal due = price.subtract(alreadyPaid);
+                return Map.<String, Object>of(
+                    "registrationId", r.getId().toString(),
+                    "payerName", r.getPayerName(),
+                    "amountDue", due
+                );
+            })
+            .toList();
+        return ResponseEntity.ok(matches);
+    }
+
+    /**
+     * Public, for the self-serve QR check-in page: pays off an existing unpaid
+     * registration found via registrantSearch() above. Same payment validation as a brand
+     * new registration going through register() below - real, completed, unused, matching
+     * the event's price - just applied to a registration that already exists instead of
+     * creating a new one.
+     */
+    @PostMapping("/{id}/registrations/{regId}/pay")
+    public ResponseEntity<?> payExistingRegistration(
+        @PathVariable UUID id,
+        @PathVariable UUID regId,
+        @RequestBody PayExistingRequest body
+    ) {
+        EventRegistration reg = registrationRepo.findById(regId).orElse(null);
+        if (reg == null || !id.equals(reg.getEventId())) {
+            return ResponseEntity.notFound().build();
+        }
+        if (reg.isPaid()) {
+            return ResponseEntity.status(409).body(new ErrorResponse("This registration is already paid."));
+        }
+        Event event = eventRepo.findById(id).orElse(null);
+        if (event == null) return ResponseEntity.notFound().build();
+        if (body.paypalOrderId() == null || body.paypalOrderId().isBlank()) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("paypalOrderId is required"));
+        }
+        if (registrationRepo.existsByPaypalOrderId(body.paypalOrderId())) {
+            return ResponseEntity.status(409).body(new ErrorResponse("This payment has already been used for a registration."));
+        }
+        PaymentReceipt receipt = receiptRepo.findByOrderId(body.paypalOrderId()).orElse(null);
+        if (receipt == null) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("Payment not found"));
+        }
+        if (!"COMPLETED".equalsIgnoreCase(receipt.getStatus())) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("Payment was not completed"));
+        }
+        BigDecimal price = event.getPrice() != null ? event.getPrice() : BigDecimal.ZERO;
+        if (receipt.getAmount() == null || receipt.getAmount().compareTo(price) != 0) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("Payment amount does not match this event's price"));
+        }
+
+        reg.setPaypalOrderId(body.paypalOrderId());
+        reg.setAmountPaid(price);
+        reg.setPaid(true);
+        reg.setPaidAt(Instant.now());
+        registrationRepo.save(reg);
+
+        return ResponseEntity.ok(toRegResponse(reg));
+    }
+
+    private String normalizeForSearch(String value) {
+        if (value == null) return "";
+        return value.toLowerCase().replaceAll("[^a-z0-9 ]", "").replaceAll("\\s+", " ").trim();
+    }
+
+    private boolean isLikelyNameMatch(String query, String candidate) {
+        if (candidate.isEmpty()) return false;
+        if (query.equals(candidate) || query.contains(candidate) || candidate.contains(query)) {
+            return true;
+        }
+        String[] queryTokens = query.split(" ");
+        String[] candidateTokens = candidate.split(" ");
+        if (queryTokens.length > 0 && candidateTokens.length > 0) {
+            String queryLast = queryTokens[queryTokens.length - 1];
+            String candidateLast = candidateTokens[candidateTokens.length - 1];
+            if (!queryLast.isEmpty() && queryLast.equals(candidateLast)) {
+                return true;
+            }
+        }
+        int threshold = Math.max(2, query.length() / 4);
+        return levenshtein(query, candidate) <= threshold;
+    }
+
+    private int levenshtein(String a, String b) {
+        int[][] dp = new int[a.length() + 1][b.length() + 1];
+        for (int i = 0; i <= a.length(); i++) dp[i][0] = i;
+        for (int j = 0; j <= b.length(); j++) dp[0][j] = j;
+        for (int i = 1; i <= a.length(); i++) {
+            for (int j = 1; j <= b.length(); j++) {
+                int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;
+                dp[i][j] = Math.min(Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1), dp[i - 1][j - 1] + cost);
+            }
+        }
+        return dp[a.length()][b.length()];
+    }
+
+    public record PayExistingRequest(String paypalOrderId) {}
 
     // Public: submit registration after PayPal capture
     @PostMapping("/{id}/register")

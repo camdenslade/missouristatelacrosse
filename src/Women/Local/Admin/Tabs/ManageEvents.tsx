@@ -1,4 +1,5 @@
 import { ChevronUp, ChevronDown, X } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import {
   useCallback,
   useEffect,
@@ -221,7 +222,7 @@ function reducer(state: State, action: Action): State {
 
 export default function ManageEvents() {
   const confirm = useConfirm();
-  const program: Program = "men";
+  const program: Program = "women";
   const [state, dispatch] = useReducer(reducer, {
     view: "list",
     events: [],
@@ -239,6 +240,7 @@ export default function ManageEvents() {
   const imageFileRef = useRef<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [posItemsEvent, setPosItemsEvent] = useState<ApiEvent | null>(null);
+  const [qrEvent, setQrEvent] = useState<ApiEvent | null>(null);
 
   useEffect(() => {
     fetchAdminEvents()
@@ -411,6 +413,12 @@ export default function ManageEvents() {
                         POS Items
                       </button>
                       <button
+                        onClick={() => setQrEvent(event)}
+                        className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+                      >
+                        QR Code
+                      </button>
+                      <button
                         onClick={() => {
                           imageFileRef.current = null;
                           setImagePreview(event.image || null);
@@ -441,6 +449,49 @@ export default function ManageEvents() {
           onClose={() => setPosItemsEvent(null)}
         />
       )}
+      {qrEvent && (
+        <QrCodeModal event={qrEvent} program={program} onClose={() => setQrEvent(null)} />
+      )}
+    </div>
+  );
+}
+
+function QrCodeModal({ event, program, onClose }: { event: ApiEvent; program: Program; onClose: () => void }) {
+  const base = program === "women" ? `${window.location.origin}/women` : window.location.origin;
+  const url = `${base}/checkin/${event.id}`;
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm text-center">
+        <h3 className="text-base font-semibold text-gray-900 mb-1">{event.name}</h3>
+        <p className="text-xs text-gray-400 mb-4">Scan to check in and pay</p>
+        <div className="flex justify-center mb-4">
+          <QRCodeSVG value={url} size={220} />
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            readOnly
+            value={url}
+            onFocus={(e) => e.target.select()}
+            className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-600 bg-gray-50"
+          />
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(url);
+              toast.success("Link copied");
+            }}
+            className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+          >
+            Copy
+          </button>
+        </div>
+        <button
+          onClick={onClose}
+          className="mt-4 text-sm text-gray-500 hover:text-gray-700"
+        >
+          Close
+        </button>
+      </div>
     </div>
   );
 }

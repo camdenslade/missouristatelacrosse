@@ -109,6 +109,25 @@ export async function registerForEvent(
   });
 }
 
+export async function searchRegistrants(
+  eventId: string,
+  query: string
+): Promise<{ registrationId: string; payerName: string; amountDue: number }[]> {
+  if (!query.trim()) return [];
+  return apiRequest(`/api/events/${eventId}/registrant-search?q=${encodeURIComponent(query)}`);
+}
+
+export async function payExistingRegistration(
+  eventId: string,
+  registrationId: string,
+  paypalOrderId: string
+): Promise<ApiEventRegistration> {
+  return apiRequest<ApiEventRegistration>(
+    `/api/events/${eventId}/registrations/${registrationId}/pay`,
+    { method: "POST", json: { paypalOrderId } }
+  );
+}
+
 export async function sendTeamReminder(
   eventId: string,
   teamId: string,

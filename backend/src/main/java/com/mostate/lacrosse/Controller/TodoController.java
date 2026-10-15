@@ -26,8 +26,10 @@ import com.mostate.lacrosse.Repository.PlayerRepository;
 import com.mostate.lacrosse.Repository.TodoRepository;
 import com.mostate.lacrosse.Repository.TodoStatusRepository;
 import com.mostate.lacrosse.Service.AuthorizationService;
+import com.mostate.lacrosse.Service.EmailService;
 import com.mostate.lacrosse.Service.PlayerProfileService;
 import com.mostate.lacrosse.Service.S3Service;
+import com.mostate.lacrosse.Utils.EmailTemplate;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
@@ -40,6 +42,7 @@ public class TodoController {
     private final AuthorizationService authorizationService;
     private final PlayerProfileService profileService;
     private final S3Service s3Service;
+    private final EmailService emailService;
 
     private static final java.time.Duration IMAGE_TTL = S3Service.IMAGE_TTL;
 
@@ -49,7 +52,8 @@ public class TodoController {
         PlayerRepository playerRepo,
         AuthorizationService authorizationService,
         PlayerProfileService profileService,
-        S3Service s3Service
+        S3Service s3Service,
+        EmailService emailService
     ) {
         this.todoRepo = todoRepo;
         this.statusRepo = statusRepo;
@@ -57,6 +61,7 @@ public class TodoController {
         this.authorizationService = authorizationService;
         this.profileService = profileService;
         this.s3Service = s3Service;
+        this.emailService = emailService;
     }
 
     @GetMapping
@@ -93,7 +98,69 @@ public class TodoController {
             todo.setImage(body.image().isBlank() ? null : s3Service.extractKey(body.image()));
         }
         todo.setActive(body.active() == null || body.active());
-        return ResponseEntity.ok(toResponse(todoRepo.save(todo)));
+        Todo saved = todoRepo.save(todo);
+
+        if (Boolean.TRUE.equals(body.notifyPlayers())) {
+            notifyPlayers(saved, playerRepo.findAllBySeason(saved.getSeason()), false);
+        }
+
+        return ResponseEntity.ok(toResponse(saved));
+    }
+
+    /**
+     * Emails players about a to-do - either everyone (new to-do, isReminder=false) or just
+     * whoever hasn't marked it done yet (isReminder=true). Silently skips players with no
+     * email on file rather than failing the whole batch over one missing address.
+     */
+    private int notifyPlayers(Todo todo, List<Player> players, boolean isReminder) {
+        String subject = isReminder
+            ? "Reminder: " + todo.getTitle()
+            : "New To-Do: " + todo.getTitle();
+        String body = EmailTemplate.paragraph(isReminder
+            ? "This is a reminder that you still have an outstanding team to-do:"
+            : "A new team to-do has been posted:")
+            + EmailTemplate.paragraph("<strong>" + todo.getTitle() + "</strong>")
+            + (todo.getDescription() != null && !todo.getDescription().isBlank()
+                ? EmailTemplate.paragraph(todo.getDescription())
+                : "")
+            + (todo.getLink() != null && !todo.getLink().isBlank()
+                ? EmailTemplate.button(todo.getLink(), "View / Complete")
+                : "");
+        String html = EmailTemplate.wrap(null, body);
+
+        int sent = 0;
+        for (Player p : players) {
+            if (p.getEmail() == null || p.getEmail().isBlank()) continue;
+            if (emailService.sendEmail(p.getEmail(), subject, html)) sent++;
+        }
+        return sent;
+    }
+
+    /** Emails only the players who haven't marked this to-do done yet. */
+    @PostMapping("/{id}/remind")
+    public ResponseEntity<?> remind(
+        HttpServletRequest request,
+        @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isBoard(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
+        Todo todo = todoRepo.findById(id).orElse(null);
+        if (todo == null) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("To-do not found"));
+        }
+        List<Player> seasonPlayers = playerRepo.findAllBySeason(todo.getSeason());
+        var doneByPlayer = statusRepo.findByTodoId(id).stream()
+            .filter(TodoStatus::isDone)
+            .map(TodoStatus::getPlayerId)
+            .collect(Collectors.toSet());
+        List<Player> notDone = seasonPlayers.stream()
+            .filter(p -> !doneByPlayer.contains(p.getId()))
+            .toList();
+
+        int sent = notifyPlayers(todo, notDone, true);
+        return ResponseEntity.ok(Map.of("remindedCount", sent));
     }
 
     @PutMapping("/{id}")
@@ -247,7 +314,8 @@ public class TodoController {
         String description,
         String link,
         String image,
-        Boolean active
+        Boolean active,
+        Boolean notifyPlayers
     ) {}
 
     public record TodoResponse(

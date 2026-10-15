@@ -11,6 +11,7 @@ import {
   deleteTodo,
   fetchTodoCompletions,
   fetchTodos,
+  remindTodo,
   setPlayerTodoStatus,
   updateTodo,
 } from "../hooks/useTodos";
@@ -22,10 +23,11 @@ type FormState = {
   description: string;
   link: string;
   active: boolean;
+  notifyPlayers: boolean;
 };
 
 function emptyForm(): FormState {
-  return { title: "", description: "", link: "", active: true };
+  return { title: "", description: "", link: "", active: true, notifyPlayers: false };
 }
 
 function todoToForm(t: ApiTodo): FormState {
@@ -34,6 +36,7 @@ function todoToForm(t: ApiTodo): FormState {
     description: t.description ?? "",
     link: t.link ?? "",
     active: t.active,
+    notifyPlayers: false,
   };
 }
 
@@ -152,16 +155,29 @@ export default function ManageTodos({ season, availableSeasons = [] }: ManageTod
         link: f.link.trim() || undefined,
         image,
         active: f.active,
+        notifyPlayers: f.notifyPlayers,
       };
       const saved = state.editingId
         ? await updateTodo(state.editingId, payload)
         : await createTodo(payload);
       setImageItem(null);
       dispatch({ type: "SAVE_DONE", todo: saved });
+      if (!state.editingId && f.notifyPlayers) {
+        toast.success("Players notified!");
+      }
     } catch {
       dispatch({ type: "SET_ERROR", msg: "Failed to save to-do. Please try again." });
     }
   }, [state.form, state.editingId, season, imageItem]);
+
+  const handleRemind = useCallback(async (todoId: string) => {
+    try {
+      const { remindedCount } = await remindTodo(todoId);
+      toast.success(`Reminded ${remindedCount} player${remindedCount === 1 ? "" : "s"}.`);
+    } catch {
+      toast.error("Failed to send reminders.");
+    }
+  }, []);
 
   const handleDelete = useCallback(async (id: string) => {
     if (!(await confirm("Delete this to-do? Players' completion status for it will be removed too."))) return;
@@ -327,6 +343,18 @@ export default function ManageTodos({ season, availableSeasons = [] }: ManageTod
             <span className="text-sm font-medium text-gray-700">Active (visible to players in the Portal)</span>
           </label>
 
+          {!state.editingId && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={f.notifyPlayers}
+                onChange={(e) => dispatch({ type: "SET_FORM", key: "notifyPlayers", value: e.target.checked })}
+                className="w-4 h-4 accent-[#5E0009]"
+              />
+              <span className="text-sm font-medium text-gray-700">Email players about this new to-do</span>
+            </label>
+          )}
+
           {state.errorMsg && (
             <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">{state.errorMsg}</div>
           )}
@@ -419,6 +447,12 @@ export default function ManageTodos({ season, availableSeasons = [] }: ManageTod
                     className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
                   >
                     {expandedId === todo.id ? "Hide Statuses" : "View Statuses"}
+                  </button>
+                  <button
+                    onClick={() => handleRemind(todo.id)}
+                    className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+                  >
+                    Remind
                   </button>
                   <button
                     onClick={() => { setImageItem(todoToImage(todo)[0] ?? null); dispatch({ type: "OPEN_EDIT", todo }); }}

@@ -5,7 +5,7 @@ import { useConfirm } from "../../../../Global/Common/components/ConfirmModal";
 import { uploadCompressedImage } from "../../../../Global/Common/hooks/uploadHelper";
 import { apiRequest } from "../../../../Services/API";
 
-const blankFormDraft = { title: "", description: "" };
+const blankFormDraft = { title: "", description: "", notifyPlayers: false };
 const blankItemDraft = { name: "", price: "", options: "" };
 
 const initialState = {
@@ -68,7 +68,7 @@ export default function ManageOrderForms() {
       await apiRequest("/api/order-forms", { method: "POST", json: state.formDraft });
       dispatch({ type: "RESET_FORM_DRAFT" });
       load();
-      toast.success("Form created.");
+      toast.success(state.formDraft.notifyPlayers ? "Form created and players notified!" : "Form created.");
     } catch (err) {
       console.error(err);
       toast.error("Failed to create form.");
@@ -84,6 +84,16 @@ export default function ManageOrderForms() {
     } catch (err) {
       console.error(err);
       toast.error("Failed to update.");
+    }
+  };
+
+  const handleRemind = async (formId) => {
+    try {
+      const { remindedCount } = await apiRequest<{ remindedCount: number }>(`/api/order-forms/${formId}/remind`, { method: "POST" });
+      toast.success(`Reminded ${remindedCount} player${remindedCount === 1 ? "" : "s"}.`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to send reminders.");
     }
   };
 
@@ -173,6 +183,15 @@ export default function ManageOrderForms() {
           className={`${input} bg-white w-full`}
           rows={2}
         />
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={state.formDraft.notifyPlayers}
+            onChange={(e) => dispatch({ type: "SET_FORM_DRAFT_FIELD", field: "notifyPlayers", value: e.target.checked })}
+            className="w-4 h-4 accent-[#5E0009]"
+          />
+          <span className="text-sm font-medium text-gray-700">Email current-season players about this form</span>
+        </label>
         <button
           type="submit"
           disabled={state.savingForm}
@@ -205,6 +224,9 @@ export default function ManageOrderForms() {
                 <div className="flex gap-2 shrink-0">
                   <button onClick={() => handleToggleActive(form)} className="text-xs px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 font-medium">
                     {form.active ? "Deactivate" : "Activate"}
+                  </button>
+                  <button onClick={() => handleRemind(form.id)} className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium">
+                    Remind
                   </button>
                   <button
                     onClick={() => {

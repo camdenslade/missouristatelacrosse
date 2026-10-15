@@ -1,6 +1,6 @@
 import { apiRequest } from "./API";
 
-export type ConfirmationKind = "order" | "donation" | "fundraiser";
+export type ConfirmationKind = "order" | "donation" | "fundraiser" | "event";
 
 const RETRIES = 4;
 const RETRY_DELAY_MS = 2500;
