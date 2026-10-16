@@ -97,6 +97,18 @@ export default function ManageBudget() {
     }
   };
 
+  const handleVoid = async (receiptId, description) => {
+    if (!(await confirm(`Void "${description}"? It'll be excluded from the ledger, but the real payment record stays untouched.`))) return;
+    try {
+      await apiRequest(`/api/budget/receipts/${receiptId}/void`, { method: "POST" });
+      load(state.season);
+      toast.success("Voided.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to void.");
+    }
+  };
+
   const input = "border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30";
 
   return (
@@ -214,6 +226,14 @@ export default function ManageBudget() {
                         className="text-xs text-red-500 hover:underline"
                       >
                         Delete
+                      </button>
+                    )}
+                    {row.receiptId && (
+                      <button
+                        onClick={() => handleVoid(row.receiptId, row.description)}
+                        className="text-xs text-gray-400 hover:text-gray-700 hover:underline"
+                      >
+                        Void
                       </button>
                     )}
                   </td>

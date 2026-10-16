@@ -1,6 +1,16 @@
 export type Program = "men" | "women";
 
-export type Role = "admin" | "player" | "parent" | "user" | "coach" | "alumni";
+export type Role =
+  | "admin"
+  | "president"
+  | "vp"
+  | "treasurer"
+  | "board"
+  | "player"
+  | "parent"
+  | "coach"
+  | "alumni"
+  | "user";
 
 export type JsonValue =
   | string

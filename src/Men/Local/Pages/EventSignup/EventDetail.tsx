@@ -255,7 +255,8 @@ export default function EventDetail() {
     canPay && !isFree ? Number(state.event?.price) : null,
     "event-paypal-buttons",
     handleSuccess as Parameters<typeof usePaymentButtons>[2],
-    "pay"
+    "pay",
+    state.event ? `event-${state.event.id}` : undefined
   );
 
   const handleFreeSubmit = async () => {

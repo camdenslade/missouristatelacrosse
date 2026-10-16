@@ -188,7 +188,9 @@ export default function RaffleDetail() {
   const { ready: paymentReady } = usePaymentButtons(
     canPay && !isFree ? amount : null,
     "raffle-paypal-buttons",
-    handleSuccess as Parameters<typeof usePaymentButtons>[2]
+    handleSuccess as Parameters<typeof usePaymentButtons>[2],
+    "pay",
+    state.raffle ? `raffle-${state.raffle.id}` : undefined
   );
 
   const handleFreeSubmit = async () => {
