@@ -1337,6 +1337,7 @@ function RegistrationRow({
 }) {
   const [marking, setMarking] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [editing, setEditing] = useState(false);
   const confirm = useConfirm();
   const formData = (typeof reg.formData === "string"
     ? (() => { try { return JSON.parse(reg.formData as unknown as string); } catch { return {}; } })()
@@ -1408,6 +1409,14 @@ function RegistrationRow({
           )}
           {eventId && (
             <button
+              onClick={() => setEditing(true)}
+              className="block mt-1 ml-auto text-xs text-gray-600 hover:text-gray-900 hover:underline"
+            >
+              Edit
+            </button>
+          )}
+          {eventId && (
+            <button
               onClick={handleRemove}
               disabled={removing}
               className="block mt-1 ml-auto text-xs text-gray-500 hover:text-gray-800 hover:underline disabled:opacity-50"
@@ -1436,6 +1445,154 @@ function RegistrationRow({
           })}
         </div>
       )}
+      {editing && eventId && (
+        <EditRegistrationModal
+          reg={reg}
+          fields={fields}
+          eventId={eventId}
+          program={program}
+          onClose={() => setEditing(false)}
+          onSaved={() => { setEditing(false); onChanged?.(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function EditRegistrationModal({
+  reg,
+  fields,
+  eventId,
+  program,
+  onClose,
+  onSaved,
+}: {
+  reg: ApiEventRegistration;
+  fields: ApiEventField[];
+  eventId: string;
+  program?: Program;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const initialFormData = (typeof reg.formData === "string"
+    ? (() => { try { return JSON.parse(reg.formData as unknown as string); } catch { return {}; } })()
+    : reg.formData) as Record<string, unknown>;
+
+  const [name, setName] = useState(reg.payerName ?? "");
+  const [email, setEmail] = useState(reg.payerEmail ?? "");
+  const [fieldValues, setFieldValues] = useState<Record<string, string | boolean>>(
+    Object.fromEntries(fields.map((f) => [f.id, (initialFormData[f.id] as string | boolean) ?? (f.type === "checkbox" ? false : "")]))
+  );
+  const [saving, setSaving] = useState(false);
+
+  const [suggestions, setSuggestions] = useState<UnmatchedCandidate[] | null>(null);
+  const [addingTeammates, setAddingTeammates] = useState(false);
+
+  useEffect(() => {
+    apiRequest<UnmatchedCandidate[]>(`/api/events/${eventId}/unmatched-teammates?program=${program ?? "men"}`)
+      .then((all) => setSuggestions(all.filter((c) => reg.payerName && c.mentionedBy.includes(reg.payerName))))
+      .catch(() => setSuggestions([]));
+  }, [eventId, program, reg.payerName]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await apiRequest(`/api/events/${eventId}/registrations/${reg.id}?program=${program ?? "men"}`, {
+        method: "PUT",
+        json: { payerName: name, payerEmail: email, formData: fieldValues },
+      });
+      toast.success("Saved.");
+      onSaved();
+    } catch {
+      toast.error("Failed to save changes.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddTeammates = async () => {
+    if (!suggestions || suggestions.length === 0) return;
+    setAddingTeammates(true);
+    try {
+      await apiRequest(`/api/events/${eventId}/unmatched-teammates?program=${program ?? "men"}`, {
+        method: "POST",
+        json: { entries: suggestions.map((c) => ({ name: c.name, email: c.suggestedEmail })) },
+      });
+      toast.success(`Added ${suggestions.length} teammate${suggestions.length === 1 ? "" : "s"}.`);
+      setSuggestions([]);
+    } catch {
+      toast.error("Failed to add teammates.");
+    } finally {
+      setAddingTeammates(false);
+    }
+  };
+
+  const input = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30";
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">
+        <h3 className="text-base font-semibold text-gray-900 mb-4">Edit Registrant</h3>
+
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Name</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} className={input} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
+            <input value={email} onChange={(e) => setEmail(e.target.value)} className={input} />
+          </div>
+          {fields.map((f) => (
+            <div key={f.id}>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{f.label}</label>
+              {f.type === "checkbox" ? (
+                <input
+                  type="checkbox"
+                  checked={!!fieldValues[f.id]}
+                  onChange={(e) => setFieldValues((prev) => ({ ...prev, [f.id]: e.target.checked }))}
+                  className="w-4 h-4 accent-[#5E0009]"
+                />
+              ) : (
+                <input
+                  value={String(fieldValues[f.id] ?? "")}
+                  onChange={(e) => setFieldValues((prev) => ({ ...prev, [f.id]: e.target.value }))}
+                  className={input}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+
+        {suggestions && suggestions.length > 0 && (
+          <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-3">
+            <p className="text-xs font-medium text-gray-700 mb-1">
+              Teammates named by this person who haven't registered:
+            </p>
+            <p className="text-xs text-gray-500 mb-2">{suggestions.map((s) => s.name).join(", ")}</p>
+            <button
+              onClick={handleAddTeammates}
+              disabled={addingTeammates}
+              className="text-xs px-3 py-1.5 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 font-medium disabled:opacity-50"
+            >
+              {addingTeammates ? "Adding..." : `Add ${suggestions.length} as Unpaid Registrants`}
+            </button>
+          </div>
+        )}
+
+        <div className="flex gap-3 justify-end mt-5">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-4 py-2 bg-[#5E0009] text-white rounded-lg text-sm font-semibold hover:bg-[#7a0012] transition disabled:opacity-60"
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

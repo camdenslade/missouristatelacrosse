@@ -1381,6 +1381,49 @@ public class EventsController {
 
     // --- Manual payment tracking + bulk invoicing -----------------------------------------
 
+    /**
+     * Lets an admin fix a registrant's name, email, or any of the event's custom fields
+     * (phone, team name, etc) - e.g. correcting a name entered via the unmatched-teammates
+     * scan, or fixing a typo'd email. Payment status is untouched here; use mark-paid/pay
+     * for that. Fields are only overwritten when actually present in the request, same
+     * merge behavior as applyPayload() for events.
+     */
+    @PutMapping("/{eventId}/registrations/{regId}")
+    public ResponseEntity<?> updateRegistration(
+        HttpServletRequest request,
+        @PathVariable UUID eventId,
+        @PathVariable UUID regId,
+        @RequestParam(defaultValue = "men") String program,
+        @RequestBody UpdateRegistrationRequest body
+    ) {
+        if (!isBoard(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Board access required"));
+        }
+        EventRegistration reg = registrationRepo.findById(regId).orElse(null);
+        if (reg == null || !eventId.equals(reg.getEventId())) {
+            return ResponseEntity.notFound().build();
+        }
+        if (body.payerName() != null) {
+            reg.setPayerName(TextSanitizer.titleCaseName(body.payerName()));
+        }
+        if (body.payerEmail() != null) {
+            String trimmed = body.payerEmail().trim();
+            reg.setPayerEmail(trimmed.isEmpty() ? null : trimmed.toLowerCase());
+        }
+        if (body.formData() != null) {
+            Map<String, Object> merged = new LinkedHashMap<>(JsonUtils.readMap(reg.getFormData()));
+            merged.putAll(TextSanitizer.cleanMap(body.formData()));
+            reg.setFormData(JsonUtils.toJson(merged));
+        }
+        return ResponseEntity.ok(toRegResponse(registrationRepo.save(reg)));
+    }
+
+    public record UpdateRegistrationRequest(
+        String payerName,
+        String payerEmail,
+        Map<String, Object> formData
+    ) {}
+
     /** For cash, check, or any payment collected outside Stripe/PayPal. */
     @PutMapping("/{eventId}/registrations/{regId}/mark-paid")
     public ResponseEntity<?> markPaid(
