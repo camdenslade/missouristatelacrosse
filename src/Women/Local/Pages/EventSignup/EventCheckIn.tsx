@@ -162,7 +162,8 @@ export default function EventCheckIn() {
     canPay && !isFree ? amountDue : null,
     "checkin-payment-buttons",
     handlePaymentSuccess as Parameters<typeof usePaymentButtons>[2],
-    "pay"
+    "pay",
+    eventId ? `event-${eventId}` : undefined
   );
 
   const handleFreeCheckIn = async () => {

@@ -48,6 +48,9 @@ public class PaymentReceipt {
     @Column(name = "receipt_sent_at")
     private Instant receiptSentAt;
 
+    @Column(nullable = false)
+    private boolean voided = false;
+
     @Column(name = "created_at")
     private Instant createdAt;
 
@@ -101,6 +104,9 @@ public class PaymentReceipt {
 
     public Instant getReceiptSentAt() { return receiptSentAt; }
     public void setReceiptSentAt(Instant receiptSentAt) { this.receiptSentAt = receiptSentAt; }
+
+    public boolean isVoided() { return voided; }
+    public void setVoided(boolean voided) { this.voided = voided; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

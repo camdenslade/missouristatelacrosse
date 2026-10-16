@@ -52,7 +52,19 @@ export default function ManagePlayers(){
     let active = true;
     const fetchUsers = async () => {
       dispatch({ type: "SET_LOADING", value: true });
-      const rolePriority: Partial<Record<Role, number>> = { admin: 1, player: 2, user: 3 };
+      // Mirrors the backend's AuthorizationService.ROLE_LADDER, highest first.
+      const rolePriority: Partial<Record<Role, number>> = {
+        admin: 1,
+        president: 2,
+        vp: 3,
+        treasurer: 4,
+        board: 5,
+        player: 6,
+        coach: 7,
+        alumni: 8,
+        parent: 9,
+        user: 10,
+      };
       try {
         const data = await apiRequest<ApiUser[]>(`/api/users?program=${program}`);
         if (!active) return;
