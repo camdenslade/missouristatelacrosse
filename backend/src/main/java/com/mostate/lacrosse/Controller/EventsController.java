@@ -442,6 +442,73 @@ public class EventsController {
     }
 
     /**
+     * Re-runs the same cross-event/raffle/roster/account contact lookup used by the
+     * unmatched-teammates scan, but against this event's OWN registrants who are still
+     * missing an email - e.g. someone added as a phantom teammate before they'd shown up
+     * anywhere else is now findable because they just registered for a different event
+     * (the banquet, say) with their email on file. Only ever suggests; nothing is
+     * overwritten until createBackfillEmails() below is called with admin-approved picks.
+     */
+    @GetMapping("/{id}/backfill-emails")
+    public ResponseEntity<?> backfillEmailCandidates(
+        HttpServletRequest request,
+        @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isBoard(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Board access required"));
+        }
+        Event event = eventRepo.findById(id).orElse(null);
+        if (event == null) return ResponseEntity.notFound().build();
+
+        List<Map<String, Object>> result = registrationRepo.findAllByEventId(id).stream()
+            .filter(r -> r.getPayerName() != null && !r.getPayerName().isBlank())
+            .filter(r -> r.getPayerEmail() == null || r.getPayerEmail().isBlank())
+            .map(r -> {
+                Map<String, Object> contact = findKnownContact(r.getPayerName());
+                if (contact == null) return null;
+                Map<String, Object> out = new LinkedHashMap<>();
+                out.put("registrationId", r.getId().toString());
+                out.put("name", r.getPayerName());
+                out.putAll(contact);
+                return out;
+            })
+            .filter(Objects::nonNull)
+            .toList();
+        return ResponseEntity.ok(result);
+    }
+
+    /** Applies admin-approved email backfills. Skips a registration if it already has an email by now. */
+    @PostMapping("/{id}/backfill-emails")
+    public ResponseEntity<?> applyBackfillEmails(
+        HttpServletRequest request,
+        @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program,
+        @RequestBody BackfillEmailsRequest body
+    ) {
+        if (!isBoard(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Board access required"));
+        }
+        if (body.updates() == null || body.updates().isEmpty()) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("No updates given"));
+        }
+        int applied = 0;
+        for (BackfillEmailEntry entry : body.updates()) {
+            if (entry.registrationId() == null || entry.email() == null || entry.email().isBlank()) continue;
+            EventRegistration reg = registrationRepo.findById(entry.registrationId()).orElse(null);
+            if (reg == null || !id.equals(reg.getEventId())) continue;
+            if (reg.getPayerEmail() != null && !reg.getPayerEmail().isBlank()) continue;
+            reg.setPayerEmail(entry.email().trim().toLowerCase());
+            registrationRepo.save(reg);
+            applied++;
+        }
+        return ResponseEntity.ok(Map.of("updated", applied));
+    }
+
+    public record BackfillEmailsRequest(List<BackfillEmailEntry> updates) {}
+    public record BackfillEmailEntry(UUID registrationId, String email) {}
+
+    /**
      * Extracts individual name candidates from a free-text teammates field. Parenthesized
      * content ("Nickname (Name1, Name2)") and the segment after the last "/" ("Nickname/
      * Name1, Name2") are treated as the authoritative name list when present, since a team
