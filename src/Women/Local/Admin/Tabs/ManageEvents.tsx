@@ -619,6 +619,120 @@ function UnmatchedTeammatesModal({
   );
 }
 
+type BackfillCandidate = {
+  registrationId: string;
+  name: string;
+  suggestedEmail?: string;
+  suggestedPhone?: string;
+  matchedFrom?: string;
+};
+
+function BackfillEmailsModal({
+  eventId,
+  program,
+  onClose,
+  onApplied,
+}: {
+  eventId: string;
+  program: Program;
+  onClose: () => void;
+  onApplied: () => void;
+}) {
+  const [loading, setLoading] = useState(true);
+  const [candidates, setCandidates] = useState<BackfillCandidate[]>([]);
+  const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [applying, setApplying] = useState(false);
+
+  useEffect(() => {
+    apiRequest<BackfillCandidate[]>(`/api/events/${eventId}/backfill-emails?program=${program}`)
+      .then((list) => {
+        setCandidates(list);
+        setChecked(Object.fromEntries(list.map((c) => [c.registrationId, true])));
+      })
+      .catch(() => toast.error("Failed to scan for missing emails."))
+      .finally(() => setLoading(false));
+  }, [eventId, program]);
+
+  const handleApply = async () => {
+    const updates = candidates
+      .filter((c) => checked[c.registrationId] && c.suggestedEmail)
+      .map((c) => ({ registrationId: c.registrationId, email: c.suggestedEmail }));
+    if (updates.length === 0) {
+      toast.error("Select at least one person first.");
+      return;
+    }
+    setApplying(true);
+    try {
+      const { updated } = await apiRequest<{ updated: number }>(
+        `/api/events/${eventId}/backfill-emails?program=${program}`,
+        { method: "POST", json: { updates } }
+      );
+      toast.success(`Updated ${updated} email${updated === 1 ? "" : "s"}.`);
+      onApplied();
+      onClose();
+    } catch {
+      toast.error("Failed to apply updates.");
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto">
+        <h3 className="text-base font-semibold text-gray-900 mb-1">Backfill Missing Emails</h3>
+        <p className="text-xs text-gray-400 mb-4">
+          Registrants with no email, matched by name against other events, raffles, the roster, and
+          accounts. Checked people get the suggested email applied.
+        </p>
+
+        {loading ? (
+          <p className="text-sm text-gray-400 py-6 text-center">Scanning...</p>
+        ) : candidates.length === 0 ? (
+          <p className="text-sm text-gray-400 py-6 text-center">No matches found for anyone missing an email.</p>
+        ) : (
+          <div className="space-y-3 mb-4">
+            {candidates.map((c) => (
+              <div key={c.registrationId} className="flex items-start gap-3 border border-gray-100 rounded-lg p-3">
+                <input
+                  type="checkbox"
+                  checked={checked[c.registrationId] ?? false}
+                  onChange={(e) => setChecked((prev) => ({ ...prev, [c.registrationId]: e.target.checked }))}
+                  className="w-4 h-4 accent-[#5E0009] mt-1"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 text-sm">{c.name}</p>
+                  <p className="text-xs text-gray-600">{c.suggestedEmail}</p>
+                  {c.matchedFrom && (
+                    <p className="text-xs text-gray-400">
+                      Found in {c.matchedFrom}{c.suggestedPhone ? ` (${c.suggestedPhone})` : ""}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex gap-3 justify-end">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">
+            Cancel
+          </button>
+          {candidates.length > 0 && (
+            <button
+              onClick={handleApply}
+              disabled={applying}
+              className="px-4 py-2 bg-[#5E0009] text-white rounded-lg text-sm font-semibold hover:bg-[#7a0012] transition disabled:opacity-60"
+            >
+              {applying ? "Applying..." : "Apply Selected"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Event form
 
 function EventForm({
@@ -1116,6 +1230,7 @@ function SubmissionsView({
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [invoicing, setInvoicing] = useState(false);
   const [showUnmatched, setShowUnmatched] = useState(false);
+  const [showBackfill, setShowBackfill] = useState(false);
   const unpaidCount = registrations.filter((r) => !r.paid && r.payerEmail).length;
 
   const handleCreateEmailGroup = async () => {
@@ -1190,6 +1305,12 @@ function SubmissionsView({
           >
             Find Unregistered Teammates
           </button>
+          <button
+            onClick={() => setShowBackfill(true)}
+            className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+          >
+            Backfill Missing Emails
+          </button>
         </div>
       </div>
 
@@ -1199,6 +1320,14 @@ function SubmissionsView({
           program={program}
           onClose={() => setShowUnmatched(false)}
           onCreated={reloadRegistrations}
+        />
+      )}
+      {showBackfill && (
+        <BackfillEmailsModal
+          eventId={event.id}
+          program={program}
+          onClose={() => setShowBackfill(false)}
+          onApplied={reloadRegistrations}
         />
       )}
 
