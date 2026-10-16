@@ -127,8 +127,7 @@ export default function RecruitmentForm({ userRole }) {
         <h1 className="text-4xl md:text-5xl font-extrabold">Recruitment Form</h1>
         <p className="text-white/80 mt-3 max-w-lg mx-auto">
           Interested in playing for Missouri State Lacrosse? We're a club program, not
-          NCAA-sponsored athletics, open to any Missouri State student. Tell us about
-          yourself and we'll be in touch.
+          NCAA-sponsored athletics, open to any current Missouri State student, incoming students welcome as well.
         </p>
 
         {(userRole === "admin" || userRole === "player") && (
