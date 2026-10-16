@@ -36,12 +36,18 @@ import com.mostate.lacrosse.Model.Event;
 import com.mostate.lacrosse.Model.EventPosItem;
 import com.mostate.lacrosse.Model.EventRegistration;
 import com.mostate.lacrosse.Model.EventTeam;
+import com.mostate.lacrosse.Model.Player;
 import com.mostate.lacrosse.Model.PaymentReceipt;
+import com.mostate.lacrosse.Model.RaffleEntry;
+import com.mostate.lacrosse.Model.UserAccount;
 import com.mostate.lacrosse.Repository.EventPosItemRepository;
 import com.mostate.lacrosse.Repository.EventRegistrationRepository;
 import com.mostate.lacrosse.Repository.EventRepository;
 import com.mostate.lacrosse.Repository.EventTeamRepository;
 import com.mostate.lacrosse.Repository.PaymentReceiptRepository;
+import com.mostate.lacrosse.Repository.PlayerRepository;
+import com.mostate.lacrosse.Repository.RaffleEntryRepository;
+import com.mostate.lacrosse.Repository.UserAccountRepository;
 import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Service.EmailService;
 import com.mostate.lacrosse.Service.S3Service;
@@ -73,6 +79,9 @@ public class EventsController {
     private final S3Service s3Service;
     private final AuthorizationService authorizationService;
     private final StripeService stripeService;
+    private final RaffleEntryRepository raffleEntryRepo;
+    private final UserAccountRepository userAccountRepo;
+    private final PlayerRepository playerRepo;
 
     @Value("${app.frontend.base-url}")
     private String frontendBaseUrl;
@@ -86,7 +95,10 @@ public class EventsController {
         EmailService emailService,
         S3Service s3Service,
         AuthorizationService authorizationService,
-        StripeService stripeService
+        StripeService stripeService,
+        RaffleEntryRepository raffleEntryRepo,
+        UserAccountRepository userAccountRepo,
+        PlayerRepository playerRepo
     ) {
         this.eventRepo = eventRepo;
         this.registrationRepo = registrationRepo;
@@ -97,6 +109,9 @@ public class EventsController {
         this.s3Service = s3Service;
         this.authorizationService = authorizationService;
         this.stripeService = stripeService;
+        this.raffleEntryRepo = raffleEntryRepo;
+        this.userAccountRepo = userAccountRepo;
+        this.playerRepo = playerRepo;
     }
 
     private boolean isAdmin(HttpServletRequest request, String program) {
@@ -315,6 +330,207 @@ public class EventsController {
 
         return ResponseEntity.ok(toRegResponse(reg));
     }
+
+    /**
+     * Scans this event's "team name"-labeled field (same one the team-pairing feature
+     * uses) for people named as teammates who never submitted their own registration -
+     * e.g. someone wrote "Jeff Cole, Seth Heartman" as teammates but only they themselves
+     * registered. Only returns names that don't already match an existing registrant for
+     * this event, and cross-references the rest of the database (other events, raffles,
+     * the roster, and site accounts) for a known email/phone, so the admin can see at a
+     * glance who's reachable by email vs who can only be caught in person. Nothing is
+     * created here - see createUnmatchedTeammates() below for that, after admin review.
+     */
+    @GetMapping("/{id}/unmatched-teammates")
+    public ResponseEntity<?> unmatchedTeammates(
+        HttpServletRequest request,
+        @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isBoard(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Board access required"));
+        }
+        Event event = eventRepo.findById(id).orElse(null);
+        if (event == null) return ResponseEntity.notFound().build();
+        String teamFieldId = findTeamNameFieldId(event);
+        if (teamFieldId == null) {
+            return ResponseEntity.ok(List.of());
+        }
+
+        List<EventRegistration> regs = registrationRepo.findAllByEventId(id);
+        Set<String> existingNormalizedNames = regs.stream()
+            .map(EventRegistration::getPayerName)
+            .filter(n -> n != null && !n.isBlank())
+            .map(this::normalizeForSearch)
+            .collect(Collectors.toSet());
+
+        // normalized name -> {name, mentionedBy: [...]}
+        Map<String, Map<String, Object>> candidates = new LinkedHashMap<>();
+        for (EventRegistration reg : regs) {
+            Map<String, Object> formData = JsonUtils.readMap(reg.getFormData());
+            Object raw = formData.get(teamFieldId);
+            if (raw == null) continue;
+            for (String token : extractNameCandidates(raw.toString())) {
+                String normalized = normalizeForSearch(token);
+                if (normalized.length() < 2) continue;
+                boolean alreadyRegistered = existingNormalizedNames.stream()
+                    .anyMatch(n -> isLikelyNameMatch(normalized, n));
+                if (alreadyRegistered) continue;
+
+                Map<String, Object> candidate = candidates.get(normalized);
+                if (candidate == null) {
+                    candidate = new LinkedHashMap<>();
+                    candidate.put("name", TextSanitizer.titleCaseName(token));
+                    candidate.put("mentionedBy", new ArrayList<String>());
+                    candidates.put(normalized, candidate);
+                }
+                @SuppressWarnings("unchecked")
+                List<String> mentionedBy = (List<String>) candidate.get("mentionedBy");
+                String by = reg.getPayerName();
+                if (by != null && !mentionedBy.contains(by)) {
+                    mentionedBy.add(by);
+                }
+            }
+        }
+
+        List<Map<String, Object>> result = candidates.values().stream().map(c -> {
+            Map<String, Object> contact = findKnownContact((String) c.get("name"));
+            Map<String, Object> out = new LinkedHashMap<>(c);
+            if (contact != null) {
+                out.putAll(contact);
+            }
+            return out;
+        }).toList();
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Creates an unpaid registration for each admin-approved name from the scan above, so
+     * they immediately show up in the Tap to Pay app's existing unpaid-registrants list
+     * and the QR check-in's search - no app changes needed, since those just read
+     * whatever registrations already exist.
+     */
+    @PostMapping("/{id}/unmatched-teammates")
+    public ResponseEntity<?> createUnmatchedTeammates(
+        HttpServletRequest request,
+        @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program,
+        @RequestBody CreateUnmatchedRequest body
+    ) {
+        if (!isBoard(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Board access required"));
+        }
+        Event event = eventRepo.findById(id).orElse(null);
+        if (event == null) return ResponseEntity.notFound().build();
+        if (body.entries() == null || body.entries().isEmpty()) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("No names given"));
+        }
+
+        List<EventRegistration> created = new ArrayList<>();
+        for (UnmatchedEntry entry : body.entries()) {
+            if (entry.name() == null || entry.name().isBlank()) continue;
+            EventRegistration reg = new EventRegistration();
+            reg.setEventId(id);
+            reg.setPayerName(TextSanitizer.titleCaseName(entry.name()));
+            reg.setPayerEmail(entry.email() != null && !entry.email().isBlank() ? entry.email().trim().toLowerCase() : null);
+            reg.setAmountPaid(BigDecimal.ZERO);
+            reg.setPaid(false);
+            reg.setFormData("{}");
+            created.add(registrationRepo.save(reg));
+        }
+        return ResponseEntity.ok(created.stream().map(this::toRegResponse).toList());
+    }
+
+    /**
+     * Extracts individual name candidates from a free-text teammates field. Parenthesized
+     * content ("Nickname (Name1, Name2)") and the segment after the last "/" ("Nickname/
+     * Name1, Name2") are treated as the authoritative name list when present, since a team
+     * nickname otherwise pollutes the split. A comma-free, slash-free, paren-free string
+     * ("Derek Joel Stew") is too ambiguous to split reliably and is skipped - if the same
+     * team is described elsewhere with real delimiters (as it usually is, by a different
+     * teammate), that version catches it instead.
+     */
+    private List<String> extractNameCandidates(String text) {
+        if (text == null || text.isBlank()) return List.of();
+        String working = text;
+        Matcher paren = Pattern.compile("\\(([^)]+)\\)").matcher(text);
+        if (paren.find()) {
+            working = paren.group(1);
+        } else if (text.contains("/")) {
+            String[] parts = text.split("/");
+            working = parts[parts.length - 1];
+        } else if (!text.contains(",")) {
+            return List.of();
+        }
+
+        List<String> out = new ArrayList<>();
+        for (String part : working.split(",")) {
+            for (String sub : part.split("(?i)\\s+and\\s+|\\s*&\\s*")) {
+                String candidate = sub.trim();
+                if (looksLikeName(candidate)) out.add(candidate);
+            }
+        }
+        return out;
+    }
+
+    private static final Set<String> NAME_STOPWORDS = Set.of(
+        "team", "hole", "squad", "crew", "group", "wrong", "mo", "town"
+    );
+
+    private boolean looksLikeName(String s) {
+        if (s.isEmpty()) return false;
+        String[] words = s.split("\\s+");
+        if (words.length == 0 || words.length > 3) return false;
+        for (String word : words) {
+            if (!word.matches("[A-Za-z'.-]+")) return false;
+            if (NAME_STOPWORDS.contains(word.toLowerCase())) return false;
+        }
+        return true;
+    }
+
+    /**
+     * Cross-references everything else in the database for a name match - other events'
+     * registrations, raffle entries, the player roster, and site accounts - so an admin
+     * reviewing unmatched teammates can see who's actually reachable by email instead of
+     * only being catchable in person. First match wins; stops at the first source that has
+     * an email on file for this name.
+     */
+    private Map<String, Object> findKnownContact(String name) {
+        String normalized = normalizeForSearch(name);
+
+        for (EventRegistration r : registrationRepo.findAll()) {
+            if (r.getPayerName() == null || r.getPayerEmail() == null || r.getPayerEmail().isBlank()) continue;
+            if (isLikelyNameMatch(normalized, normalizeForSearch(r.getPayerName()))) {
+                return Map.of("suggestedEmail", r.getPayerEmail(), "matchedFrom", "a previous event registration");
+            }
+        }
+        for (RaffleEntry r : raffleEntryRepo.findAll()) {
+            if (r.getPayerName() == null || r.getPayerEmail() == null || r.getPayerEmail().isBlank()) continue;
+            if (isLikelyNameMatch(normalized, normalizeForSearch(r.getPayerName()))) {
+                Map<String, Object> out = new LinkedHashMap<>();
+                out.put("suggestedEmail", r.getPayerEmail());
+                if (r.getPayerPhone() != null && !r.getPayerPhone().isBlank()) out.put("suggestedPhone", r.getPayerPhone());
+                out.put("matchedFrom", "a raffle entry");
+                return out;
+            }
+        }
+        for (Player p : playerRepo.findAll()) {
+            if (p.getName() == null || p.getEmail() == null || p.getEmail().isBlank()) continue;
+            if (isLikelyNameMatch(normalized, normalizeForSearch(p.getName()))) {
+                return Map.of("suggestedEmail", p.getEmail(), "matchedFrom", "the player roster");
+            }
+        }
+        for (UserAccount u : userAccountRepo.findAll()) {
+            if (u.getDisplayName() == null || u.getEmail() == null || u.getEmail().isBlank()) continue;
+            if (isLikelyNameMatch(normalized, normalizeForSearch(u.getDisplayName()))) {
+                return Map.of("suggestedEmail", u.getEmail(), "matchedFrom", "an existing account");
+            }
+        }
+        return null;
+    }
+
+    public record CreateUnmatchedRequest(List<UnmatchedEntry> entries) {}
+    public record UnmatchedEntry(String name, String email) {}
 
     private String normalizeForSearch(String value) {
         if (value == null) return "";
@@ -723,11 +939,15 @@ public class EventsController {
     }
 
     private String findTeamNameFieldId(Event event) {
+        return findFieldIdByLabel(event, "team name");
+    }
+
+    private String findFieldIdByLabel(Event event, String labelContains) {
         if (event == null || event.getFields() == null) return null;
         for (Object obj : JsonUtils.readList(event.getFields())) {
             if (!(obj instanceof Map<?, ?> field)) continue;
             Object label = field.get("label");
-            if (label == null || !label.toString().toLowerCase().contains("team name")) continue;
+            if (label == null || !label.toString().toLowerCase().contains(labelContains)) continue;
             Object id = field.get("id");
             if (id != null) return id.toString();
         }

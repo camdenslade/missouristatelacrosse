@@ -496,6 +496,129 @@ function QrCodeModal({ event, program, onClose }: { event: ApiEvent; program: Pr
   );
 }
 
+type UnmatchedCandidate = {
+  name: string;
+  mentionedBy: string[];
+  suggestedEmail?: string;
+  suggestedPhone?: string;
+  matchedFrom?: string;
+};
+
+function UnmatchedTeammatesModal({
+  eventId,
+  program,
+  onClose,
+  onCreated,
+}: {
+  eventId: string;
+  program: Program;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [loading, setLoading] = useState(true);
+  const [candidates, setCandidates] = useState<UnmatchedCandidate[]>([]);
+  const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [emails, setEmails] = useState<Record<string, string>>({});
+  const [creating, setCreating] = useState(false);
+
+  useEffect(() => {
+    apiRequest<UnmatchedCandidate[]>(`/api/events/${eventId}/unmatched-teammates?program=${program}`)
+      .then((list) => {
+        setCandidates(list);
+        setChecked(Object.fromEntries(list.map((c) => [c.name, true])));
+        setEmails(Object.fromEntries(list.map((c) => [c.name, c.suggestedEmail ?? ""])));
+      })
+      .catch(() => toast.error("Failed to scan for unregistered teammates."))
+      .finally(() => setLoading(false));
+  }, [eventId, program]);
+
+  const handleCreate = async () => {
+    const entries = candidates
+      .filter((c) => checked[c.name])
+      .map((c) => ({ name: c.name, email: emails[c.name]?.trim() || undefined }));
+    if (entries.length === 0) {
+      toast.error("Select at least one person first.");
+      return;
+    }
+    setCreating(true);
+    try {
+      await apiRequest(`/api/events/${eventId}/unmatched-teammates?program=${program}`, {
+        method: "POST",
+        json: { entries },
+      });
+      toast.success(`Added ${entries.length} unpaid registration${entries.length === 1 ? "" : "s"}.`);
+      onCreated();
+      onClose();
+    } catch {
+      toast.error("Failed to add registrations.");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto">
+        <h3 className="text-base font-semibold text-gray-900 mb-1">Unregistered Teammates</h3>
+        <p className="text-xs text-gray-400 mb-4">
+          People named as teammates who never submitted their own registration. Checked people will get
+          an unpaid registration created for them, so they show up in the Tap to Pay app and QR check-in.
+        </p>
+
+        {loading ? (
+          <p className="text-sm text-gray-400 py-6 text-center">Scanning...</p>
+        ) : candidates.length === 0 ? (
+          <p className="text-sm text-gray-400 py-6 text-center">No unregistered teammates found.</p>
+        ) : (
+          <div className="space-y-3 mb-4">
+            {candidates.map((c) => (
+              <div key={c.name} className="flex items-start gap-3 border border-gray-100 rounded-lg p-3">
+                <input
+                  type="checkbox"
+                  checked={checked[c.name] ?? false}
+                  onChange={(e) => setChecked((prev) => ({ ...prev, [c.name]: e.target.checked }))}
+                  className="w-4 h-4 accent-[#5E0009] mt-1"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 text-sm">{c.name}</p>
+                  <p className="text-xs text-gray-400">Mentioned by: {c.mentionedBy.join(", ")}</p>
+                  {c.matchedFrom && (
+                    <p className="text-xs text-gray-400">
+                      Found contact info from {c.matchedFrom}{c.suggestedPhone ? ` (${c.suggestedPhone})` : ""}
+                    </p>
+                  )}
+                  <input
+                    type="email"
+                    placeholder="Email (optional)"
+                    value={emails[c.name] ?? ""}
+                    onChange={(e) => setEmails((prev) => ({ ...prev, [c.name]: e.target.value }))}
+                    className="mt-1 w-full border border-gray-200 rounded-lg px-2 py-1 text-xs"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex gap-3 justify-end">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">
+            Cancel
+          </button>
+          {candidates.length > 0 && (
+            <button
+              onClick={handleCreate}
+              disabled={creating}
+              className="px-4 py-2 bg-[#5E0009] text-white rounded-lg text-sm font-semibold hover:bg-[#7a0012] transition disabled:opacity-60"
+            >
+              {creating ? "Adding..." : "Add Selected"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Event form
 
 function EventForm({
@@ -992,6 +1115,7 @@ function SubmissionsView({
 
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [invoicing, setInvoicing] = useState(false);
+  const [showUnmatched, setShowUnmatched] = useState(false);
   const unpaidCount = registrations.filter((r) => !r.paid && r.payerEmail).length;
 
   const handleCreateEmailGroup = async () => {
@@ -1060,8 +1184,23 @@ function SubmissionsView({
           >
             {invoicing ? "Sending..." : `Invoice Unpaid (${unpaidCount})`}
           </button>
+          <button
+            onClick={() => setShowUnmatched(true)}
+            className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+          >
+            Find Unregistered Teammates
+          </button>
         </div>
       </div>
+
+      {showUnmatched && (
+        <UnmatchedTeammatesModal
+          eventId={event.id}
+          program={program}
+          onClose={() => setShowUnmatched(false)}
+          onCreated={reloadRegistrations}
+        />
+      )}
 
       {loading ? (
         <p className="text-gray-400">Loading...</p>
