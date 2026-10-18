@@ -21,6 +21,7 @@ import com.mostate.lacrosse.Service.PaymentReceiptService;
 import com.mostate.lacrosse.Service.StripeService;
 import com.mostate.lacrosse.Utils.JsonUtils;
 import com.stripe.exception.SignatureVerificationException;
+import com.stripe.exception.StripeException;
 import com.stripe.model.Event;
 import com.stripe.model.EventDataObjectDeserializer;
 import com.stripe.model.Invoice;
@@ -283,20 +284,30 @@ public class StripeController {
         });
     }
 
-    private static Invoice invoiceOf(Event event) {
+    // getObject() is empty whenever the webhook endpoint's API version differs from the
+    // SDK's pinned one, which silently dropped every Terminal and invoice event. Fall back
+    // to re-fetching by id, which also guarantees we act on Stripe's current state.
+    private static Invoice invoiceOf(Event event) throws StripeException {
         EventDataObjectDeserializer d = event.getDataObjectDeserializer();
         if (d.getObject().isPresent() && d.getObject().get() instanceof Invoice inv) {
             return inv;
         }
-        return null;
+        String id = rawIdOf(d);
+        return id != null && id.startsWith("in_") ? Invoice.retrieve(id) : null;
     }
 
-    private static PaymentIntent paymentIntentOf(Event event) {
+    private static PaymentIntent paymentIntentOf(Event event) throws StripeException {
         EventDataObjectDeserializer d = event.getDataObjectDeserializer();
         if (d.getObject().isPresent() && d.getObject().get() instanceof PaymentIntent pi) {
             return pi;
         }
-        return null;
+        String id = rawIdOf(d);
+        return id != null && id.startsWith("pi_") ? PaymentIntent.retrieve(id) : null;
+    }
+
+    private static String rawIdOf(EventDataObjectDeserializer d) {
+        Object id = JsonUtils.readMap(d.getRawJson()).get("id");
+        return id == null ? null : String.valueOf(id);
     }
 
     private static String sessionIdOf(Event event) {
