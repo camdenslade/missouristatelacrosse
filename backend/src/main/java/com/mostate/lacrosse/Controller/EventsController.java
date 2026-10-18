@@ -64,6 +64,7 @@ import com.stripe.param.CustomerCreateParams;
 import com.stripe.param.CustomerListParams;
 import com.stripe.param.InvoiceCreateParams;
 import com.stripe.param.InvoiceItemCreateParams;
+import com.stripe.param.InvoiceItemListParams;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
@@ -1590,24 +1591,18 @@ public class EventsController {
             try {
                 Customer customer = findOrCreateCustomer(reg.getPayerEmail(), reg.getPayerName());
 
-                InvoiceItemCreateParams itemParams = InvoiceItemCreateParams.builder()
-                    .setCustomer(customer.getId())
-                    .setAmount(priceCents)
-                    .setCurrency("usd")
-                    .setDescription(event.getName() + " - registration")
-                    .build();
-                InvoiceItem.create(itemParams);
+                String itemDescription = event.getName() + " - registration";
+                deleteStalePendingItems(customer.getId(), itemDescription);
 
+                // Create the invoice empty (EXCLUDE pending items), then attach the line item
+                // directly to it by id. Never sweeping pending items means a leftover item on
+                // the customer can't double the total, and the item can't miss the invoice.
                 InvoiceCreateParams invoiceParams = InvoiceCreateParams.builder()
                     .setCustomer(customer.getId())
                     .setCollectionMethod(InvoiceCreateParams.CollectionMethod.SEND_INVOICE)
                     .setDaysUntilDue(14L)
                     .setDescription("Missouri State Lacrosse - " + event.getName())
-                    // Stripe's API defaults this to EXCLUDE as of the 2023-08-16 version -
-                    // without it, the InvoiceItem created just above never actually gets
-                    // attached to this invoice, so it sends for $0 while the real $80 item
-                    // sits orphaned "pending" on the customer. This is the fix for that.
-                    .setPendingInvoiceItemsBehavior(InvoiceCreateParams.PendingInvoiceItemsBehavior.INCLUDE)
+                    .setPendingInvoiceItemsBehavior(InvoiceCreateParams.PendingInvoiceItemsBehavior.EXCLUDE)
                     // Lets the webhook (StripeController, "invoice.paid") mark exactly this
                     // registration paid once Stripe tells us the customer actually paid it.
                     .putMetadata("registrationId", reg.getId().toString())
@@ -1615,7 +1610,23 @@ public class EventsController {
                     .putMetadata("program", program)
                     .build();
                 Invoice invoice = Invoice.create(invoiceParams);
-                invoice.finalizeInvoice();
+
+                InvoiceItemCreateParams itemParams = InvoiceItemCreateParams.builder()
+                    .setCustomer(customer.getId())
+                    .setInvoice(invoice.getId())
+                    .setAmount(priceCents)
+                    .setCurrency("usd")
+                    .setDescription(itemDescription)
+                    .build();
+                InvoiceItem.create(itemParams);
+
+                invoice = Invoice.retrieve(invoice.getId());
+                if (invoice.getAmountDue() == null || invoice.getAmountDue() != priceCents) {
+                    invoice.delete();
+                    failures.add(reg.getPayerEmail() + ": invoice total came out wrong, not sent");
+                    continue;
+                }
+                invoice = invoice.finalizeInvoice();
                 invoice.sendInvoice();
                 sent++;
             } catch (StripeException e) {
@@ -1624,6 +1635,20 @@ public class EventsController {
         }
 
         return ResponseEntity.ok(Map.of("invoicesSent", sent, "failures", failures));
+    }
+
+    /** Removes orphaned, never-invoiced items for this event left by the old $0-invoice bug. */
+    private void deleteStalePendingItems(String customerId, String description) throws StripeException {
+        InvoiceItemListParams params = InvoiceItemListParams.builder()
+            .setCustomer(customerId)
+            .setPending(true)
+            .setLimit(100L)
+            .build();
+        for (InvoiceItem item : InvoiceItem.list(params).getData()) {
+            if (description.equals(item.getDescription())) {
+                item.delete();
+            }
+        }
     }
 
     private Customer findOrCreateCustomer(String email, String name) throws StripeException {
