@@ -250,6 +250,9 @@ public class StripeController {
     }
 
     private void markRegistrationPaid(String registrationId, PaymentIntent intent) {
+        if (intent.getAmount() == null || intent.getAmount() <= 0) {
+            return;
+        }
         registrationRepository.findById(java.util.UUID.fromString(registrationId)).ifPresent(reg -> {
             if (reg.isPaid()) return;
             reg.setPaid(true);
@@ -262,6 +265,13 @@ public class StripeController {
     }
 
     private void markRegistrationPaidFromInvoice(String registrationId, String eventId, Invoice invoice) {
+        // Stripe auto-marks a $0 invoice "paid" the instant it's finalized, since there's
+        // nothing to actually collect - a bug upstream of here (an empty invoice, e.g. from
+        // forgetting pendingInvoiceItemsBehavior) must never be able to flip someone to paid
+        // with nothing actually charged. Real invoices for this club are never $0.
+        if (invoice.getAmountPaid() == null || invoice.getAmountPaid() <= 0) {
+            return;
+        }
         registrationRepository.findById(java.util.UUID.fromString(registrationId)).ifPresent(reg -> {
             if (reg.isPaid()) return;
             reg.setPaid(true);
