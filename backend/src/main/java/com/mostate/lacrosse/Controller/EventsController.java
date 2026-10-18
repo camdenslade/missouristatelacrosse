@@ -1603,6 +1603,11 @@ public class EventsController {
                     .setCollectionMethod(InvoiceCreateParams.CollectionMethod.SEND_INVOICE)
                     .setDaysUntilDue(14L)
                     .setDescription("Missouri State Lacrosse - " + event.getName())
+                    // Stripe's API defaults this to EXCLUDE as of the 2023-08-16 version -
+                    // without it, the InvoiceItem created just above never actually gets
+                    // attached to this invoice, so it sends for $0 while the real $80 item
+                    // sits orphaned "pending" on the customer. This is the fix for that.
+                    .setPendingInvoiceItemsBehavior(InvoiceCreateParams.PendingInvoiceItemsBehavior.INCLUDE)
                     // Lets the webhook (StripeController, "invoice.paid") mark exactly this
                     // registration paid once Stripe tells us the customer actually paid it.
                     .putMetadata("registrationId", reg.getId().toString())
