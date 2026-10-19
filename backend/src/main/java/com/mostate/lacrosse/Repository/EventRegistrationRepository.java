@@ -1,5 +1,6 @@
 package com.mostate.lacrosse.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,4 +30,5 @@ public interface EventRegistrationRepository extends JpaRepository<EventRegistra
     Optional<EventRegistration> findByPayerEmailAndEventIdAndPaidTrue(String payerEmail, UUID eventId);
     long countByTeamIdAndPaidTrue(UUID teamId);
     boolean existsByPaypalOrderId(String paypalOrderId);
+    boolean existsByEventIdAndAmountPaidGreaterThan(UUID eventId, BigDecimal amount);
 }

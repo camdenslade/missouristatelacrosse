@@ -13,6 +13,7 @@ const initialState = {
   loading: true,
   form: blankForm,
   saving: false,
+  syncing: false,
 };
 
 function reducer(state, action) {
@@ -25,6 +26,8 @@ function reducer(state, action) {
       return { ...state, form: blankForm };
     case "SET_SAVING":
       return { ...state, saving: action.payload };
+    case "SET_SYNCING":
+      return { ...state, syncing: action.payload };
     case "REMOVE":
       return { ...state, items: state.items.filter((i) => i.id !== action.id) };
     default:
@@ -77,6 +80,33 @@ export default function EventPosItemsModal({ eventId, eventName, onClose }) {
     } catch (err) {
       console.error(err);
       toast.error("Failed to remove.");
+    }
+  };
+
+  const handleSync = async () => {
+    dispatch({ type: "SET_SYNCING", payload: true });
+    try {
+      const report = await apiRequest<{
+        days: number;
+        stripePayments: number;
+        stripeTotal: number;
+        newlyRecorded: number;
+        newlyMarkedPaid: number;
+        chargedMoreThanOnce: Record<string, string[]>;
+      }>("/api/events/terminal-sync?days=14", { method: "POST" });
+      const doubles = Object.keys(report.chargedMoreThanOnce || {}).length;
+      toast.success(
+        `Stripe has ${report.stripePayments} card payments ($${Number(report.stripeTotal).toFixed(2)}) in the last ${report.days} days. ` +
+        `Recovered ${report.newlyRecorded}, marked ${report.newlyMarkedPaid} registrant${report.newlyMarkedPaid === 1 ? "" : "s"} paid.` +
+        (doubles ? ` ${doubles} registrant${doubles === 1 ? " was" : "s were"} charged more than once, check Stripe.` : ""),
+        { duration: 12000 }
+      );
+      load();
+    } catch (err) {
+      console.error(err);
+      toast.error("Sync from Stripe failed.");
+    } finally {
+      dispatch({ type: "SET_SYNCING", payload: false });
     }
   };
 
@@ -148,6 +178,10 @@ export default function EventPosItemsModal({ eventId, eventName, onClose }) {
               Sales so far: {state.sales.saleCount} sale{state.sales.saleCount === 1 ? "" : "s"},
               {" "}${Number(state.sales.grandTotal).toFixed(2)} total
             </h4>
+            <p className="text-sm text-gray-600 mb-2">
+              Registration payments: {state.sales.registrationCount ?? 0},
+              {" "}${Number(state.sales.registrationTotal ?? 0).toFixed(2)} total
+            </p>
             {state.sales.items.length > 0 ? (
               <ul className="text-sm text-gray-600 space-y-1">
                 {state.sales.items.map((i) => (
@@ -159,6 +193,18 @@ export default function EventPosItemsModal({ eventId, eventName, onClose }) {
             ) : (
               <p className="text-sm text-gray-400">No itemized sales yet.</p>
             )}
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <button
+                onClick={handleSync}
+                disabled={state.syncing}
+                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition disabled:opacity-60"
+              >
+                {state.syncing ? "Syncing..." : "Sync card payments from Stripe"}
+              </button>
+              <span className="text-xs text-gray-400">
+                Pulls every Tap to Pay charge from the last 14 days and records any that are missing.
+              </span>
+            </div>
           </div>
         )}
 

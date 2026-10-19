@@ -49,6 +49,8 @@ public class Event {
 
     private boolean published = false;
 
+    private boolean archived = false;
+
     private String image;
 
     @Column(name = "created_at")
@@ -107,6 +109,9 @@ public class Event {
 
     public boolean isPublished() { return published; }
     public void setPublished(boolean published) { this.published = published; }
+
+    public boolean isArchived() { return archived; }
+    public void setArchived(boolean archived) { this.archived = archived; }
 
     public String getImage() { return image; }
     public void setImage(String image) { this.image = image; }

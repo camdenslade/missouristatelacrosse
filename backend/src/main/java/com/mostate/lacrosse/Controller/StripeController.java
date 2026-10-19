@@ -19,6 +19,7 @@ import com.mostate.lacrosse.Model.EventRegistration;
 import com.mostate.lacrosse.Repository.EventRegistrationRepository;
 import com.mostate.lacrosse.Service.PaymentReceiptService;
 import com.mostate.lacrosse.Service.StripeService;
+import com.mostate.lacrosse.Service.TerminalPaymentRecorder;
 import com.mostate.lacrosse.Utils.JsonUtils;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.exception.StripeException;
@@ -46,15 +47,18 @@ public class StripeController {
     private final StripeService stripeService;
     private final PaymentReceiptService receiptService;
     private final EventRegistrationRepository registrationRepository;
+    private final TerminalPaymentRecorder terminalPaymentRecorder;
 
     public StripeController(
         StripeService stripeService,
         PaymentReceiptService receiptService,
-        EventRegistrationRepository registrationRepository
+        EventRegistrationRepository registrationRepository,
+        TerminalPaymentRecorder terminalPaymentRecorder
     ) {
         this.stripeService = stripeService;
         this.receiptService = receiptService;
         this.registrationRepository = registrationRepository;
+        this.terminalPaymentRecorder = terminalPaymentRecorder;
     }
 
     @GetMapping("/config")
@@ -174,47 +178,13 @@ public class StripeController {
         }
 
         // Onsite Stripe Terminal (Tap to Pay) sale - tagged by TerminalController when the
-        // PaymentIntent was created. Recorded as a payment_receipts row like any other
-        // payment, so it shows up in the budget ledger automatically.
+        // PaymentIntent was created. TerminalPaymentRecorder writes the receipt and marks a
+        // registrant paid; its scheduled sync covers any event this endpoint never receives.
         if ("payment_intent.succeeded".equals(type)) {
             try {
                 PaymentIntent intent = paymentIntentOf(event);
-                if (intent != null && "true".equals(intent.getMetadata().get("terminalSale"))) {
-                    String program = intent.getMetadata().getOrDefault("program", "men");
-                    String eventId = intent.getMetadata().get("eventId");
-                    String registrationId = intent.getMetadata().get("registrationId");
-                    String source = registrationId != null && !registrationId.isBlank()
-                        ? "event-registration-" + eventId
-                        : (eventId != null && !eventId.isBlank()) ? "event-pos-" + eventId : "pos-sale";
-
-                    Map<String, Object> receiptPayload = new java.util.LinkedHashMap<>(Map.of(
-                        "id", intent.getId(),
-                        "status", "COMPLETED",
-                        "payer", Map.of(),
-                        "purchase_units", java.util.List.of(Map.of(
-                            "amount", Map.of(
-                                "value", java.math.BigDecimal.valueOf(intent.getAmount(), 2).toPlainString(),
-                                "currency_code", intent.getCurrency().toUpperCase()
-                            )
-                        ))
-                    ));
-                    String itemsJson = intent.getMetadata().get("items");
-                    if (itemsJson != null && !itemsJson.isBlank()) {
-                        receiptPayload.put("items", com.mostate.lacrosse.Utils.JsonUtils.readList(itemsJson));
-                    }
-
-                    TenantContext.setTenant(program);
-                    try {
-                        receiptService.recordReceipt(receiptPayload, source, "stripe-terminal");
-                        // Registration mode (vs generic POS): this charge was for one
-                        // specific unpaid registrant, picked off a list in the app - mark
-                        // that exact registration paid now that Stripe confirms it went through.
-                        if (registrationId != null && !registrationId.isBlank()) {
-                            markRegistrationPaid(registrationId, intent);
-                        }
-                    } finally {
-                        TenantContext.clear();
-                    }
+                if (intent != null) {
+                    terminalPaymentRecorder.record(intent);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -248,21 +218,6 @@ public class StripeController {
             }
         }
         return ResponseEntity.ok(Map.of("received", true));
-    }
-
-    private void markRegistrationPaid(String registrationId, PaymentIntent intent) {
-        if (intent.getAmount() == null || intent.getAmount() <= 0) {
-            return;
-        }
-        registrationRepository.findById(java.util.UUID.fromString(registrationId)).ifPresent(reg -> {
-            if (reg.isPaid()) return;
-            reg.setPaid(true);
-            reg.setPaidAt(java.time.Instant.now());
-            BigDecimal current = reg.getAmountPaid() != null ? reg.getAmountPaid() : BigDecimal.ZERO;
-            reg.setAmountPaid(current.add(BigDecimal.valueOf(intent.getAmount(), 2)));
-            reg.setPaypalOrderId(intent.getId());
-            registrationRepository.save(reg);
-        });
     }
 
     private void markRegistrationPaidFromInvoice(String registrationId, String eventId, Invoice invoice) {

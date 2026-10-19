@@ -20,6 +20,7 @@ import {
   fetchAdminEvents,
   fetchRegistrations,
   pairEventTeam,
+  setEventArchived,
   updateEvent,
   sendTeamReminder,
 } from "../../../../Global/Common/hooks/useEvents";
@@ -123,6 +124,7 @@ type State = {
 
 type Action =
   | { type: "LOADED"; events: ApiEvent[] }
+  | { type: "EVENT_UPDATED"; event: ApiEvent }
   | { type: "SET_VIEW"; view: View }
   | { type: "OPEN_CREATE" }
   | { type: "OPEN_EDIT"; event: ApiEvent }
@@ -209,6 +211,8 @@ function reducer(state: State, action: Action): State {
         : [...state.events, action.event];
       return { ...state, saving: false, events, view: "list" };
     }
+    case "EVENT_UPDATED":
+      return { ...state, events: state.events.map((e) => (e.id === action.event.id ? action.event : e)) };
     case "DELETE_DONE":
       return { ...state, events: state.events.filter((e) => e.id !== action.id) };
     case "SET_ERROR":
@@ -241,6 +245,7 @@ export default function ManageEvents() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [posItemsEvent, setPosItemsEvent] = useState<ApiEvent | null>(null);
   const [qrEvent, setQrEvent] = useState<ApiEvent | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     fetchAdminEvents()
@@ -290,14 +295,34 @@ export default function ManageEvents() {
   }, [state.form, state.editingId]);
 
   const handleDelete = useCallback(async (id: string) => {
-    if (!await confirm("Delete this event and all its registrations?")) return;
+    if (!await confirm("Permanently delete this event and all its registrations? This can't be undone.")) return;
     try {
       await deleteEvent(id);
       dispatch({ type: "DELETE_DONE", id });
-    } catch {
-      toast.error("Failed to delete event.");
+    } catch (err) {
+      toast.error(
+        String(err).includes("409")
+          ? "This event has payment records, so it can only be archived."
+          : "Failed to delete event."
+      );
     }
   }, [confirm]);
+
+  const handleArchive = useCallback(async (event: ApiEvent, archived: boolean) => {
+    if (archived && !await confirm(
+      `Archive "${event.name}"? It comes off the website and the Tap to Pay app, but its registrations and payments stay in the budget.`
+    )) return;
+    try {
+      const updated = await setEventArchived(event.id, archived);
+      dispatch({ type: "EVENT_UPDATED", event: updated });
+      toast.success(archived ? "Event archived." : "Event restored.");
+    } catch {
+      toast.error(archived ? "Failed to archive event." : "Failed to restore event.");
+    }
+  }, [confirm]);
+
+  const archivedCount = state.events.filter((e) => e.archived).length;
+  const visibleEvents = state.events.filter((e) => !!e.archived === showArchived);
 
   if (state.view === "form") {
     return (
@@ -336,7 +361,17 @@ export default function ManageEvents() {
   return (
     <div>
       <div className="flex justify-between items-center mb-5">
-        <h2 className="text-lg font-bold text-gray-900">Events</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-bold text-gray-900">{showArchived ? "Archived Events" : "Events"}</h2>
+          {(archivedCount > 0 || showArchived) && (
+            <button
+              onClick={() => setShowArchived((v) => !v)}
+              className="text-xs text-gray-500 hover:text-gray-800 hover:underline"
+            >
+              {showArchived ? "Back to active events" : `Archived (${archivedCount})`}
+            </button>
+          )}
+        </div>
         <button
           onClick={() => {
             imageFileRef.current = null;
@@ -351,8 +386,10 @@ export default function ManageEvents() {
 
       {state.loading ? (
         <p className="text-gray-400">Loading...</p>
-      ) : state.events.length === 0 ? (
-        <p className="text-gray-400 text-center py-10">No events yet. Create one above.</p>
+      ) : visibleEvents.length === 0 ? (
+        <p className="text-gray-400 text-center py-10">
+          {showArchived ? "No archived events." : "No events yet. Create one above."}
+        </p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
@@ -368,7 +405,7 @@ export default function ManageEvents() {
               </tr>
             </thead>
             <tbody>
-              {state.events.map((event) => (
+              {visibleEvents.map((event) => (
                 <tr key={event.id} className="border-b hover:bg-gray-50">
                   <td className="py-2 pr-4 font-medium">{event.name}</td>
                   <td className="py-2 pr-4 text-gray-600">
@@ -394,7 +431,7 @@ export default function ManageEvents() {
                           : "bg-gray-100 text-gray-500"
                       }`}
                     >
-                      {event.published ? "Published" : "Draft"}
+                      {event.archived ? "Archived" : event.published ? "Published" : "Draft"}
                     </span>
                   </td>
                   <td className="py-2 pr-4 text-gray-600">{event.registrationCount ?? 0}</td>
@@ -428,12 +465,29 @@ export default function ManageEvents() {
                       >
                         Edit
                       </button>
-                      <button
-                        onClick={() => handleDelete(event.id)}
-                        className="text-xs px-2 py-1 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-medium"
-                      >
-                        Delete
-                      </button>
+                      {event.archived ? (
+                        <>
+                          <button
+                            onClick={() => handleArchive(event, false)}
+                            className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+                          >
+                            Restore
+                          </button>
+                          <button
+                            onClick={() => handleDelete(event.id)}
+                            className="text-xs px-2 py-1 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-medium"
+                          >
+                            Delete
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => handleArchive(event, true)}
+                          className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+                        >
+                          Archive
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
