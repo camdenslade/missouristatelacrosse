@@ -97,7 +97,7 @@ public class TerminalController {
         }
         try {
             TenantContext.setTenant("women".equalsIgnoreCase(program) ? "women" : "men");
-            List<Map<String, Object>> events = eventRepository.findAllByOrderByStartTimeAsc().stream()
+            List<Map<String, Object>> events = eventRepository.findByArchivedFalseOrderByStartTimeAsc().stream()
                 .map(e -> Map.<String, Object>of(
                     "id", e.getId().toString(),
                     "name", e.getName(),

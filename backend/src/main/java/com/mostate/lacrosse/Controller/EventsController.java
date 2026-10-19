@@ -52,6 +52,7 @@ import com.mostate.lacrosse.Service.AuthorizationService;
 import com.mostate.lacrosse.Service.EmailService;
 import com.mostate.lacrosse.Service.S3Service;
 import com.mostate.lacrosse.Service.StripeService;
+import com.mostate.lacrosse.Service.TerminalPaymentRecorder;
 import com.mostate.lacrosse.Utils.EmailTemplate;
 import com.mostate.lacrosse.Utils.JsonUtils;
 import com.mostate.lacrosse.Utils.TextSanitizer;
@@ -83,6 +84,7 @@ public class EventsController {
     private final RaffleEntryRepository raffleEntryRepo;
     private final UserAccountRepository userAccountRepo;
     private final PlayerRepository playerRepo;
+    private final TerminalPaymentRecorder terminalPaymentRecorder;
 
     @Value("${app.frontend.base-url}")
     private String frontendBaseUrl;
@@ -99,7 +101,8 @@ public class EventsController {
         StripeService stripeService,
         RaffleEntryRepository raffleEntryRepo,
         UserAccountRepository userAccountRepo,
-        PlayerRepository playerRepo
+        PlayerRepository playerRepo,
+        TerminalPaymentRecorder terminalPaymentRecorder
     ) {
         this.eventRepo = eventRepo;
         this.registrationRepo = registrationRepo;
@@ -113,6 +116,7 @@ public class EventsController {
         this.raffleEntryRepo = raffleEntryRepo;
         this.userAccountRepo = userAccountRepo;
         this.playerRepo = playerRepo;
+        this.terminalPaymentRecorder = terminalPaymentRecorder;
     }
 
     private boolean isAdmin(HttpServletRequest request, String program) {
@@ -133,7 +137,7 @@ public class EventsController {
     @GetMapping
     public ResponseEntity<List<EventResponse>> listPublished() {
         return ResponseEntity.ok(
-            eventRepo.findByPublishedTrueOrderByStartTimeAsc().stream()
+            eventRepo.findByPublishedTrueAndArchivedFalseOrderByStartTimeAsc().stream()
                 .map(this::toResponse)
                 .toList()
         );
@@ -142,7 +146,7 @@ public class EventsController {
     // Public: get published event by slug
     @GetMapping("/slug/{slug}")
     public ResponseEntity<EventResponse> getBySlug(@PathVariable String slug) {
-        return eventRepo.findBySlugAndPublishedTrue(slug)
+        return eventRepo.findBySlugAndPublishedTrueAndArchivedFalse(slug)
             .map(e -> ResponseEntity.ok(toResponse(e)))
             .orElse(ResponseEntity.notFound().build());
     }
@@ -192,7 +196,8 @@ public class EventsController {
         return ResponseEntity.ok(toResponse(eventRepo.save(existing)));
     }
 
-    // Admin: delete event
+    // Admin: delete event. Refused once any money is attached, because deleting takes the
+    // registrations with it and leaves the budget ledger unable to name the event's payments.
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(
         HttpServletRequest request,
@@ -202,8 +207,36 @@ public class EventsController {
         if (!isBoard(request, program)) {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
+        if (hasMoneyRecords(id)) {
+            return ResponseEntity.status(409).body(new ErrorResponse(
+                "This event has payment records. Archive it instead so the budget keeps them."));
+        }
         eventRepo.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // Admin: archive or restore an event. Archived events are hidden from the public site and
+    // the Tap to Pay app but keep every registration and payment for the budget.
+    @PutMapping("/{id}/archived")
+    public ResponseEntity<?> setArchived(
+        HttpServletRequest request,
+        @PathVariable UUID id,
+        @RequestParam(defaultValue = "men") String program,
+        @RequestParam boolean value
+    ) {
+        if (!isBoard(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
+        Event event = eventRepo.findById(id).orElse(null);
+        if (event == null) return ResponseEntity.notFound().build();
+        event.setArchived(value);
+        return ResponseEntity.ok(toResponse(eventRepo.save(event)));
+    }
+
+    private boolean hasMoneyRecords(UUID eventId) {
+        boolean receipts = receiptRepo.existsBySourceIn(List.of(
+            "event-" + eventId, "event-registration-" + eventId, "event-pos-" + eventId));
+        return receipts || registrationRepo.existsByEventIdAndAmountPaidGreaterThan(eventId, BigDecimal.ZERO);
     }
 
     // Admin: get all registrations for an event
@@ -646,7 +679,7 @@ public class EventsController {
         @RequestHeader(value = "X-Program", defaultValue = "men") String program
     ) {
         Event event = eventRepo.findById(id).orElse(null);
-        if (event == null) return ResponseEntity.notFound().build();
+        if (event == null || event.isArchived()) return ResponseEntity.notFound().build();
 
         String teamNameFieldId = findTeamNameFieldId(event);
         String normalizedTeamName = getNormalizedTeamName(payload.formData(), teamNameFieldId);
@@ -938,7 +971,7 @@ public class EventsController {
             e.getId(), e.getName(), e.getSlug(), e.getAddress(), e.getMapsLink(),
             e.getStartTime(), e.getEndTime(), e.getDescription(),
             s3Service.toPresignedUrl(e.getImage(), IMAGE_TTL),
-            e.getFields(), e.getPrice(), e.isAcceptsCash(), e.getTeamSize(), e.isPublished(),
+            e.getFields(), e.getPrice(), e.isAcceptsCash(), e.getTeamSize(), e.isPublished(), e.isArchived(),
             regCount, e.getCreatedAt(), e.getUpdatedAt()
         );
     }
@@ -1299,6 +1332,7 @@ public class EventsController {
         boolean acceptsCash,
         int teamSize,
         boolean published,
+        boolean archived,
         long registrationCount,
         Instant createdAt,
         Instant updatedAt
@@ -1396,6 +1430,41 @@ public class EventsController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Pulls every Tap to Pay payment from the last {@code days} days straight from Stripe and
+     * records any the webhook missed: the receipt, and the registrant marked paid. Safe to run
+     * any number of times. The report is Stripe's own count and total, so it doubles as the
+     * number to reconcile the event totals against.
+     */
+    @PostMapping("/terminal-sync")
+    public ResponseEntity<?> terminalSync(
+        HttpServletRequest request,
+        @RequestParam(defaultValue = "men") String program,
+        @RequestParam(defaultValue = "7") int days
+    ) {
+        if (!isBoard(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Board access required"));
+        }
+        if (!stripeService.isEnabled()) {
+            return ResponseEntity.status(503).body(new ErrorResponse("Stripe is not enabled"));
+        }
+        int window = Math.max(1, Math.min(days, 90));
+        try {
+            TerminalPaymentRecorder.SyncReport report =
+                terminalPaymentRecorder.sync(Instant.now().minus(java.time.Duration.ofDays(window)));
+            return ResponseEntity.ok(Map.of(
+                "days", window,
+                "stripePayments", report.succeeded,
+                "stripeTotal", BigDecimal.valueOf(report.totalCents, 2),
+                "newlyRecorded", report.newlyRecorded,
+                "newlyMarkedPaid", report.newlyMarkedPaid,
+                "chargedMoreThanOnce", report.chargedMoreThanOnce
+            ));
+        } catch (StripeException e) {
+            return ResponseEntity.internalServerError().body(new ErrorResponse(e.getMessage()));
+        }
+    }
+
     /** What actually sold at this event's Tap to Pay register, itemized. */
     @GetMapping("/{eventId}/pos-sales")
     public ResponseEntity<?> posSales(
@@ -1438,10 +1507,22 @@ public class EventsController {
             ))
             .toList();
 
+        // Registration payments (online, Tap to Pay registration mode, cash) are tracked under
+        // their own source tags, so they're reported beside the POS sales, not mixed into them.
+        java.util.Set<String> registrationSources = java.util.Set.of("event-" + eventId, "event-registration-" + eventId);
+        List<PaymentReceipt> registrationReceipts = receiptRepo.findAll().stream()
+            .filter(r -> registrationSources.contains(r.getSource()) && "COMPLETED".equalsIgnoreCase(r.getStatus()) && !r.isVoided())
+            .toList();
+        BigDecimal registrationTotal = registrationReceipts.stream()
+            .map(r -> r.getAmount() != null ? r.getAmount() : BigDecimal.ZERO)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         return ResponseEntity.ok(Map.of(
             "saleCount", receipts.size(),
             "grandTotal", grandTotal,
-            "items", breakdown
+            "items", breakdown,
+            "registrationCount", registrationReceipts.size(),
+            "registrationTotal", registrationTotal
         ));
     }
 

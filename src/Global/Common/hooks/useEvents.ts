@@ -76,6 +76,13 @@ export async function deleteEvent(id: string): Promise<void> {
   await apiRequest(`/api/events/${id}`, { method: "DELETE" });
 }
 
+export async function setEventArchived(id: string, archived: boolean): Promise<ApiEvent> {
+  const data = await apiRequest<RawEventResponse>(`/api/events/${id}/archived?value=${archived}`, {
+    method: "PUT",
+  });
+  return parseFields(data);
+}
+
 export async function fetchRegistrations(eventId: string): Promise<ApiEventRegistration[]> {
   return apiRequest<ApiEventRegistration[]>(`/api/events/${eventId}/registrations`);
 }

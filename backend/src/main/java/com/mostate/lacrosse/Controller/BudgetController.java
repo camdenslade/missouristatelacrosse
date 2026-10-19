@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -114,6 +115,7 @@ public class BudgetController {
         }
 
         List<Row> rows = new ArrayList<>();
+        Map<UUID, String> eventNames = new HashMap<>();
 
         for (PaymentReceipt r : receiptRepo.findAll()) {
             if (!"COMPLETED".equalsIgnoreCase(r.getStatus())) continue;
@@ -121,9 +123,14 @@ public class BudgetController {
             LocalDate date = toDate(r.getCreatedAt());
             if (!season.equals(SeasonUtil.currentSeason(date))) continue;
             BigDecimal gross = r.getAmount() != null ? r.getAmount() : BigDecimal.ZERO;
+            // Every payment tied to one event (online signups, Tap to Pay, cash, POS) shares a
+            // group so the ledger can show it as one expandable line per event.
+            UUID eventId = eventIdOf(r.getSource());
+            String groupKey = eventId != null ? "event-" + eventId : null;
+            String groupLabel = eventId != null ? eventLabel(eventId, eventNames) : null;
             rows.add(new Row(
                 date, describeSource(r), gross, estimateNet(gross), "income",
-                r.getSource() != null ? r.getSource() : "payment", null, r.getId()
+                r.getSource() != null ? r.getSource() : "payment", null, r.getId(), groupKey, groupLabel
             ));
         }
 
@@ -134,12 +141,12 @@ public class BudgetController {
             String playerName = playerRepo.findById(d.getPlayerId()).map(Player::getName).orElse("Unknown player");
             String desc = "Dues - " + playerName + (d.getNote() != null && !d.getNote().isBlank() ? " (" + d.getNote() + ")" : "");
             // Manually recorded ("paid directly") - no processor took a cut.
-            rows.add(new Row(date, desc, d.getAmount(), d.getAmount(), "income", "dues-manual", null, null));
+            rows.add(new Row(date, desc, d.getAmount(), d.getAmount(), "income", "dues-manual", null, null, null, null));
         }
 
         for (BudgetEntry e : entryRepo.findAll()) {
             if (!season.equals(SeasonUtil.currentSeason(e.getEntryDate()))) continue;
-            rows.add(new Row(e.getEntryDate(), e.getDescription(), e.getAmount(), e.getAmount(), e.getEntryType(), "manual", e.getId(), null));
+            rows.add(new Row(e.getEntryDate(), e.getDescription(), e.getAmount(), e.getAmount(), e.getEntryType(), "manual", e.getId(), null, null, null));
         }
 
         rows.sort(Comparator.comparing((Row r) -> r.date));
@@ -158,6 +165,8 @@ public class BudgetController {
             row.put("source", r.source);
             row.put("manualEntryId", r.manualEntryId != null ? r.manualEntryId : "");
             row.put("receiptId", r.receiptId != null ? r.receiptId : "");
+            row.put("groupKey", r.groupKey != null ? r.groupKey : "");
+            row.put("groupLabel", r.groupLabel != null ? r.groupLabel : "");
             row.put("runningTotal", running);
             withRunningTotal.add(row);
         }
@@ -279,9 +288,27 @@ public class BudgetController {
         return (source.startsWith("raffle") ? "Raffle" : source.startsWith("event") ? "Event" : source) + suffix;
     }
 
+    private UUID eventIdOf(String source) {
+        if (source == null || !source.startsWith("event")) return null;
+        Matcher m = UUID_PATTERN.matcher(source);
+        if (!m.find()) return null;
+        try {
+            return UUID.fromString(m.group());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private String eventLabel(UUID eventId, Map<UUID, String> cache) {
+        return cache.computeIfAbsent(eventId, id -> eventRepo.findById(id)
+            .map(e -> e.getName() + (e.isArchived() ? " (archived)" : ""))
+            .orElse("Deleted event " + id.toString().substring(0, 8)));
+    }
+
     private record Row(
         LocalDate date, String description, BigDecimal amount, BigDecimal netAmount,
-        String type, String source, UUID manualEntryId, UUID receiptId
+        String type, String source, UUID manualEntryId, UUID receiptId,
+        String groupKey, String groupLabel
     ) {}
 
     public record EntryRequest(String entryType, BigDecimal amount, String description, LocalDate entryDate) {}

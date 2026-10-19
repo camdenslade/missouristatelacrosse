@@ -296,6 +296,7 @@ export interface ApiEvent {
   acceptsCash?: boolean;
   teamSize: number;
   published: boolean;
+  archived?: boolean;
   registrationCount?: number;
   createdAt?: string;
   updatedAt?: string;

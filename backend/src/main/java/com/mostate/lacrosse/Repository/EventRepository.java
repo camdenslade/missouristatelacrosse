@@ -8,7 +8,8 @@ import com.mostate.lacrosse.Model.Event;
 
 public interface EventRepository extends JpaRepository<Event, UUID> {
     List<Event> findAllByOrderByStartTimeAsc();
-    List<Event> findByPublishedTrueOrderByStartTimeAsc();
+    List<Event> findByPublishedTrueAndArchivedFalseOrderByStartTimeAsc();
+    List<Event> findByArchivedFalseOrderByStartTimeAsc();
     Optional<Event> findBySlug(String slug);
-    Optional<Event> findBySlugAndPublishedTrue(String slug);
+    Optional<Event> findBySlugAndPublishedTrueAndArchivedFalse(String slug);
 }
