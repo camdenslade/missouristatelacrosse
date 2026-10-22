@@ -257,7 +257,7 @@ export default function ManageTodos({ season, availableSeasons = [] }: ManageTod
 
   if (state.view === "form") {
     const f = state.form;
-    const input = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]";
+    const input = "w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:border-[#5E0009] transition";
     return (
       <div>
         <div className="flex items-center gap-3 mb-5">
@@ -272,7 +272,7 @@ export default function ManageTodos({ season, availableSeasons = [] }: ManageTod
 
         <div className="space-y-4 max-w-xl">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Title *</label>
             <input
               className={input}
               placeholder="e.g. US Lacrosse Membership"
@@ -282,7 +282,7 @@ export default function ManageTodos({ season, availableSeasons = [] }: ManageTod
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Description</label>
             <textarea
               rows={3}
               className={input}
@@ -292,7 +292,7 @@ export default function ManageTodos({ season, availableSeasons = [] }: ManageTod
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Link</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Link</label>
             <input
               type="text"
               className={input}
@@ -303,7 +303,7 @@ export default function ManageTodos({ season, availableSeasons = [] }: ManageTod
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Image</label>
             <p className="text-xs text-gray-400 mb-2">Optional. Without one, the card shows the link's favicon.</p>
             {imageItem ? (
               <div className="relative w-16">
@@ -363,7 +363,7 @@ export default function ManageTodos({ season, availableSeasons = [] }: ManageTod
             <button
               onClick={handleSave}
               disabled={state.saving}
-              className="px-5 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] text-sm font-semibold disabled:opacity-50"
+              className="px-5 py-2 bg-[#5E0009] text-white rounded-full hover:bg-[#7a0012] text-sm font-semibold disabled:opacity-50 shadow-sm"
             >
               {state.saving ? "Saving..." : "Save To-Do"}
             </button>
@@ -399,7 +399,7 @@ export default function ManageTodos({ season, availableSeasons = [] }: ManageTod
               <button
                 onClick={handleCopyFromSeason}
                 disabled={!copySource || copying}
-                className="px-3 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+                className="px-3 py-2 rounded-full text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50"
               >
                 {copying ? "Copying..." : "Copy"}
               </button>
@@ -407,7 +407,7 @@ export default function ManageTodos({ season, availableSeasons = [] }: ManageTod
           )}
           <button
             onClick={() => { setImageItem(null); dispatch({ type: "OPEN_CREATE" }); }}
-            className="px-4 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] text-sm font-semibold"
+            className="px-5 py-2 bg-[#5E0009] text-white rounded-full hover:bg-[#7a0012] text-sm font-semibold shadow-sm"
           >
             + New To-Do
           </button>
@@ -444,19 +444,19 @@ export default function ManageTodos({ season, availableSeasons = [] }: ManageTod
                   </button>
                   <button
                     onClick={() => handleViewCompletions(todo.id)}
-                    className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+                    className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold"
                   >
                     {expandedId === todo.id ? "Hide Statuses" : "View Statuses"}
                   </button>
                   <button
                     onClick={() => handleRemind(todo.id)}
-                    className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+                    className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold"
                   >
                     Remind
                   </button>
                   <button
                     onClick={() => { setImageItem(todoToImage(todo)[0] ?? null); dispatch({ type: "OPEN_EDIT", todo }); }}
-                    className="text-xs px-2 py-1 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 font-medium"
+                    className="text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-800 hover:bg-gray-300 font-medium"
                   >
                     Edit
                   </button>

@@ -412,13 +412,13 @@ export default function ManageRaffles() {
   return (
     <div>
       <div className="flex justify-between items-center mb-5">
-        <h2 className="text-lg font-bold text-gray-900">Raffles</h2>
+        <h2 className="text-2xl md:text-3xl font-extrabold uppercase text-gray-900">Raffles</h2>
         <button
           onClick={() => {
             setImageItems([]);
             dispatch({ type: "OPEN_CREATE" });
           }}
-          className="px-4 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] text-sm font-semibold"
+          className="px-5 py-2 bg-[#5E0009] text-white rounded-full hover:bg-[#7a0012] text-sm font-semibold shadow-sm"
         >
           + New Raffle
         </button>
@@ -432,7 +432,7 @@ export default function ManageRaffles() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
-              <tr className="border-b text-left text-gray-500">
+              <tr className="border-b text-left text-gray-500 text-[11px] uppercase tracking-wider">
                 <th className="py-2 pr-4 font-medium">Name</th>
                 <th className="py-2 pr-4 font-medium">Mode</th>
                 <th className="py-2 pr-4 font-medium">Price</th>
@@ -463,7 +463,7 @@ export default function ManageRaffles() {
                     <div className="flex gap-1 flex-wrap">
                       <button
                         onClick={() => dispatch({ type: "OPEN_ENTRIES", raffle })}
-                        className="text-xs px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 font-medium"
+                        className="text-xs px-3 py-1 rounded-full bg-gray-100 hover:bg-gray-200 font-semibold"
                       >
                         Entries
                       </button>
@@ -486,7 +486,7 @@ export default function ManageRaffles() {
                       {(raffle.status === "closed" || raffle.status === "drawn") && (
                         <button
                           onClick={() => handleReopen(raffle)}
-                          className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+                          className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold"
                         >
                           Reopen
                         </button>
@@ -496,13 +496,13 @@ export default function ManageRaffles() {
                           setImageItems(raffleToImages(raffle));
                           dispatch({ type: "OPEN_EDIT", raffle });
                         }}
-                        className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+                        className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(raffle.id)}
-                        className="text-xs px-2 py-1 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-medium"
+                        className="text-xs px-3 py-1 rounded-full bg-red-50 text-red-600 hover:bg-red-100 font-semibold"
                       >
                         Delete
                       </button>
@@ -538,19 +538,19 @@ function RaffleForm({
   onRemoveImage: (idx: number) => void;
 }) {
   const f = state.form;
-  const input = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]";
+  const input = "w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:border-[#5E0009] transition";
 
   return (
     <div>
       <div className="flex items-center gap-3 mb-5">
         <button onClick={onCancel} className="text-sm text-gray-500 hover:text-gray-700">Back</button>
-        <h2 className="text-lg font-bold text-gray-900">{state.editingId ? "Edit Raffle" : "New Raffle"}</h2>
+        <h2 className="text-2xl md:text-3xl font-extrabold uppercase text-gray-900">{state.editingId ? "Edit Raffle" : "New Raffle"}</h2>
       </div>
 
       <div className="space-y-4 max-w-2xl">
         {/* Name */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Raffle Name *</label>
+          <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Raffle Name *</label>
           <input
             className={input}
             value={f.name}
@@ -560,7 +560,7 @@ function RaffleForm({
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Description</label>
           <textarea
             rows={3}
             className={input}
@@ -571,7 +571,7 @@ function RaffleForm({
 
         {/* Photos */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Photos</label>
+          <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Photos</label>
           <div className="flex flex-wrap gap-3 mt-2">
             {imageItems.map((item, idx) => (
               <div key={idx} className="relative">
@@ -619,7 +619,7 @@ function RaffleForm({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
                 {f.allowBids ? "Minimum Bid ($)" : "Ticket Price ($)"}
               </label>
               <input
@@ -634,7 +634,7 @@ function RaffleForm({
             </div>
             {!f.allowBids && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Max Tickets per Person</label>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Max Tickets per Person</label>
                 <input
                   type="number"
                   min="1"
@@ -650,7 +650,7 @@ function RaffleForm({
 
         {/* End time */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">End Date & Time</label>
+          <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">End Date & Time</label>
           <input
             type="datetime-local"
             className={input}
@@ -682,7 +682,7 @@ function RaffleForm({
           <button
             onClick={onSave}
             disabled={state.saving}
-            className="px-5 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] text-sm font-semibold disabled:opacity-50"
+            className="px-5 py-2 bg-[#5E0009] text-white rounded-full hover:bg-[#7a0012] text-sm font-semibold disabled:opacity-50 shadow-sm"
           >
             {state.saving ? "Saving..." : "Save Raffle"}
           </button>
@@ -758,14 +758,14 @@ function EntriesView({
   const isBid = raffle.allowBids;
   const paid = entries.filter((e) => e.paid);
   const totalRevenue = paid.reduce((sum, e) => sum + (Number(e.amountPaid) || 0), 0);
-  const input = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]";
+  const input = "w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:border-[#5E0009] transition";
 
   return (
     <div>
       <div className="flex items-center gap-3 mb-5">
         <button onClick={onBack} className="text-sm text-gray-500 hover:text-gray-700">Back to raffles</button>
         <div>
-          <h2 className="text-lg font-bold text-gray-900">{raffle.name}</h2>
+          <h2 className="text-2xl md:text-3xl font-extrabold uppercase text-gray-900">{raffle.name}</h2>
           <p className="text-sm text-gray-400">
             {paid.length} paid {isBid ? "bids" : "entries"} · ${totalRevenue.toFixed(2)} collected
           </p>
@@ -854,7 +854,7 @@ function EntriesView({
         )}
         <button
           onClick={onToggleAddEntry}
-          className="px-3 py-1.5 text-sm bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] font-medium ml-auto"
+          className="px-3 py-1.5 text-sm bg-[#5E0009] text-white rounded-full hover:bg-[#7a0012] font-medium ml-auto shadow-sm"
         >
           {addEntryOpen ? "Cancel" : "+ Add Entry"}
         </button>
@@ -925,7 +925,7 @@ function EntriesView({
           <button
             onClick={onAddEntry}
             disabled={addEntrySubmitting}
-            className="px-4 py-2 bg-[#5E0009] text-white rounded-lg text-sm font-semibold hover:bg-[#7a0012] disabled:opacity-50"
+            className="px-5 py-2 bg-[#5E0009] text-white rounded-full text-sm font-semibold hover:bg-[#7a0012] disabled:opacity-50 shadow-sm"
           >
             {addEntrySubmitting ? "Adding..." : "Add Entry"}
           </button>
@@ -940,7 +940,7 @@ function EntriesView({
         <div className="border border-gray-200 rounded-lg overflow-hidden">
           <table className="w-full text-sm border-collapse">
             <thead>
-              <tr className="bg-gray-50 border-b text-left text-gray-500">
+              <tr className="bg-gray-50 border-b text-left text-gray-500 text-[11px] uppercase tracking-wider">
                 <th className="px-4 py-2 font-medium">Name</th>
                 <th className="px-4 py-2 font-medium">Email</th>
                 {isBid ? (

@@ -362,7 +362,7 @@ export default function ManageEvents() {
     <div>
       <div className="flex justify-between items-center mb-5">
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-bold text-gray-900">{showArchived ? "Archived Events" : "Events"}</h2>
+          <h2 className="text-2xl md:text-3xl font-extrabold uppercase text-gray-900">{showArchived ? "Archived Events" : "Events"}</h2>
           {(archivedCount > 0 || showArchived) && (
             <button
               onClick={() => setShowArchived((v) => !v)}
@@ -378,7 +378,7 @@ export default function ManageEvents() {
             setImagePreview(null);
             dispatch({ type: "OPEN_CREATE" });
           }}
-          className="px-4 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] text-sm font-semibold"
+          className="px-5 py-2 bg-[#5E0009] text-white rounded-full hover:bg-[#7a0012] text-sm font-semibold shadow-sm"
         >
           + New Event
         </button>
@@ -394,7 +394,7 @@ export default function ManageEvents() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
-              <tr className="border-b text-left text-gray-500">
+              <tr className="border-b text-left text-gray-500 text-[11px] uppercase tracking-wider">
                 <th className="py-2 pr-4 font-medium">Name</th>
                 <th className="py-2 pr-4 font-medium">Start</th>
                 <th className="py-2 pr-4 font-medium">Price</th>
@@ -439,19 +439,19 @@ export default function ManageEvents() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => dispatch({ type: "OPEN_SUBMISSIONS", event })}
-                        className="text-xs px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 font-medium"
+                        className="text-xs px-3 py-1 rounded-full bg-gray-100 hover:bg-gray-200 font-semibold"
                       >
                         Submissions
                       </button>
                       <button
                         onClick={() => setPosItemsEvent(event)}
-                        className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+                        className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold"
                       >
                         POS Items
                       </button>
                       <button
                         onClick={() => setQrEvent(event)}
-                        className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+                        className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold"
                       >
                         QR Code
                       </button>
@@ -461,7 +461,7 @@ export default function ManageEvents() {
                           setImagePreview(event.image || null);
                           dispatch({ type: "OPEN_EDIT", event });
                         }}
-                        className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+                        className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold"
                       >
                         Edit
                       </button>
@@ -469,13 +469,13 @@ export default function ManageEvents() {
                         <>
                           <button
                             onClick={() => handleArchive(event, false)}
-                            className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+                            className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold"
                           >
                             Restore
                           </button>
                           <button
                             onClick={() => handleDelete(event.id)}
-                            className="text-xs px-2 py-1 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-medium"
+                            className="text-xs px-3 py-1 rounded-full bg-red-50 text-red-600 hover:bg-red-100 font-semibold"
                           >
                             Delete
                           </button>
@@ -483,7 +483,7 @@ export default function ManageEvents() {
                       ) : (
                         <button
                           onClick={() => handleArchive(event, true)}
-                          className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+                          className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold"
                         >
                           Archive
                         </button>
@@ -534,7 +534,7 @@ function QrCodeModal({ event, program, onClose }: { event: ApiEvent; program: Pr
               navigator.clipboard.writeText(url);
               toast.success("Link copied");
             }}
-            className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+            className="text-xs px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold"
           >
             Copy
           </button>
@@ -662,7 +662,7 @@ function UnmatchedTeammatesModal({
             <button
               onClick={handleCreate}
               disabled={creating}
-              className="px-4 py-2 bg-[#5E0009] text-white rounded-lg text-sm font-semibold hover:bg-[#7a0012] transition disabled:opacity-60"
+              className="px-5 py-2 bg-[#5E0009] text-white rounded-full text-sm font-semibold hover:bg-[#7a0012] transition disabled:opacity-60 shadow-sm"
             >
               {creating ? "Adding..." : "Add Selected"}
             </button>
@@ -776,7 +776,7 @@ function BackfillEmailsModal({
             <button
               onClick={handleApply}
               disabled={applying}
-              className="px-4 py-2 bg-[#5E0009] text-white rounded-lg text-sm font-semibold hover:bg-[#7a0012] transition disabled:opacity-60"
+              className="px-5 py-2 bg-[#5E0009] text-white rounded-full text-sm font-semibold hover:bg-[#7a0012] transition disabled:opacity-60 shadow-sm"
             >
               {applying ? "Applying..." : "Apply Selected"}
             </button>
@@ -809,7 +809,7 @@ function EventForm({
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(f.address.trim())}`
     : null;
 
-  const input = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]";
+  const input = "w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:border-[#5E0009] transition";
 
   return (
     <div>
@@ -817,13 +817,13 @@ function EventForm({
         <button onClick={onCancel} className="text-sm text-gray-500 hover:text-gray-700">
           Back
         </button>
-        <h2 className="text-lg font-bold text-gray-900">{state.editingId ? "Edit Event" : "New Event"}</h2>
+        <h2 className="text-2xl md:text-3xl font-extrabold uppercase text-gray-900">{state.editingId ? "Edit Event" : "New Event"}</h2>
       </div>
 
       <div className="space-y-4 max-w-2xl">
         {/* Name */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Event Name *</label>
+          <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Event Name *</label>
           <input
             className={input}
             value={f.name}
@@ -833,7 +833,7 @@ function EventForm({
 
         {/* Address */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Address / Location</label>
+          <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Address / Location</label>
           <input
             className={input}
             value={f.address}
@@ -855,7 +855,7 @@ function EventForm({
         {/* Times */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date & Time</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Start Date & Time</label>
             <input
               type="datetime-local"
               className={input}
@@ -864,7 +864,7 @@ function EventForm({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">End Date & Time</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">End Date & Time</label>
             <input
               type="datetime-local"
               className={input}
@@ -876,7 +876,7 @@ function EventForm({
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Description</label>
           <textarea
             rows={3}
             className={input}
@@ -887,7 +887,7 @@ function EventForm({
 
         {/* Image */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Event Image</label>
+          <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Event Image</label>
           <input
             type="file"
             accept="image/*"
@@ -918,7 +918,7 @@ function EventForm({
         {/* Price + Team size */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Price ($ per person)</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Price ($ per person)</label>
             <input
               type="number"
               min="0"
@@ -930,7 +930,7 @@ function EventForm({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Team Size</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Team Size</label>
             <input
               type="number"
               min="1"
@@ -976,7 +976,7 @@ function EventForm({
             </label>
             <button
               onClick={() => dispatch({ type: "ADD_FIELD" })}
-              className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium"
+              className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full font-semibold"
             >
               + Add Field
             </button>
@@ -1012,7 +1012,7 @@ function EventForm({
           <button
             onClick={onSave}
             disabled={state.saving}
-            className="px-5 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] text-sm font-semibold disabled:opacity-50"
+            className="px-5 py-2 bg-[#5E0009] text-white rounded-full hover:bg-[#7a0012] text-sm font-semibold disabled:opacity-50 shadow-sm"
           >
             {state.saving ? "Saving..." : "Save Event"}
           </button>
@@ -1147,7 +1147,7 @@ function FieldEditor({
             />
             <button
               onClick={() => dispatch({ type: "ADD_OPTION", fieldId: field.id })}
-              className="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded-lg"
+              className="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded-full"
             >
               Add
             </button>
@@ -1335,33 +1335,33 @@ function SubmissionsView({
           Back to events
         </button>
         <div>
-          <h2 className="text-lg font-bold text-gray-900">{event.name}</h2>
+          <h2 className="text-2xl md:text-3xl font-extrabold uppercase text-gray-900">{event.name}</h2>
           <p className="text-sm text-gray-400">Submission audit - {registrations.length} registrations</p>
         </div>
         <div className="ml-auto flex gap-2">
           <button
             onClick={handleCreateEmailGroup}
             disabled={creatingGroup}
-            className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 font-medium disabled:opacity-50"
+            className="text-xs px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 font-semibold disabled:opacity-50"
           >
             {creatingGroup ? "Creating..." : "Create Email Group"}
           </button>
           <button
             onClick={handleInvoiceUnpaid}
             disabled={invoicing || unpaidCount === 0}
-            className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium disabled:opacity-50"
+            className="text-xs px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold disabled:opacity-50"
           >
             {invoicing ? "Sending..." : `Invoice Unpaid (${unpaidCount})`}
           </button>
           <button
             onClick={() => setShowUnmatched(true)}
-            className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+            className="text-xs px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold"
           >
             Find Unregistered Teammates
           </button>
           <button
             onClick={() => setShowBackfill(true)}
-            className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+            className="text-xs px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold"
           >
             Backfill Missing Emails
           </button>
@@ -1440,7 +1440,7 @@ function SubmissionsView({
                     )}
                     <div className="flex flex-wrap gap-2 items-center">
                       <input
-                        className="text-xs px-2 py-1 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-[#5E0009]"
+                        className="text-xs px-2 py-1 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-1 focus:ring-[#5E0009] focus:border-[#5E0009] transition"
                         placeholder="Pair team name"
                         value={pairNameInputs[teamId] ?? teamLabel ?? ""}
                         onChange={(e) =>
@@ -1719,16 +1719,16 @@ function EditRegistrationModal({
 
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Name</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Name</label>
             <input value={name} onChange={(e) => setName(e.target.value)} className={input} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Email</label>
             <input value={email} onChange={(e) => setEmail(e.target.value)} className={input} />
           </div>
           {fields.map((f) => (
             <div key={f.id}>
-              <label className="block text-xs font-medium text-gray-500 mb-1">{f.label}</label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">{f.label}</label>
               {f.type === "checkbox" ? (
                 <input
                   type="checkbox"
@@ -1756,7 +1756,7 @@ function EditRegistrationModal({
             <button
               onClick={handleAddTeammates}
               disabled={addingTeammates}
-              className="text-xs px-3 py-1.5 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 font-medium disabled:opacity-50"
+              className="text-xs px-3 py-1.5 rounded-full bg-gray-200 text-gray-800 hover:bg-gray-300 font-medium disabled:opacity-50"
             >
               {addingTeammates ? "Adding..." : `Add ${suggestions.length} as Unpaid Registrants`}
             </button>
@@ -1770,7 +1770,7 @@ function EditRegistrationModal({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-4 py-2 bg-[#5E0009] text-white rounded-lg text-sm font-semibold hover:bg-[#7a0012] transition disabled:opacity-60"
+            className="px-5 py-2 bg-[#5E0009] text-white rounded-full text-sm font-semibold hover:bg-[#7a0012] transition disabled:opacity-60 shadow-sm"
           >
             {saving ? "Saving..." : "Save"}
           </button>

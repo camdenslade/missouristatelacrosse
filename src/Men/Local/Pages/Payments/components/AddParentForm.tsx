@@ -107,7 +107,7 @@ export default function AddParentForm({
         <button
           type="button"
           onClick={mode === "invite" ? handleAddParent : handleLinkExistingParent}
-          className="px-4 py-2 bg-[#5E0009] text-white rounded-full font-semibold hover:bg-[#7a0012] transition whitespace-nowrap"
+          className="px-5 py-2 bg-[#5E0009] text-white rounded-full font-semibold hover:bg-[#7a0012] transition whitespace-nowrap shadow-sm"
         >
           {mode === "invite" ? "Add" : "Link"}
         </button>

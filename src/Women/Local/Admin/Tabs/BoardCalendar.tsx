@@ -72,7 +72,7 @@ export default function BoardCalendar() {
     }
   };
 
-  const input = "border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30";
+  const input = "border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition";
 
   // Merge board entries with upcoming compliance due dates, read-only reminders here -
   // edit those from the Compliance tab, not duplicated into this table.
@@ -99,13 +99,13 @@ export default function BoardCalendar() {
 
   return (
     <div className="max-w-4xl mx-auto animate-fadeIn space-y-6">
-      <h2 className="text-lg font-bold text-gray-900">Board Calendar</h2>
+      <h2 className="text-2xl md:text-3xl font-extrabold uppercase text-gray-900">Board Calendar</h2>
       <p className="text-sm text-gray-500 -mt-4">
         Shared with board members and up. Upcoming compliance filing due dates show here
         automatically.
       </p>
 
-      <form onSubmit={handleAdd} className="bg-gray-50 border border-gray-200 rounded-xl p-5 shadow-sm space-y-3">
+      <form onSubmit={handleAdd} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-3">
         <div className="flex flex-wrap gap-3">
           <input
             type="text"
@@ -131,7 +131,7 @@ export default function BoardCalendar() {
         <button
           type="submit"
           disabled={state.saving}
-          className="px-5 py-2 bg-[#5E0009] text-white rounded-lg text-sm font-medium hover:bg-[#7a0012] transition disabled:opacity-60"
+          className="px-5 py-2 bg-[#5E0009] text-white rounded-full text-sm font-medium hover:bg-[#7a0012] transition disabled:opacity-60 shadow-sm"
         >
           {state.saving ? "Adding..." : "Add to Calendar"}
         </button>

@@ -238,297 +238,359 @@ export default function ManageOrderForms() {
       .catch(() => dispatch({ type: "SET_NOT_SUBMITTED", formId, players: [] }));
   };
 
-  const input = "border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30";
+  const input =
+    "w-full bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition";
+  const pill = "inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-semibold transition";
+  const pillSecondary = `${pill} bg-white border border-gray-200 text-gray-700 hover:border-[#5E0009]/40 hover:text-[#5E0009]`;
+  const sectionLabel = (text) => (
+    <div className="inline-flex items-center gap-3 text-[#5E0009] text-[11px] font-semibold uppercase tracking-[0.2em] mb-3">
+      <span className="h-px w-5 bg-[#5E0009]/40" />
+      {text}
+      <span className="h-px w-5 bg-[#5E0009]/40" />
+    </div>
+  );
 
   return (
-    <div className="max-w-4xl mx-auto animate-fadeIn space-y-6">
-      <h2 className="text-lg font-bold text-gray-900">Order Forms</h2>
-      <p className="text-sm text-gray-500 -mt-4">
-        Build order forms (gear, apparel, etc) players pick from in their portal. Submitting
-        posts the total straight to their dues balance.
-      </p>
+    <div className="max-w-4xl mx-auto animate-fadeIn space-y-8">
+      <div>
+        <div className="inline-flex items-center gap-3 text-[#5E0009] text-xs font-semibold uppercase tracking-[0.2em] mb-2">
+          <span className="h-px w-6 bg-[#5E0009]/40" />
+          Team Gear
+          <span className="h-px w-6 bg-[#5E0009]/40" />
+        </div>
+        <h2 className="text-3xl md:text-4xl font-extrabold uppercase text-gray-900">Order Forms</h2>
+        <p className="text-sm text-gray-500 mt-2 max-w-2xl">
+          Build order forms (gear, apparel, etc) players pick from in their portal. Submitting
+          posts the total straight to their dues balance.
+        </p>
+      </div>
 
-      <form onSubmit={handleCreateForm} className="bg-gray-50 border border-gray-200 rounded-xl p-5 shadow-sm space-y-3">
-        <h3 className="text-sm font-bold text-gray-700">New Form</h3>
-        <input
-          type="text"
-          placeholder="Title (e.g. Spring Gear Order)"
-          value={state.formDraft.title}
-          onChange={(e) => dispatch({ type: "SET_FORM_DRAFT_FIELD", field: "title", value: e.target.value })}
-          className={`${input} bg-white w-full`}
-        />
-        <textarea
-          placeholder="Description (optional)"
-          value={state.formDraft.description}
-          onChange={(e) => dispatch({ type: "SET_FORM_DRAFT_FIELD", field: "description", value: e.target.value })}
-          className={`${input} bg-white w-full`}
-          rows={2}
-        />
-        <label className="flex items-center gap-2 cursor-pointer">
+      <form onSubmit={handleCreateForm} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-gradient-to-r from-[#5E0009] via-[#7a1020] to-[#5E0009] px-5 py-4 flex items-center gap-3">
+          <img src="/missouri-state-white.png" alt="" className="h-10 w-10 object-contain" />
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/60">New</p>
+            <h3 className="text-lg font-extrabold uppercase text-white leading-tight">Create a Form</h3>
+          </div>
+        </div>
+        <div className="p-5 space-y-3">
           <input
-            type="checkbox"
-            checked={state.formDraft.notifyPlayers}
-            onChange={(e) => dispatch({ type: "SET_FORM_DRAFT_FIELD", field: "notifyPlayers", value: e.target.checked })}
-            className="w-4 h-4 accent-[#5E0009]"
+            type="text"
+            placeholder="Title (e.g. Spring Gear Order)"
+            value={state.formDraft.title}
+            onChange={(e) => dispatch({ type: "SET_FORM_DRAFT_FIELD", field: "title", value: e.target.value })}
+            className={input}
           />
-          <span className="text-sm font-medium text-gray-700">Email current-season players about this form</span>
-        </label>
-        <button
-          type="submit"
-          disabled={state.savingForm}
-          className="px-5 py-2 bg-[#5E0009] text-white rounded-lg text-sm font-medium hover:bg-[#7a0012] transition disabled:opacity-60"
-        >
-          {state.savingForm ? "Creating..." : "Create Form"}
-        </button>
+          <textarea
+            placeholder="Description (optional)"
+            value={state.formDraft.description}
+            onChange={(e) => dispatch({ type: "SET_FORM_DRAFT_FIELD", field: "description", value: e.target.value })}
+            className={input}
+            rows={2}
+          />
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={state.formDraft.notifyPlayers}
+                onChange={(e) => dispatch({ type: "SET_FORM_DRAFT_FIELD", field: "notifyPlayers", value: e.target.checked })}
+                className="w-4 h-4 accent-[#5E0009]"
+              />
+              <span className="text-sm text-gray-700">Email current-season players about this form</span>
+            </label>
+            <button
+              type="submit"
+              disabled={state.savingForm}
+              className="inline-flex items-center justify-center bg-[#5E0009] text-white rounded-full px-6 py-2.5 text-sm font-semibold hover:bg-[#7a0012] transition shadow-sm disabled:opacity-60"
+            >
+              {state.savingForm ? "Creating..." : "Create Form"}
+            </button>
+          </div>
+        </div>
       </form>
 
       {!state.loading && state.forms.length === 0 && (
-        <p className="text-sm text-gray-400">No order forms yet.</p>
+        <p className="text-sm text-gray-400 text-center py-8">No order forms yet. Create one above.</p>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-5">
         {state.forms.map((form) => {
           const expanded = state.expandedFormId === form.id;
+          const submitted = state.submissionsByForm[form.id] || [];
+          const notSubmitted = state.notSubmittedByForm[form.id] || [];
           return (
-            <div key={form.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-              <div className="flex items-center justify-between p-4">
-                <div>
-                  <p className="font-semibold text-gray-900">
-                    {form.title}{" "}
-                    <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${form.active ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+            <div key={form.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="p-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-xl font-extrabold uppercase text-gray-900 leading-tight break-words">{form.title}</h3>
+                    <span
+                      className={`text-[11px] font-semibold uppercase tracking-wide px-2.5 py-0.5 rounded-full ${
+                        form.active ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"
+                      }`}
+                    >
                       {form.active ? "Active" : "Inactive"}
                     </span>
+                  </div>
+                  {form.description && <p className="text-sm text-gray-500 mt-1">{form.description}</p>}
+                  <p className="text-xs text-gray-400 mt-1">
+                    {form.items.length} item{form.items.length === 1 ? "" : "s"}
                   </p>
-                  {form.description && <p className="text-xs text-gray-500 mt-1">{form.description}</p>}
-                  <p className="text-xs text-gray-400 mt-1">{form.items.length} item{form.items.length === 1 ? "" : "s"}</p>
                 </div>
-                <div className="flex gap-2 shrink-0">
-                  <button onClick={() => handleToggleActive(form)} className="text-xs px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 font-medium">
-                    {form.active ? "Deactivate" : "Activate"}
-                  </button>
-                  <button onClick={() => handleRemind(form.id)} className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium">
-                    Remind
-                  </button>
-                  <button onClick={() => handleCopyLink(form.id)} className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium">
-                    Copy Link
-                  </button>
+                <div className="flex flex-wrap gap-2 md:justify-end md:shrink-0">
                   <button
                     onClick={() => {
                       dispatch({ type: "TOGGLE_EXPANDED", id: form.id });
                       if (state.expandedFormId !== form.id) loadSubmissions(form.id);
                     }}
-                    className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+                    className={`${pill} ${expanded ? "bg-gray-900 text-white hover:bg-gray-800" : "bg-[#5E0009] text-white hover:bg-[#7a0012]"}`}
                   >
-                    {expanded ? "Hide" : "Manage"}
+                    {expanded ? "Close" : "Manage"}
                   </button>
-                  <button onClick={() => handleDeleteForm(form.id)} className="text-xs px-2 py-1 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-medium">
+                  <button onClick={() => handleCopyLink(form.id)} className={pillSecondary}>Copy Link</button>
+                  <button onClick={() => handleRemind(form.id)} className={pillSecondary}>Remind</button>
+                  <button onClick={() => handleToggleActive(form)} className={pillSecondary}>
+                    {form.active ? "Deactivate" : "Activate"}
+                  </button>
+                  <button
+                    onClick={() => handleDeleteForm(form.id)}
+                    className={`${pill} text-red-600 hover:bg-red-50`}
+                  >
                     Delete
                   </button>
                 </div>
               </div>
 
               {expanded && (
-                <div className="border-t border-gray-100 p-4 space-y-4 bg-gray-50">
-                  <ul className="divide-y divide-gray-100 bg-white rounded-lg border border-gray-200">
-                    {form.items.map((item) => (
-                      <li key={item.id} className="flex items-start justify-between gap-3 px-3 py-2">
-                        <div className="flex items-start gap-2 min-w-0 flex-1">
-                          {item.image && <img src={item.image} alt="" className="h-8 w-8 rounded object-cover" />}
-                          <div className="min-w-0 flex-1">
-                            <span className="text-sm text-gray-800">
-                              {item.name}{item.price != null ? ` - $${Number(item.price).toFixed(2)}` : ""}
-                              {item.options?.length > 0 ? ` (${item.options.join(", ")})` : ""}
-                            </span>
-                            {item.firstYearComp && (
-                              <span className="ml-2 text-[11px] px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 font-medium">
-                                First Year Comp
-                              </span>
-                            )}
-                            {editingNote?.itemId === item.id ? (
-                              <div className="mt-1 flex flex-wrap gap-2">
-                                <input
-                                  type="text"
-                                  autoFocus
-                                  value={editingNote?.text ?? ""}
-                                  placeholder="First-year players get this free"
-                                  onChange={(e) => setEditingNote({ itemId: item.id, text: e.target.value })}
-                                  onKeyDown={(e) => { if (e.key === "Enter") handleSaveNote(); }}
-                                  className={`${input} bg-white flex-1 min-w-[12rem] py-1 text-xs`}
-                                />
-                                <button onClick={handleSaveNote} className="text-xs text-[#5E0009] font-medium hover:underline">Save</button>
-                                <button onClick={() => setEditingNote(null)} className="text-xs text-gray-400 hover:underline">Cancel</button>
+                <div className="border-t border-gray-100 bg-gray-50/70 p-5 space-y-8">
+                  <div>
+                    {sectionLabel("Items")}
+                    {form.items.length === 0 ? (
+                      <p className="text-sm text-gray-400">No items yet. Add one below.</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {form.items.map((item) => (
+                          <li key={item.id} className="bg-white rounded-xl border border-gray-100 p-3 flex gap-3">
+                            <div className="h-14 w-14 shrink-0 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center">
+                              {item.image ? (
+                                <img src={item.image} alt="" className="h-full w-full object-cover" />
+                              ) : (
+                                <img src="/missouri-state.png" alt="" className="h-9 w-9 object-contain opacity-30" />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                                <p className="font-bold text-gray-900">{item.name}</p>
+                                {item.price != null && (
+                                  <p className="font-semibold text-gray-900 tabular-nums">${Number(item.price).toFixed(2)}</p>
+                                )}
                               </div>
-                            ) : (
-                              item.description && <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex gap-3 shrink-0">
-                          <button
-                            onClick={() => handleToggleFirstYearComp(item)}
-                            title="First-year players get one of this item free"
-                            className="text-xs text-gray-500 hover:underline"
-                          >
-                            {item.firstYearComp ? "Turn off First Year Comp" : "First Year Comp"}
-                          </button>
-                          {editingNote?.itemId !== item.id && (
-                            <button
-                              onClick={() => setEditingNote({ itemId: item.id, text: item.description || "" })}
-                              className="text-xs text-gray-500 hover:underline"
-                            >
-                              {item.description ? "Edit note" : "Add note"}
-                            </button>
-                          )}
-                          <button onClick={() => handleDeleteItem(item.id)} className="text-xs text-red-500 hover:underline">
-                            Remove
-                          </button>
-                        </div>
-                      </li>
-                    ))}
-                    {form.items.length === 0 && <li className="px-3 py-2 text-sm text-gray-400">No items yet.</li>}
-                  </ul>
+                              <div className="mt-1 flex flex-wrap gap-1.5">
+                                {item.firstYearComp && (
+                                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700">
+                                    First Year Comp
+                                  </span>
+                                )}
+                                {(item.options || []).map((opt) => (
+                                  <span key={opt} className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                                    {opt}
+                                  </span>
+                                ))}
+                              </div>
+                              {editingNote?.itemId === item.id ? (
+                                <div className="mt-2 flex flex-wrap items-center gap-2">
+                                  <input
+                                    type="text"
+                                    autoFocus
+                                    value={editingNote?.text ?? ""}
+                                    placeholder="First-year players get this free"
+                                    onChange={(e) => setEditingNote({ itemId: item.id, text: e.target.value })}
+                                    onKeyDown={(e) => { if (e.key === "Enter") handleSaveNote(); }}
+                                    className={`${input} flex-1 min-w-[12rem] py-1.5 text-xs`}
+                                  />
+                                  <button onClick={handleSaveNote} className="text-xs font-semibold text-[#5E0009] hover:underline">Save</button>
+                                  <button onClick={() => setEditingNote(null)} className="text-xs text-gray-400 hover:underline">Cancel</button>
+                                </div>
+                              ) : (
+                                item.description && <p className="text-xs text-gray-500 mt-1">{item.description}</p>
+                              )}
+                              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                                <button
+                                  onClick={() => handleToggleFirstYearComp(item)}
+                                  title="First-year players get one of this item free"
+                                  className="text-gray-500 hover:text-[#5E0009]"
+                                >
+                                  {item.firstYearComp ? "Turn off First Year Comp" : "Make First Year Comp"}
+                                </button>
+                                {editingNote?.itemId !== item.id && (
+                                  <button
+                                    onClick={() => setEditingNote({ itemId: item.id, text: item.description || "" })}
+                                    className="text-gray-500 hover:text-[#5E0009]"
+                                  >
+                                    {item.description ? "Edit note" : "Add note"}
+                                  </button>
+                                )}
+                                <button onClick={() => handleDeleteItem(item.id)} className="text-red-500 hover:text-red-700">
+                                  Remove
+                                </button>
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
 
-                  <form onSubmit={(e) => handleAddItem(e, form.id)} className="flex flex-wrap gap-2 items-end">
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Item name</label>
-                      <input
-                        type="text"
-                        value={state.itemDraft.name}
-                        onChange={(e) => dispatch({ type: "SET_ITEM_DRAFT_FIELD", field: "name", value: e.target.value })}
-                        className={`${input} bg-white w-32`}
-                      />
+                  <form onSubmit={(e) => handleAddItem(e, form.id)} className="bg-white rounded-xl border border-gray-100 p-4">
+                    {sectionLabel("Add an Item")}
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label className="block">
+                        <span className="block text-xs font-semibold text-gray-500 mb-1">Item name</span>
+                        <input
+                          type="text"
+                          placeholder="Custom gloves"
+                          value={state.itemDraft.name}
+                          onChange={(e) => dispatch({ type: "SET_ITEM_DRAFT_FIELD", field: "name", value: e.target.value })}
+                          className={input}
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="block text-xs font-semibold text-gray-500 mb-1">Price ($, optional)</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="135.00"
+                          value={state.itemDraft.price}
+                          onChange={(e) => dispatch({ type: "SET_ITEM_DRAFT_FIELD", field: "price", value: e.target.value })}
+                          className={input}
+                        />
+                      </label>
+                      <label className="block sm:col-span-2">
+                        <span className="block text-xs font-semibold text-gray-500 mb-1">Description (optional)</span>
+                        <input
+                          type="text"
+                          placeholder="First-year players get this free"
+                          value={state.itemDraft.description}
+                          onChange={(e) => dispatch({ type: "SET_ITEM_DRAFT_FIELD", field: "description", value: e.target.value })}
+                          className={input}
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="block text-xs font-semibold text-gray-500 mb-1">Sizes or options (comma-separated)</span>
+                        <input
+                          type="text"
+                          placeholder="S, M, L, XL"
+                          value={state.itemDraft.options}
+                          onChange={(e) => dispatch({ type: "SET_ITEM_DRAFT_FIELD", field: "options", value: e.target.value })}
+                          className={input}
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="block text-xs font-semibold text-gray-500 mb-1">Image (optional)</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => dispatch({ type: "SET_ITEM_DRAFT_FIELD", field: "imageFile", value: e.target.files?.[0] || null })}
+                          className="block w-full text-xs text-gray-500 file:mr-3 file:rounded-full file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-gray-700 hover:file:bg-gray-200"
+                        />
+                      </label>
                     </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Description (optional)</label>
-                      <input
-                        type="text"
-                        placeholder="First-year players get this free"
-                        value={state.itemDraft.description}
-                        onChange={(e) => dispatch({ type: "SET_ITEM_DRAFT_FIELD", field: "description", value: e.target.value })}
-                        className={`${input} bg-white w-56`}
-                      />
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                      <label className="flex items-center gap-2 cursor-pointer" title="First-year players get one of this item free">
+                        <input
+                          type="checkbox"
+                          checked={state.itemDraft.firstYearComp}
+                          onChange={(e) => dispatch({ type: "SET_ITEM_DRAFT_FIELD", field: "firstYearComp", value: e.target.checked })}
+                          className="w-4 h-4 accent-[#5E0009]"
+                        />
+                        <span className="text-sm text-gray-700">First Year Comp (first-year players get one free)</span>
+                      </label>
+                      <button
+                        type="submit"
+                        disabled={state.savingItem}
+                        className="inline-flex items-center justify-center bg-[#5E0009] text-white rounded-full px-6 py-2.5 text-sm font-semibold hover:bg-[#7a0012] transition shadow-sm disabled:opacity-60"
+                      >
+                        {state.savingItem ? (uploadProgress ? `${uploadProgress}%` : "Adding...") : "Add Item"}
+                      </button>
                     </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Price ($, optional)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={state.itemDraft.price}
-                        onChange={(e) => dispatch({ type: "SET_ITEM_DRAFT_FIELD", field: "price", value: e.target.value })}
-                        className={`${input} bg-white w-24`}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Options (comma-separated)</label>
-                      <input
-                        type="text"
-                        placeholder="S, M, L, XL"
-                        value={state.itemDraft.options}
-                        onChange={(e) => dispatch({ type: "SET_ITEM_DRAFT_FIELD", field: "options", value: e.target.value })}
-                        className={`${input} bg-white w-36`}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Image (optional)</label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => dispatch({ type: "SET_ITEM_DRAFT_FIELD", field: "imageFile", value: e.target.files?.[0] || null })}
-                        className="text-xs"
-                      />
-                    </div>
-                    <label className="flex items-center gap-1.5 text-xs text-gray-600 pb-2" title="First-year players get one of this item free">
-                      <input
-                        type="checkbox"
-                        checked={state.itemDraft.firstYearComp}
-                        onChange={(e) => dispatch({ type: "SET_ITEM_DRAFT_FIELD", field: "firstYearComp", value: e.target.checked })}
-                      />
-                      First Year Comp
-                    </label>
-                    <button
-                      type="submit"
-                      disabled={state.savingItem}
-                      className="px-4 py-2 bg-[#5E0009] text-white rounded-lg text-sm font-medium hover:bg-[#7a0012] transition disabled:opacity-60"
-                    >
-                      {state.savingItem ? (uploadProgress ? `${uploadProgress}%` : "Adding...") : "Add Item"}
-                    </button>
                   </form>
 
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <h4 className="text-sm font-bold text-gray-700 mb-2">
-                        Submitted ({(state.submissionsByForm[form.id] || []).length})
-                      </h4>
-                      {(state.submissionsByForm[form.id] || []).length === 0 ? (
-                        <p className="text-xs text-gray-400">No submissions yet.</p>
-                      ) : (
-                        <ul className="space-y-2">
-                          {(state.submissionsByForm[form.id] || []).map((s) => (
-                            <li key={s.id} className="border border-gray-200 rounded-lg px-3 py-2 bg-white">
-                              <div className="flex justify-between gap-2 text-sm">
-                                <span className="font-medium text-gray-800">{s.playerName}</span>
-                                <span className="font-mono text-gray-700">
-                                  ${Number(s.owed ?? s.total).toFixed(2)}
-                                  {Number(s.waivedTotal) > 0 && (
-                                    <span className="ml-1 text-xs text-gray-400">
-                                      (${Number(s.waivedTotal).toFixed(2)} waived)
-                                    </span>
-                                  )}
-                                </span>
-                              </div>
-                              <ul className="mt-1 text-xs text-gray-600 space-y-1">
-                                {(s.selections || []).map((line, i) => (
-                                  <li key={i} className="flex items-center justify-between gap-2">
-                                    <span>
-                                      <span className={line.waived ? "line-through text-gray-400" : ""}>
-                                        {line.quantity} x {line.name}
-                                        {line.option ? ` (${line.option})` : ""}
-                                        {Number(line.lineTotal) > 0 && ` - $${Number(line.lineTotal).toFixed(2)}`}
+                  <div>
+                    {sectionLabel("Submissions")}
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <p className="text-sm font-bold text-gray-800 mb-2">Submitted ({submitted.length})</p>
+                        {submitted.length === 0 ? (
+                          <p className="text-xs text-gray-400">No submissions yet.</p>
+                        ) : (
+                          <ul className="space-y-2">
+                            {submitted.map((s) => (
+                              <li key={s.id} className="bg-white rounded-xl border border-gray-100 p-3">
+                                <div className="flex justify-between gap-2">
+                                  <span className="font-bold text-gray-900 text-sm">{s.playerName}</span>
+                                  <span className="text-sm font-semibold text-gray-900 tabular-nums">
+                                    ${Number(s.owed ?? s.total).toFixed(2)}
+                                  </span>
+                                </div>
+                                {Number(s.waivedTotal) > 0 && (
+                                  <p className="text-[11px] text-green-700">${Number(s.waivedTotal).toFixed(2)} waived</p>
+                                )}
+                                <ul className="mt-2 space-y-1.5 text-xs text-gray-600">
+                                  {(s.selections || []).map((line, i) => (
+                                    <li key={i} className="flex items-center justify-between gap-2">
+                                      <span className="min-w-0">
+                                        <span className={line.waived ? "line-through text-gray-400" : ""}>
+                                          {line.quantity} x {line.name}
+                                          {line.option ? ` (${line.option})` : ""}
+                                          {Number(line.lineTotal) > 0 && ` - $${Number(line.lineTotal).toFixed(2)}`}
+                                        </span>
+                                        {line.waived && line.waivedReason && (
+                                          <span className="ml-1 font-semibold text-green-700">{line.waivedReason}</span>
+                                        )}
                                       </span>
-                                      {line.waived && line.waivedReason && (
-                                        <span className="ml-1 text-green-700">{line.waivedReason}</span>
+                                      {Number(line.lineTotal) > 0 && (
+                                        <button
+                                          onClick={() => handleToggleWaived(form.id, s, i, !line.waived)}
+                                          className={`${pill} shrink-0 py-1 ${
+                                            line.waived
+                                              ? "bg-green-50 text-green-700 hover:bg-green-100"
+                                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                          }`}
+                                        >
+                                          {line.waived ? "Waived, undo" : "Waive"}
+                                        </button>
                                       )}
-                                    </span>
-                                    {Number(line.lineTotal) > 0 && (
-                                      <button
-                                        onClick={() => handleToggleWaived(form.id, s, i, !line.waived)}
-                                        className={`shrink-0 px-2 py-0.5 rounded-md font-medium ${
-                                          line.waived
-                                            ? "bg-green-50 text-green-700 hover:bg-green-100"
-                                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                        }`}
-                                      >
-                                        {line.waived ? "Waived, undo" : "Waive"}
-                                      </button>
-                                    )}
-                                  </li>
-                                ))}
-                              </ul>
-                              <p className="mt-1 text-[11px] text-gray-400">
-                                {new Date(s.createdAt).toLocaleDateString()}
-                              </p>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-gray-700 mb-2">
-                        Not submitted yet ({(state.notSubmittedByForm[form.id] || []).length})
-                      </h4>
-                      {(state.notSubmittedByForm[form.id] || []).length === 0 ? (
-                        <p className="text-xs text-gray-400">Everyone on this season's roster has submitted.</p>
-                      ) : (
-                        <ul className="text-sm text-gray-700 space-y-1">
-                          {(state.notSubmittedByForm[form.id] || []).map((p) => (
-                            <li key={p.playerId}>
-                              {p.name}
-                              {!p.hasEmail && <span className="ml-2 text-xs text-gray-400">(no email, Remind can't reach them)</span>}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
+                                    </li>
+                                  ))}
+                                </ul>
+                                <p className="mt-2 text-[11px] text-gray-400">{new Date(s.createdAt).toLocaleDateString()}</p>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-gray-800 mb-2">Not submitted yet ({notSubmitted.length})</p>
+                        {notSubmitted.length === 0 ? (
+                          <p className="text-xs text-gray-400">Everyone on this season's roster has submitted.</p>
+                        ) : (
+                          <div className="flex flex-wrap gap-1.5">
+                            {notSubmitted.map((p) => (
+                              <span
+                                key={p.playerId}
+                                title={p.hasEmail ? undefined : "No email on file, Remind can't reach them"}
+                                className={`text-xs font-medium px-2.5 py-1 rounded-full border ${
+                                  p.hasEmail ? "bg-white border-gray-200 text-gray-700" : "bg-amber-50 border-amber-200 text-amber-800"
+                                }`}
+                              >
+                                {p.name}
+                                {!p.hasEmail && " (no email)"}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

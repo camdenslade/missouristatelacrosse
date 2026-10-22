@@ -88,7 +88,7 @@ export default function ManageSeasons() {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-lg font-bold text-gray-900">Manage Seasons</h2>
+        <h2 className="text-2xl md:text-3xl font-extrabold uppercase text-gray-900">Manage Seasons</h2>
         <p className="text-sm text-gray-500 mt-0.5">
           Control which seasons appear on Roster/Schedule and which one is active by default.
         </p>
@@ -96,30 +96,30 @@ export default function ManageSeasons() {
 
       <form onSubmit={handleAdd} className="flex flex-wrap gap-3 items-end mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
         <div className="w-32">
-          <label className="block text-xs font-medium text-gray-500 mb-1">Code</label>
+          <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Code</label>
           <input
             type="text"
             placeholder="26-27"
             value={code}
             onChange={(e) => setCode(e.target.value)}
             required
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]"
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:border-[#5E0009] transition"
           />
         </div>
         <div className="flex-1 min-w-40">
-          <label className="block text-xs font-medium text-gray-500 mb-1">Label (optional)</label>
+          <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Label (optional)</label>
           <input
             type="text"
             placeholder="2026-2027"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]"
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:border-[#5E0009] transition"
           />
         </div>
         <button
           type="submit"
           disabled={saving}
-          className="px-4 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] text-sm font-semibold transition disabled:opacity-50"
+          className="px-5 py-2 bg-[#5E0009] text-white rounded-full hover:bg-[#7a0012] text-sm font-semibold transition disabled:opacity-50 shadow-sm"
         >
           {saving ? "Adding…" : "Add Season"}
         </button>
@@ -155,7 +155,7 @@ export default function ManageSeasons() {
                   <button
                     onClick={() => handleActivate(s.id)}
                     disabled={busyId === s.id}
-                    className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 font-medium transition disabled:opacity-50"
+                    className="text-xs px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 font-semibold transition disabled:opacity-50"
                   >
                     Make Active
                   </button>
@@ -163,7 +163,7 @@ export default function ManageSeasons() {
                 <button
                   onClick={() => handleDelete(s.id, s.code)}
                   disabled={busyId === s.id}
-                  className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-medium transition disabled:opacity-50"
+                  className="text-xs px-3 py-1.5 rounded-full bg-red-50 text-red-600 hover:bg-red-100 font-semibold transition disabled:opacity-50"
                 >
                   Delete
                 </button>

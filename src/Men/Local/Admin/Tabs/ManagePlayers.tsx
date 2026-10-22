@@ -173,11 +173,11 @@ export default function ManagePlayers(){
 
   return (
     <div className="max-w-4xl mx-auto animate-fadeIn">
-      <h2 className="text-lg font-bold text-gray-900 mb-4">
+      <h2 className="text-2xl md:text-3xl font-extrabold uppercase text-gray-900 mb-4">
         Manage Users <span className="text-[#5E0009]">Men&#39;s Program</span>
       </h2>
 
-      <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 shadow-sm mb-6">
+      <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm mb-6">
         <UserSearch
           searchTerm={searchTerm}
           setSearchTerm={(value) => dispatch({ type: "SET_SEARCH", value })}

@@ -98,16 +98,16 @@ export default function ManageSponsors() {
     }
   };
 
-  const input = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30";
+  const input = "w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition";
 
   return (
     <div className="max-w-4xl mx-auto animate-fadeIn">
-      <h2 className="text-lg font-bold text-gray-900 mb-4">Manage Sponsors</h2>
+      <h2 className="text-2xl md:text-3xl font-extrabold uppercase text-gray-900 mb-4">Manage Sponsors</h2>
 
       {/* Add / Edit Form */}
       <form
         onSubmit={handleSubmit}
-        className="bg-gray-50 border border-gray-200 rounded-xl p-5 shadow-sm mb-8 space-y-4"
+        className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm mb-8 space-y-4"
       >
         <h3 className="text-base font-bold text-gray-900">
           {editing ? "Edit Sponsor" : "Add Sponsor"}
@@ -115,7 +115,7 @@ export default function ManageSponsors() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
               Business Name
             </label>
             <input
@@ -127,7 +127,7 @@ export default function ManageSponsors() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
               Website Link
             </label>
             <input
@@ -141,7 +141,7 @@ export default function ManageSponsors() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
             Logo Image
           </label>
           <input
@@ -169,7 +169,7 @@ export default function ManageSponsors() {
           <button
             type="submit"
             disabled={saving}
-            className="px-5 py-2 bg-[#5E0009] text-white rounded-lg text-sm font-medium hover:bg-[#7a0012] transition disabled:opacity-60"
+            className="px-5 py-2 bg-[#5E0009] text-white rounded-full text-sm font-medium hover:bg-[#7a0012] transition disabled:opacity-60 shadow-sm"
           >
             {saving ? "Saving..." : editing ? "Update" : "Add Sponsor"}
           </button>
@@ -187,7 +187,7 @@ export default function ManageSponsors() {
 
       {/* Sponsor List */}
       <section>
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Current Sponsors</h2>
+        <h2 className="text-2xl md:text-3xl font-extrabold uppercase text-gray-900 mb-4">Current Sponsors</h2>
 
         {loading ? (
           <p className="text-gray-500 animate-pulse text-sm">Loading sponsors...</p>
@@ -241,7 +241,7 @@ export default function ManageSponsors() {
                   </button>
                   <button
                     onClick={() => startEdit(s)}
-                    className="px-3 py-1.5 text-sm bg-[#5E0009] text-white rounded-lg font-medium hover:bg-[#7a0012] transition"
+                    className="px-3 py-1.5 text-sm bg-[#5E0009] text-white rounded-full font-medium hover:bg-[#7a0012] transition shadow-sm"
                   >
                     Edit
                   </button>

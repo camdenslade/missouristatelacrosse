@@ -97,7 +97,7 @@ export default function UserList({ users, handleRoleChange, handleDisplayNameCha
                   aria-label="User display name"
                   value={nameDraft}
                   onChange={(event) => setNameDraft(event.target.value)}
-                  className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30"
+                  className="border border-gray-200 rounded-xl px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
                   autoFocus
                 />
                 <button
@@ -141,7 +141,7 @@ export default function UserList({ users, handleRoleChange, handleDisplayNameCha
                   type="email"
                   value={emailDraft}
                   onChange={(event) => setEmailDraft(event.target.value)}
-                  className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30"
+                  className="border border-gray-200 rounded-xl px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
                   autoFocus
                 />
                 <button
@@ -202,7 +202,7 @@ export default function UserList({ users, handleRoleChange, handleDisplayNameCha
             <select
               value={user.role}
               onChange={(e) => handleRoleChange(user.id, e.target.value)}
-              className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30"
+              className="border border-gray-200 rounded-xl px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
             >
               <option value="user">User</option>
               <option value="player">Player</option>

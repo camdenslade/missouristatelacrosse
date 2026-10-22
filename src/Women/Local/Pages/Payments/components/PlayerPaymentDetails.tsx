@@ -19,6 +19,8 @@ type PlayerPaymentDetailsProps = {
   setCustomAmount: (val: string) => void;
   ledger: DuesPayment[];
   onAdminAdjust: (amount: number, type: "CHARGE" | "CREDIT", note: string) => Promise<void>;
+  // Which parts to render; all of them when omitted. The Portal shows them on separate tabs.
+  sections?: Array<"summary" | "adjust" | "family" | "amount" | "history">;
 };
 
 const typeLabel: Record<string, { label: string; color: string; sign: string }> = {
@@ -60,7 +62,9 @@ export default function PlayerPaymentDetails({
   setCustomAmount,
   ledger,
   onAdminAdjust,
+  sections,
 }: PlayerPaymentDetailsProps) {
+  const show = (part: NonNullable<PlayerPaymentDetailsProps["sections"]>[number]) => !sections || sections.includes(part);
   const balance = Number(selectedPlayer?.balance ?? 0);
   const parents: ParentLink[] = selectedPlayer?.parents || [];
 
@@ -84,6 +88,7 @@ export default function PlayerPaymentDetails({
 
   return (
     <div className="space-y-6">
+      {show("summary") && (
       <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5">
         <h2 className="text-xl font-semibold text-[#5E0009]">
           {selectedPlayer?.name || "Player"}
@@ -93,9 +98,10 @@ export default function PlayerPaymentDetails({
           {balance <= 0 && <span className="ml-2 text-sm font-normal">Paid up</span>}
         </p>
       </div>
+      )}
 
       {/* Admin balance adjustment */}
-      {userRole === "admin" && (
+      {show("adjust") && userRole === "admin" && (
         <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4">
           <h3 className="font-medium text-gray-800 mb-3 text-sm">Adjust Balance</h3>
           <div className="flex flex-wrap gap-2">
@@ -129,7 +135,7 @@ export default function PlayerPaymentDetails({
             <button
               onClick={handleAdjust}
               disabled={adjusting || !adjustAmount}
-              className="px-4 py-1.5 bg-[#5E0009] text-white rounded-full text-sm font-semibold hover:bg-[#7a0012] disabled:opacity-50 transition"
+              className="px-5 py-1.5 bg-[#5E0009] text-white rounded-full text-sm font-semibold hover:bg-[#7a0012] disabled:opacity-50 transition shadow-sm"
             >
               {adjusting ? "Saving…" : "Apply"}
             </button>
@@ -138,7 +144,7 @@ export default function PlayerPaymentDetails({
       )}
 
       {/* Parent management */}
-      {(userRole === "admin" || userRole === "player") && (
+      {show("family") && (userRole === "admin" || userRole === "player") && (
         <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4">
           <AddParentForm
             addParentEmail={addParentEmail}
@@ -155,7 +161,7 @@ export default function PlayerPaymentDetails({
         </div>
       )}
 
-      {parents.length > 0 && (
+      {show("family") && parents.length > 0 && (
         <div>
           <h3 className="font-medium mb-2 text-sm text-gray-800">Linked Parents</h3>
           <div className="space-y-1.5">
@@ -178,6 +184,7 @@ export default function PlayerPaymentDetails({
       )}
 
       {/* Payment amount input */}
+      {show("amount") && (
       <div>
         <label className="block font-medium mb-1 text-sm text-gray-800">Payment Amount</label>
         <input
@@ -190,11 +197,15 @@ export default function PlayerPaymentDetails({
           className="border border-gray-200 px-3 py-2 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
         />
       </div>
+      )}
 
       {/* Payment ledger */}
-      {ledger.length > 0 && (
+      {show("history") && ledger.length === 0 && sections && (
+        <p className="text-sm text-gray-400 text-center py-8">No payments or charges yet.</p>
+      )}
+      {show("history") && ledger.length > 0 && (
         <div>
-          <h3 className="font-medium text-sm mb-2 text-gray-800">Payment History</h3>
+          {!sections && <h3 className="font-medium text-sm mb-2 text-gray-800">Payment History</h3>}
           <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-x-auto">
             <table className="w-full text-xs">
               <thead className="bg-gray-50 text-gray-600">

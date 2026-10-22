@@ -46,7 +46,17 @@ function reducer(state: typeof initialState, action: any) {
   }
 }
 
-export default function OrderForms({ playerId, focusFormId }: { playerId: string; focusFormId?: string | null }) {
+export default function OrderForms({
+  playerId,
+  focusFormId,
+  emptyMessage,
+  hideHeading,
+}: {
+  playerId: string;
+  focusFormId?: string | null;
+  emptyMessage?: string;
+  hideHeading?: boolean;
+}) {
   const confirm = useConfirm();
   const [state, dispatch] = useReducer(reducer, initialState);
   const focusRef = useRef<HTMLDivElement | null>(null);
@@ -76,9 +86,8 @@ export default function OrderForms({ playerId, focusFormId }: { playerId: string
 
   if (state.loading) return null;
   if (state.forms.length === 0) {
-    return focusFormId ? (
-      <p className="text-sm text-gray-500">That order form is closed or no longer available.</p>
-    ) : null;
+    if (focusFormId) return <p className="text-sm text-gray-500">That order form is closed or no longer available.</p>;
+    return emptyMessage ? <p className="text-sm text-gray-400 text-center py-8">{emptyMessage}</p> : null;
   }
   const linkedFormMissing = !!focusFormId && !state.forms.some((f) => f.id === focusFormId);
 
@@ -95,6 +104,13 @@ export default function OrderForms({ playerId, focusFormId }: { playerId: string
       .map(([itemId, line]) => ({ itemId, option: line.option || undefined, quantity: line.quantity }));
     if (selections.length === 0) {
       toast.error("Pick at least one item first.");
+      return;
+    }
+    const missingOption = form.items.find(
+      (item) => item.options?.length > 0 && state.cart[item.id] && !state.cart[item.id].option
+    );
+    if (missingOption) {
+      toast.error(`Pick a size or option for ${missingOption.name}.`);
       return;
     }
     const total = totalFor(form);
@@ -119,79 +135,139 @@ export default function OrderForms({ playerId, focusFormId }: { playerId: string
 
   return (
     <div className="space-y-6">
-      <h3 className="font-medium text-sm text-gray-800">Order Forms</h3>
+      {!hideHeading && (
+        <div className="inline-flex items-center gap-3 text-[#5E0009] text-xs font-semibold uppercase tracking-[0.2em]">
+          <span className="h-px w-6 bg-[#5E0009]/40" />
+          Order Forms
+          <span className="h-px w-6 bg-[#5E0009]/40" />
+        </div>
+      )}
       {linkedFormMissing && (
         <p className="text-sm text-gray-500">That order form is closed or no longer available.</p>
       )}
       {state.forms.map((form) => {
         const total = totalFor(form);
         const focused = form.id === focusFormId;
+        const itemCount = form.items.reduce((n, item) => n + (state.cart[item.id]?.quantity ?? 0), 0);
         return (
-          <div
+          <section
             key={form.id}
             ref={focused ? focusRef : undefined}
-            className={`bg-white border rounded-2xl shadow-sm p-4 scroll-mt-24 ${
+            className={`bg-white rounded-2xl shadow-sm overflow-hidden scroll-mt-24 border ${
               focused ? "border-[#5E0009] ring-2 ring-[#5E0009]/20" : "border-gray-100"
             }`}
           >
-            <h4 className="font-semibold text-gray-900">{form.title}</h4>
-            {form.description && <p className="text-sm text-gray-600 mt-1">{form.description}</p>}
+            <header className="relative bg-gradient-to-r from-[#5E0009] via-[#7a1020] to-[#5E0009] px-5 py-5 flex items-center gap-4">
+              <img src="/missouri-state-white.png" alt="Mo State" className="h-14 w-14 object-contain shrink-0 drop-shadow" />
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/60">Order Form</p>
+                <h4 className="text-xl font-extrabold uppercase leading-tight text-white break-words">{form.title}</h4>
+                {form.description && <p className="text-sm text-white/80 mt-1">{form.description}</p>}
+              </div>
+            </header>
 
-            <div className="mt-3 space-y-3">
+            <div className="p-4 space-y-3">
               {form.items.map((item) => {
                 const line = state.cart[item.id];
+                const quantity = line?.quantity ?? 0;
+                const selected = quantity > 0;
                 return (
-                  <div key={item.id} className="flex items-center gap-3 border-t border-gray-100 pt-3 first:border-t-0 first:pt-0">
-                    {item.image && (
-                      <img src={item.image} alt="" className="h-12 w-12 rounded-lg object-cover border border-gray-200 shrink-0" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-gray-800 text-sm">{item.name}</p>
-                      {item.description && <p className="text-xs text-gray-500">{item.description}</p>}
-                      {item.price != null && <p className="text-xs text-gray-500">${item.price.toFixed(2)}</p>}
-                      {item.firstYearComp && (
-                        <p className="text-xs font-medium text-green-700">
-                          {firstYear ? "Free for you: First Year Comp (one included)" : "Free for first-year players"}
-                        </p>
-                      )}
-                      {item.options?.length > 0 && (
-                        <select
-                          value={line?.option ?? ""}
-                          onChange={(e) => dispatch({ type: "SET_OPTION", itemId: item.id, option: e.target.value })}
-                          className="mt-1 border border-gray-200 rounded-lg px-2 py-1 text-xs"
-                        >
-                          <option value="">Choose...</option>
-                          {item.options.map((opt) => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
-                      )}
+                  <div
+                    key={item.id}
+                    className={`rounded-xl border p-3 transition ${
+                      selected ? "border-[#5E0009]/40 bg-[#5E0009]/[0.03]" : "border-gray-100 bg-gray-50/60"
+                    }`}
+                  >
+                    <div className="flex gap-3">
+                      <div className="h-16 w-16 shrink-0 rounded-lg bg-white border border-gray-100 overflow-hidden flex items-center justify-center">
+                        {item.image ? (
+                          <img src={item.image} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <img src="/missouri-state.png" alt="" className="h-10 w-10 object-contain opacity-30" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="font-bold text-gray-900 leading-snug">{item.name}</p>
+                          {item.price != null && (
+                            <p className="font-semibold text-gray-900 tabular-nums shrink-0">${item.price.toFixed(2)}</p>
+                          )}
+                        </div>
+                        {item.description && <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>}
+                        {item.firstYearComp && (
+                          <span className="mt-1 inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700">
+                            {firstYear ? "Free for you: First Year Comp" : "Free for first-year players"}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <input
-                      type="number"
-                      min="0"
-                      value={line?.quantity ?? 0}
-                      onChange={(e) =>
-                        dispatch({ type: "SET_LINE", itemId: item.id, quantity: parseInt(e.target.value, 10) || 0, option: line?.option })
-                      }
-                      className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-sm text-center"
-                    />
+
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                      {item.options?.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {item.options.map((opt) => {
+                            const active = line?.option === opt;
+                            return (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => dispatch({ type: "SET_OPTION", itemId: item.id, option: opt })}
+                                className={`min-w-[2.5rem] px-3 py-1 rounded-full text-xs font-semibold border transition ${
+                                  active
+                                    ? "bg-[#5E0009] border-[#5E0009] text-white"
+                                    : "bg-white border-gray-200 text-gray-700 hover:border-[#5E0009]/50"
+                                }`}
+                              >
+                                {opt}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <span />
+                      )}
+                      <div className="flex items-center rounded-full border border-gray-200 bg-white">
+                        <button
+                          type="button"
+                          aria-label={`Remove one ${item.name}`}
+                          onClick={() => dispatch({ type: "SET_LINE", itemId: item.id, quantity: quantity - 1, option: line?.option })}
+                          disabled={quantity === 0}
+                          className="h-8 w-8 rounded-full text-lg leading-none text-gray-600 hover:bg-gray-100 disabled:opacity-30"
+                        >
+                          −
+                        </button>
+                        <span className="w-6 text-center text-sm font-semibold tabular-nums">{quantity}</span>
+                        <button
+                          type="button"
+                          aria-label={`Add one ${item.name}`}
+                          onClick={() => dispatch({ type: "SET_LINE", itemId: item.id, quantity: quantity + 1, option: line?.option })}
+                          className="h-8 w-8 rounded-full text-lg leading-none text-[#5E0009] hover:bg-[#5E0009]/10"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
             </div>
 
-            <div className="mt-4 flex items-center justify-between">
-              <span className="text-sm font-semibold text-gray-700">Total: ${total.toFixed(2)}</span>
+            <footer className="border-t border-gray-100 bg-gray-50 px-4 py-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400">
+                  {itemCount} item{itemCount === 1 ? "" : "s"}
+                </p>
+                <p className="text-lg font-extrabold text-gray-900 tabular-nums">${total.toFixed(2)}</p>
+              </div>
               <button
                 onClick={() => handleSubmit(form)}
-                disabled={state.submitting === form.id}
-                className="px-4 py-2 bg-[#5E0009] text-white rounded-full text-sm font-semibold hover:bg-[#7a0012] transition disabled:opacity-60"
+                disabled={state.submitting === form.id || itemCount === 0}
+                className="inline-flex items-center justify-center bg-[#5E0009] text-white rounded-full px-6 py-2.5 text-sm font-semibold hover:bg-[#7a0012] transition shadow-sm disabled:opacity-50"
               >
                 {state.submitting === form.id ? "Submitting..." : "Submit Order"}
               </button>
-            </div>
-          </div>
+            </footer>
+          </section>
         );
       })}
     </div>

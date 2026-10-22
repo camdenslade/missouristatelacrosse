@@ -103,23 +103,22 @@ export default function WAdminDashboard(){
 
   return (
     <div className="max-w-6xl mx-auto mt-8 px-4 pb-16">
-      <div className="mb-8">
-        <div className="inline-flex items-center gap-3 text-[#5E0009] text-xs font-semibold uppercase tracking-[0.2em] mb-2">
-          <span className="h-px w-6 bg-[#5E0009]/40" />
-          Team Management
-          <span className="h-px w-6 bg-[#5E0009]/40" />
+      <div className="mb-8 rounded-2xl overflow-hidden shadow-lg bg-gradient-to-r from-[#5E0009] via-[#7a1020] to-[#5E0009] px-6 py-6 md:px-8 flex items-center gap-4">
+        <img src="/missouri-state-white.png" alt="Mo State" className="h-14 w-14 md:h-16 md:w-16 object-contain shrink-0 drop-shadow" />
+        <div>
+          <p className="text-[10px] md:text-xs font-semibold uppercase tracking-[0.2em] text-white/60">Team Management</p>
+          <h1 className="text-3xl md:text-4xl font-extrabold uppercase leading-tight text-white">Admin Dashboard</h1>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6 items-start">
         {/* Tab controls: stacked sidebar */}
-        <nav className="flex flex-row flex-wrap md:flex-col gap-2 md:sticky md:top-4">
+        <nav className="flex flex-row md:flex-col gap-2 md:sticky md:top-4 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 pb-1 md:pb-0">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => dispatch({ type: "SET_TAB", tab: tab.id })}
-              className={`px-4 py-2 rounded-full text-sm font-semibold text-left transition-all ${
+              className={`shrink-0 whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold text-left transition-all ${
                 activeTab === tab.id
                   ? "bg-[#5E0009] text-white shadow-sm"
                   : "bg-white text-gray-600 border border-gray-200 hover:border-[#5E0009]/40 hover:text-[#5E0009]"

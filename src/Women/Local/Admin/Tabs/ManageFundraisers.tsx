@@ -259,13 +259,13 @@ export default function ManageFundraisers() {
   return (
     <div>
       <div className="flex justify-between items-center mb-5">
-        <h2 className="text-lg font-bold text-gray-900">Fundraiser Campaigns</h2>
+        <h2 className="text-2xl md:text-3xl font-extrabold uppercase text-gray-900">Fundraiser Campaigns</h2>
         <button
           onClick={() => {
             setImageItem(null);
             dispatch({ type: "OPEN_CREATE" });
           }}
-          className="px-4 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] text-sm font-semibold"
+          className="px-5 py-2 bg-[#5E0009] text-white rounded-full hover:bg-[#7a0012] text-sm font-semibold shadow-sm"
         >
           + New Campaign
         </button>
@@ -279,7 +279,7 @@ export default function ManageFundraisers() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
-              <tr className="border-b text-left text-gray-500">
+              <tr className="border-b text-left text-gray-500 text-[11px] uppercase tracking-wider">
                 <th className="py-2 pr-4 font-medium">Title</th>
                 <th className="py-2 pr-4 font-medium">Raised / Goal</th>
                 <th className="py-2 pr-4 font-medium">Active</th>
@@ -326,13 +326,13 @@ export default function ManageFundraisers() {
                           setImageItem(fundraiserToImage(f)[0] ?? null);
                           dispatch({ type: "OPEN_EDIT", fundraiser: f });
                         }}
-                        className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+                        className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(f.id)}
-                        className="text-xs px-2 py-1 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-medium"
+                        className="text-xs px-3 py-1 rounded-full bg-red-50 text-red-600 hover:bg-red-100 font-semibold"
                       >
                         Delete
                       </button>
@@ -368,18 +368,18 @@ function FundraiserForm({
   onRemoveImage: () => void;
 }) {
   const f = state.form;
-  const input = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]";
+  const input = "w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:border-[#5E0009] transition";
 
   return (
     <div>
       <div className="flex items-center gap-3 mb-5">
         <button onClick={onCancel} className="text-sm text-gray-500 hover:text-gray-700">Back</button>
-        <h2 className="text-lg font-bold text-gray-900">{state.editingId ? "Edit Campaign" : "New Campaign"}</h2>
+        <h2 className="text-2xl md:text-3xl font-extrabold uppercase text-gray-900">{state.editingId ? "Edit Campaign" : "New Campaign"}</h2>
       </div>
 
       <div className="space-y-4 max-w-2xl">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Campaign Title *</label>
+          <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Campaign Title *</label>
           <input
             className={input}
             value={f.title}
@@ -388,7 +388,7 @@ function FundraiserForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Description</label>
           <textarea
             rows={4}
             className={input}
@@ -398,7 +398,7 @@ function FundraiserForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Campaign Image</label>
+          <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Campaign Image</label>
           {imageItem ? (
             <div className="relative w-40">
               <img src={safeImageSrc(imageItem.preview)} alt="" className="h-24 w-40 object-cover rounded-lg border border-gray-200" />
@@ -430,7 +430,7 @@ function FundraiserForm({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Goal Amount ($)</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Goal Amount ($)</label>
             <input
               type="number"
               min="0"
@@ -442,7 +442,7 @@ function FundraiserForm({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">External Link Override</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">External Link Override</label>
             <input
               type="text"
               className={input}
@@ -460,7 +460,7 @@ function FundraiserForm({
             <button
               type="button"
               onClick={() => dispatch({ type: "ADD_EXPENSE" })}
-              className="text-xs px-2 py-1 rounded-lg bg-gray-200 hover:bg-gray-300 font-medium"
+              className="text-xs px-2 py-1 rounded-full bg-gray-200 hover:bg-gray-300 font-medium"
             >
               + Add Line Item
             </button>
@@ -538,7 +538,7 @@ function FundraiserForm({
           <button
             onClick={onSave}
             disabled={state.saving}
-            className="px-5 py-2 bg-[#5E0009] text-white rounded-lg hover:bg-[#7a0012] text-sm font-semibold disabled:opacity-50"
+            className="px-5 py-2 bg-[#5E0009] text-white rounded-full hover:bg-[#7a0012] text-sm font-semibold disabled:opacity-50 shadow-sm"
           >
             {state.saving ? "Saving..." : "Save Campaign"}
           </button>
