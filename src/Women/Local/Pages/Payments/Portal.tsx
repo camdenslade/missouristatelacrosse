@@ -14,6 +14,8 @@ import { apiRequest } from "../../../../Services/API";
 import type { ApiParentRecord, ApiPlayer, ApiUser, DuesPayment, ParentLink, Program, Role } from "../../../../types/api";
 import { fetchActiveSeasonCode, getSeasonValue, displaySeasonLabel } from "../Roster/hooks/seasonUtils";
 
+type PortalTab = "pay" | "todos" | "orders" | "family" | "history";
+
 type PortalState = {
   selectedPlayerId: string;
   selectedPlayer: ApiPlayer | null;
@@ -59,6 +61,7 @@ export default function Portal() {
   // A shared order form link (/portal?form=<id>, copied from Manage Order Forms) jumps to that form.
   const [searchParams] = useSearchParams();
   const linkedFormId = searchParams.get("form");
+  const [activeTab, setActiveTab] = useState<PortalTab>(linkedFormId ? "orders" : "pay");
   const [linkedPlayerId, setLinkedPlayerId] = useState<string>("");
   const [linkedPlayer, setLinkedPlayer] = useState<ApiPlayer | null>(null);
   const [ledger, setLedger] = useState<DuesPayment[]>([]);
@@ -298,96 +301,211 @@ export default function Portal() {
       </div>
     );
 
+  const player = state.selectedPlayer;
+  const balance = Number(player?.balance ?? 0);
+  const isPlayerView = programRole === "player" || (programRole === "admin" && !!linkedPlayer);
+  const tabs: Array<{ id: PortalTab; label: string }> = [
+    { id: "pay", label: "Pay Dues" },
+    ...(isPlayerView ? [{ id: "todos" as PortalTab, label: "To-Dos" }, { id: "orders" as PortalTab, label: "Order Forms" }] : []),
+    { id: "family", label: "Family" },
+    { id: "history", label: "History" },
+  ];
+  const currentTab = tabs.some((t) => t.id === activeTab) ? activeTab : "pay";
+  const quickAmounts = [
+    ...(balance > 0 ? [{ label: `Full balance ($${balance.toFixed(2)})`, value: balance }] : []),
+    ...[50, 100].filter((v) => balance <= 0 || v < balance).map((v) => ({ label: `$${v}`, value: v })),
+  ];
+
+  // The Portal is always the player's own view; balance adjustments, payment references, and
+  // parent removal stay on Payments > Manage even when the viewer is an admin.
+  const detailsProps = {
+    userRole: programRole === "admin" ? "player" : programRole,
+    selectedPlayer: player,
+    addParentEmail: state.addParentEmail,
+    setAddParentEmail: (val: string) => dispatch({ type: "SET_FIELD", field: "addParentEmail", value: val }),
+    addParentName: state.addParentName,
+    setAddParentName: (val: string) => dispatch({ type: "SET_FIELD", field: "addParentName", value: val }),
+    handleAddParent,
+    handleLinkExistingParent,
+    handleRemoveParent,
+    message: state.message,
+    customAmount: state.customAmount,
+    setCustomAmount: (val: string) => dispatch({ type: "SET_FIELD", field: "customAmount", value: val }),
+    ledger,
+    onAdminAdjust: async () => {},
+  };
+
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 text-left">
-      <div className="mb-8">
-        <div className="inline-flex items-center gap-3 text-[#5E0009] text-xs font-semibold uppercase tracking-[0.2em] mb-2">
-          <span className="h-px w-6 bg-[#5E0009]/40" />
-          Team Dues
-          <span className="h-px w-6 bg-[#5E0009]/40" />
-        </div>
-        <h1 className="text-3xl font-bold text-gray-900">
-          Portal <span className="text-[#5E0009]">{displaySeasonLabel(currentSeason)}</span>
-        </h1>
-      </div>
-
+    <div className="max-w-3xl mx-auto px-4 py-8 text-left">
       {loadingPlayers ? (
-        <p className="text-gray-600 animate-pulse">Loading payment data...</p>
-      ) : (
-        <div className="space-y-8">
-          {programRole === "parent" && (
-            <ParentPlayerSelect
-              players={parentLinkedPlayers}
-              selectedPlayerId={state.selectedPlayerId}
-              setSelectedPlayerId={(id) =>
-                dispatch({ type: "SET_FIELD", field: "selectedPlayerId", value: id })
-              }
-            />
-          )}
-
-          {state.selectedPlayer ? (
-            <div className={paymentProvider === "stripe" ? "max-w-xl" : "max-w-lg"}>
-              <PlayerPaymentDetails
-                userRole={programRole}
-                selectedPlayer={state.selectedPlayer}
-                addParentEmail={state.addParentEmail}
-                setAddParentEmail={(val) => dispatch({ type: "SET_FIELD", field: "addParentEmail", value: val })}
-                addParentName={state.addParentName}
-                setAddParentName={(val) => dispatch({ type: "SET_FIELD", field: "addParentName", value: val })}
-                handleAddParent={handleAddParent}
-                handleLinkExistingParent={handleLinkExistingParent}
-                handleRemoveParent={handleRemoveParent}
-                message={state.message}
-                customAmount={state.customAmount}
-                setCustomAmount={(val) => dispatch({ type: "SET_FIELD", field: "customAmount", value: val })}
-                ledger={ledger}
-                onAdminAdjust={async () => {}}
+        <p className="text-gray-600 animate-pulse text-center py-16">Loading payment data...</p>
+      ) : !player ? (
+        <div className="text-center bg-white border border-gray-100 rounded-2xl shadow-sm p-8">
+          {programRole === "parent" && parentLinkedPlayers.length > 1 && (
+            <div className="flex justify-center">
+              <ParentPlayerSelect
+                players={parentLinkedPlayers}
+                selectedPlayerId={state.selectedPlayerId}
+                setSelectedPlayerId={(id) => dispatch({ type: "SET_FIELD", field: "selectedPlayerId", value: id })}
               />
-
-              <div className="mt-6 flex flex-col items-center">
-                <button
-                  onClick={handleConfirm}
-                  className="inline-flex items-center justify-center bg-[#5E0009] text-white rounded-full px-6 py-2.5 text-sm font-semibold hover:bg-[#7a0012] transition shadow-sm"
+            </div>
+          )}
+          <h3 className="text-xl font-extrabold uppercase text-gray-900 mb-2">No Player Linked</h3>
+          <p className="text-gray-600 mb-4">
+            We couldn't find any player data connected to your account for the{" "}
+            <span className="font-semibold">{displaySeasonLabel(currentSeason)}</span> season.
+          </p>
+          <p className="text-gray-700 mb-6">
+            {programRole === "parent"
+              ? "If you're a parent, please contact your coach to confirm that your email is linked to your player's account."
+              : "If you're a player, verify that your account is linked to a valid roster entry."}
+          </p>
+          <a
+            href="/"
+            className="inline-block bg-[#5E0009] text-white px-6 py-2.5 rounded-full font-semibold hover:bg-[#7a0012] transition shadow-sm"
+          >
+            Return Home
+          </a>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <section className="rounded-2xl overflow-hidden shadow-lg bg-gradient-to-r from-[#5E0009] via-[#7a1020] to-[#5E0009] text-white">
+            <div className="px-6 py-6 md:px-8 md:py-7 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-4 min-w-0">
+                <img src="/missouri-state-white.png" alt="Mo State" className="h-14 w-14 md:h-16 md:w-16 object-contain shrink-0 drop-shadow" />
+                <div className="min-w-0">
+                  <p className="text-[10px] md:text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
+                    Player Portal · {displaySeasonLabel(currentSeason)}
+                  </p>
+                  <h1 className="text-2xl md:text-3xl font-extrabold uppercase leading-tight break-words">
+                    {player.name || "Player"}
+                  </h1>
+                </div>
+              </div>
+              <div className="md:text-right">
+                <p className="text-[10px] md:text-xs font-semibold uppercase tracking-[0.2em] text-white/60">Balance</p>
+                <p className="text-3xl md:text-4xl font-extrabold tabular-nums">${balance.toFixed(2)}</p>
+                <span
+                  className={`mt-1 inline-block text-[11px] font-semibold uppercase tracking-wide px-2.5 py-0.5 rounded-full ${
+                    balance > 0 ? "bg-white text-[#5E0009]" : "bg-green-500/20 text-green-100"
+                  }`}
                 >
-                  {state.confirmedAmount ? "Update Amount" : "Confirm Amount"}
-                </button>
+                  {balance > 0 ? "Balance due" : "Paid up"}
+                </span>
+              </div>
+            </div>
+            {programRole === "parent" && parentLinkedPlayers.length > 1 && (
+              <div className="px-6 md:px-8 pb-5 [&_label]:text-white/80">
+                <ParentPlayerSelect
+                  players={parentLinkedPlayers}
+                  selectedPlayerId={state.selectedPlayerId}
+                  setSelectedPlayerId={(id) => dispatch({ type: "SET_FIELD", field: "selectedPlayerId", value: id })}
+                />
+              </div>
+            )}
+          </section>
 
-                {state.confirmedAmount && (
-                  <div id="paypal-payment-buttons" className="mt-4 w-full" />
+          <nav className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1 md:mx-0 md:px-0">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  if (tab.id !== "pay") dispatch({ type: "SET_FIELD", field: "confirmedAmount", value: null });
+                  setActiveTab(tab.id);
+                }}
+                className={`shrink-0 whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                  currentTab === tab.id
+                    ? "bg-[#5E0009] text-white shadow-sm"
+                    : "bg-white text-gray-600 border border-gray-200 hover:border-[#5E0009]/40 hover:text-[#5E0009]"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+
+          <div className="animate-fadeIn">
+            {currentTab === "pay" && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 md:p-6 space-y-4">
+                <div>
+                  <h2 className="text-lg font-extrabold uppercase text-gray-900">Make a Payment</h2>
+                  <p className="text-sm text-gray-500">
+                    {balance > 0
+                      ? "Pay all or part of your balance. Payments post to your account right away."
+                      : "You're all paid up. You can still make a payment toward future dues."}
+                  </p>
+                </div>
+                {quickAmounts.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {quickAmounts.map((q) => (
+                      <button
+                        key={q.label}
+                        type="button"
+                        onClick={() => {
+                          dispatch({ type: "SET_FIELD", field: "customAmount", value: q.value.toFixed(2) });
+                          dispatch({ type: "SET_FIELD", field: "confirmedAmount", value: null });
+                        }}
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition ${
+                          Number(state.customAmount) === q.value
+                            ? "bg-[#5E0009] border-[#5E0009] text-white"
+                            : "bg-white border-gray-200 text-gray-700 hover:border-[#5E0009]/40 hover:text-[#5E0009]"
+                        }`}
+                      >
+                        {q.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="relative flex-1">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">$</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="Enter amount"
+                      value={state.customAmount}
+                      onChange={(e) => {
+                        dispatch({ type: "SET_FIELD", field: "customAmount", value: e.target.value });
+                        dispatch({ type: "SET_FIELD", field: "confirmedAmount", value: null });
+                      }}
+                      className="w-full bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 rounded-xl pl-8 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
+                    />
+                  </div>
+                  <button
+                    onClick={handleConfirm}
+                    className="inline-flex items-center justify-center bg-[#5E0009] text-white rounded-full px-6 py-2.5 text-sm font-semibold hover:bg-[#7a0012] transition shadow-sm"
+                  >
+                    {state.confirmedAmount ? "Update Amount" : "Continue to Payment"}
+                  </button>
+                </div>
+                {state.confirmedAmount && <div id="paypal-payment-buttons" className="w-full pt-2" />}
+              </div>
+            )}
+
+            {currentTab === "todos" && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 md:p-6">
+                <TodoList playerId={player.id} season={currentSeason} hideHeading emptyMessage="Nothing on your list right now." />
+              </div>
+            )}
+
+            {currentTab === "orders" && (
+              <OrderForms playerId={player.id} focusFormId={linkedFormId} hideHeading emptyMessage="No order forms are open right now." />
+            )}
+
+            {currentTab === "family" && (
+              <div className="space-y-4">
+                <PlayerPaymentDetails {...detailsProps} sections={["family"]} />
+                {programRole === "parent" && (player.parents || []).length === 0 && (
+                  <p className="text-sm text-gray-400 text-center py-8">No parents linked yet.</p>
                 )}
               </div>
+            )}
 
-              {(programRole === "player" || (programRole === "admin" && !!linkedPlayer)) && (
-                <div className="mt-8 space-y-8">
-                  <TodoList playerId={state.selectedPlayer.id} season={currentSeason} />
-                  <OrderForms playerId={state.selectedPlayer.id} focusFormId={linkedFormId} />
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-center bg-white border border-gray-100 rounded-2xl shadow-sm p-8">
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">No Player Linked</h3>
-              <p className="text-gray-600 mb-4">
-                We couldn't find any player data connected to your account for the{" "}
-                <span className="font-semibold">{displaySeasonLabel(currentSeason)}</span> season.
-              </p>
-              {programRole === "parent" ? (
-                <p className="text-gray-700 mb-4">
-                  If you're a parent, please contact your coach to confirm that your email is linked to your player's account.
-                </p>
-              ) : (
-                <p className="text-gray-700 mb-4">
-                  If you're a player, verify that your account is linked to a valid roster entry.
-                </p>
-              )}
-              <a
-                href="/"
-                className="inline-block bg-[#5E0009] text-white px-6 py-2.5 rounded-full font-semibold hover:bg-[#7a0012] transition"
-              >
-                Return Home
-              </a>
-            </div>
-          )}
+            {currentTab === "history" && (
+              <PlayerPaymentDetails {...detailsProps} sections={["history"]} />
+            )}
+          </div>
         </div>
       )}
     </div>

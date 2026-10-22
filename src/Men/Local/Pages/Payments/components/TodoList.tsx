@@ -13,9 +13,11 @@ function cardThumb(t: ApiTodo): string | null {
 type TodoListProps = {
   playerId: string;
   season: string;
+  emptyMessage?: string;
+  hideHeading?: boolean;
 };
 
-export default function TodoList({ playerId, season }: TodoListProps) {
+export default function TodoList({ playerId, season, emptyMessage, hideHeading }: TodoListProps) {
   const [todos, setTodos] = useState<ApiTodo[]>([]);
   const [statuses, setStatuses] = useState<Record<string, ApiTodoStatus>>({});
   const [loading, setLoading] = useState(true);
@@ -50,7 +52,10 @@ export default function TodoList({ playerId, season }: TodoListProps) {
     };
   }, [playerId, season]);
 
-  if (loading || todos.length === 0) return null;
+  if (loading) return null;
+  if (todos.length === 0) {
+    return emptyMessage ? <p className="text-sm text-gray-400 text-center py-8">{emptyMessage}</p> : null;
+  }
 
   const handleToggle = async (todo: ApiTodo, done: boolean) => {
     setSaving(todo.id);
@@ -67,7 +72,7 @@ export default function TodoList({ playerId, season }: TodoListProps) {
 
   return (
     <div>
-      <h3 className="font-medium text-sm mb-2 text-gray-800">To-Dos</h3>
+      {!hideHeading && <h3 className="font-medium text-sm mb-2 text-gray-800">To-Dos</h3>}
       <div className="space-y-3">
         {todos.map((todo) => {
           const done = statuses[todo.id]?.done ?? false;

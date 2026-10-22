@@ -110,7 +110,7 @@ export default function EventPosItemsModal({ eventId, eventName, onClose }) {
     }
   };
 
-  const input = "border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30";
+  const input = "border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition";
 
   return (
     <Modal onClose={onClose} size="lg">
@@ -147,7 +147,7 @@ export default function EventPosItemsModal({ eventId, eventName, onClose }) {
           <button
             type="submit"
             disabled={state.saving}
-            className="px-4 py-2 bg-[#5E0009] text-white rounded-lg text-sm font-medium hover:bg-[#7a0012] transition disabled:opacity-60"
+            className="px-5 py-2 bg-[#5E0009] text-white rounded-full text-sm font-medium hover:bg-[#7a0012] transition disabled:opacity-60 shadow-sm"
           >
             {state.saving ? "Adding..." : "Add"}
           </button>
@@ -197,7 +197,7 @@ export default function EventPosItemsModal({ eventId, eventName, onClose }) {
               <button
                 onClick={handleSync}
                 disabled={state.syncing}
-                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition disabled:opacity-60"
+                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold hover:bg-gray-200 transition disabled:opacity-60"
               >
                 {state.syncing ? "Syncing..." : "Sync card payments from Stripe"}
               </button>
@@ -209,7 +209,7 @@ export default function EventPosItemsModal({ eventId, eventName, onClose }) {
         )}
 
         <div className="flex justify-end pt-2">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-lg text-sm font-semibold hover:bg-gray-300 transition">
+          <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-full text-sm font-semibold hover:bg-gray-300 transition">
             Close
           </button>
         </div>

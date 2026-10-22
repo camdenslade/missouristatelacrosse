@@ -189,7 +189,7 @@ export default function ManageAccountRequests() {
       <div className="space-y-6 lg:sticky lg:top-4">
 
         {/* Onboard New Player */}
-        <section className="bg-gray-50 border border-gray-200 rounded-xl p-5 shadow-sm">
+        <section className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
           <h2 className="text-base font-bold text-gray-900 mb-1">Onboard New Player</h2>
           <p className="text-xs text-gray-500 mb-4">
             Creates an account and sends a "Set your password" invite email directly. No approval step needed.
@@ -200,19 +200,19 @@ export default function ManageAccountRequests() {
               placeholder="Full name"
               value={onboardName}
               onChange={(e) => setOnboardName(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30"
+              className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
             />
             <input
               type="email"
               placeholder="Email address"
               value={onboardEmail}
               onChange={(e) => setOnboardEmail(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30"
+              className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
             />
             <button
               onClick={handleOnboard}
               disabled={onboarding || checkingOnboard}
-              className="px-5 py-2 bg-[#5E0009] text-white rounded-lg text-sm font-medium hover:bg-[#7a0012] transition disabled:opacity-60"
+              className="px-5 py-2 bg-[#5E0009] text-white rounded-full text-sm font-medium hover:bg-[#7a0012] transition disabled:opacity-60 shadow-sm"
             >
               {checkingOnboard ? "Checking roster…" : onboarding ? "Sending…" : "Send Invite"}
             </button>
@@ -230,7 +230,7 @@ export default function ManageAccountRequests() {
                     <button
                       onClick={() => submitOnboard(c.id)}
                       disabled={onboarding}
-                      className="px-2 py-1 text-xs bg-[#5E0009] text-white rounded hover:bg-[#7a0012] transition disabled:opacity-60"
+                      className="px-2 py-1 text-xs bg-[#5E0009] text-white rounded-full hover:bg-[#7a0012] transition disabled:opacity-60 shadow-sm"
                     >
                       Link to this player
                     </button>
@@ -255,7 +255,7 @@ export default function ManageAccountRequests() {
         </section>
 
         {/* Onboard Alumni */}
-        <section className="bg-gray-50 border border-gray-200 rounded-xl p-5 shadow-sm">
+        <section className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
           <h2 className="text-base font-bold text-gray-900 mb-1">Onboard Alumni</h2>
           <p className="text-xs text-gray-500 mb-4">
             Creates an alumni account and sends a thank-you invite with instructions to view the program budget.
@@ -266,14 +266,14 @@ export default function ManageAccountRequests() {
               placeholder="Full name"
               value={alumniName}
               onChange={(e) => setAlumniName(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30"
+              className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
             />
             <input
               type="email"
               placeholder="Email address"
               value={alumniEmail}
               onChange={(e) => setAlumniEmail(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30"
+              className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30 focus:border-[#5E0009] transition"
             />
             <button
               onClick={handleOnboardAlumni}
@@ -286,7 +286,7 @@ export default function ManageAccountRequests() {
         </section>
 
         {/* Alumni Self-Signup QR Code */}
-        <section className="bg-gray-50 border border-gray-200 rounded-xl p-5 shadow-sm">
+        <section className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
           <h2 className="text-base font-bold text-gray-900 mb-1">Alumni Self-Signup Link</h2>
           <p className="text-xs text-gray-500 mb-4">
             Share this QR code or link. Alumni fill out their own name and email and get an invite automatically.
@@ -323,7 +323,7 @@ export default function ManageAccountRequests() {
 
         {/* Pending Account Requests */}
         <section>
-          <h2 className="text-lg font-bold text-gray-900 mb-4">
+          <h2 className="text-2xl md:text-3xl font-extrabold uppercase text-gray-900 mb-4">
             Pending Requests <span className="text-[#5E0009]">{programLabel}</span>
           </h2>
 
@@ -349,7 +349,7 @@ export default function ManageAccountRequests() {
                     onChange={(e) =>
                       setApproveRoles((prev) => ({ ...prev, [req.id]: e.target.value as Role }))
                     }
-                    className="border border-gray-300 rounded-lg px-2 py-2 text-sm bg-white focus:outline-none"
+                    className="border border-gray-200 rounded-xl px-2 py-2.5 text-sm bg-white focus:outline-none transition"
                   >
                     {ASSIGNABLE_ROLES.map((r) => (
                       <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
@@ -372,13 +372,13 @@ export default function ManageAccountRequests() {
         {/* Team Members */}
         <section>
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h2 className="text-lg font-bold text-gray-900">
+            <h2 className="text-2xl md:text-3xl font-extrabold uppercase text-gray-900">
               Team Members <span className="text-[#5E0009]">{programLabel}</span>
             </h2>
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value as Role | "all")}
-              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none"
+              className="border border-gray-200 rounded-xl px-3 py-1.5 text-sm bg-white focus:outline-none transition"
             >
               {ROLES.map((r) => (
                 <option key={r} value={r}>{r === "all" ? "All Roles" : r.charAt(0).toUpperCase() + r.slice(1)}</option>
