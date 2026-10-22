@@ -1,7 +1,7 @@
 // src/App.jsx
 import { Suspense, useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
-import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { Navigate, Route, BrowserRouter as Router, Routes, useLocation } from "react-router-dom";
 
 import AuthModal from "./Global/Authentication/AuthModal";
 import ProtectedRoute from "./Global/Authentication/ProtectedRoutes";
@@ -83,6 +83,18 @@ function PageLoading() {
   );
 }
 
+// A signed-out visitor bounced off a protected page (see ProtectedRoute) arrives with
+// state.signIn set; open the sign-in box so they can continue to where they were going.
+function OpenSignInFromRedirect({ onOpen }: { onOpen: () => void }) {
+  const location = useLocation();
+  const wantsSignIn = (location.state as { signIn?: boolean } | null)?.signIn === true;
+  useEffect(() => {
+    if (wantsSignIn) onOpen();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantsSignIn, location.key]);
+  return null;
+}
+
 export default function App() {
   const { roles } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -104,6 +116,7 @@ export default function App() {
     <Router>
       <div className="min-h-screen flex flex-col bg-white">
         <RouteSeo />
+        <OpenSignInFromRedirect onOpen={() => setShowAuthModal(true)} />
         <Header onAuthOpen={() => setShowAuthModal(true)} />
 
         <main className="flex-1 w-full">

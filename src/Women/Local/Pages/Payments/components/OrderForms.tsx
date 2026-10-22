@@ -1,4 +1,4 @@
-import { useEffect, useReducer } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 import { useConfirm } from "../../../../../Global/Common/components/ConfirmModal";
@@ -7,6 +7,8 @@ import { apiRequest } from "../../../../../Services/API";
 type Item = {
   id: string;
   name: string;
+  description: string | null;
+  firstYearComp?: boolean;
   price: number | null;
   image: string | null;
   options: string[];
@@ -44,9 +46,21 @@ function reducer(state: typeof initialState, action: any) {
   }
 }
 
-export default function OrderForms({ playerId }: { playerId: string }) {
+export default function OrderForms({ playerId, focusFormId }: { playerId: string; focusFormId?: string | null }) {
   const confirm = useConfirm();
   const [state, dispatch] = useReducer(reducer, initialState);
+  const focusRef = useRef<HTMLDivElement | null>(null);
+  const [firstYear, setFirstYear] = useState(false);
+
+  useEffect(() => {
+    apiRequest<{ firstYear: boolean }>(`/api/order-forms/first-year?playerId=${playerId}`)
+      .then((r) => setFirstYear(!!r?.firstYear))
+      .catch(() => setFirstYear(false));
+  }, [playerId]);
+
+  // First Year Comp: one unit of the item is free in a player's first season (the server
+  // applies the same rule when the order is submitted).
+  const compedUnits = (item: Item, quantity: number) => (firstYear && item.firstYearComp && quantity > 0 ? 1 : 0);
 
   useEffect(() => {
     apiRequest<OrderForm[]>("/api/order-forms/active")
@@ -54,13 +68,25 @@ export default function OrderForms({ playerId }: { playerId: string }) {
       .catch(() => dispatch({ type: "SET_FORMS", forms: [] }));
   }, []);
 
-  if (state.loading || state.forms.length === 0) return null;
+  useEffect(() => {
+    if (!state.loading && focusFormId) {
+      focusRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [state.loading, focusFormId]);
+
+  if (state.loading) return null;
+  if (state.forms.length === 0) {
+    return focusFormId ? (
+      <p className="text-sm text-gray-500">That order form is closed or no longer available.</p>
+    ) : null;
+  }
+  const linkedFormMissing = !!focusFormId && !state.forms.some((f) => f.id === focusFormId);
 
   const totalFor = (form: OrderForm) =>
     form.items.reduce((sum, item) => {
       const line = state.cart[item.id];
       if (!line) return sum;
-      return sum + (item.price ?? 0) * line.quantity;
+      return sum + (item.price ?? 0) * (line.quantity - compedUnits(item, line.quantity));
     }, 0);
 
   const handleSubmit = async (form: OrderForm) => {
@@ -94,10 +120,20 @@ export default function OrderForms({ playerId }: { playerId: string }) {
   return (
     <div className="space-y-6">
       <h3 className="font-medium text-sm text-gray-800">Order Forms</h3>
+      {linkedFormMissing && (
+        <p className="text-sm text-gray-500">That order form is closed or no longer available.</p>
+      )}
       {state.forms.map((form) => {
         const total = totalFor(form);
+        const focused = form.id === focusFormId;
         return (
-          <div key={form.id} className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4">
+          <div
+            key={form.id}
+            ref={focused ? focusRef : undefined}
+            className={`bg-white border rounded-2xl shadow-sm p-4 scroll-mt-24 ${
+              focused ? "border-[#5E0009] ring-2 ring-[#5E0009]/20" : "border-gray-100"
+            }`}
+          >
             <h4 className="font-semibold text-gray-900">{form.title}</h4>
             {form.description && <p className="text-sm text-gray-600 mt-1">{form.description}</p>}
 
@@ -111,7 +147,13 @@ export default function OrderForms({ playerId }: { playerId: string }) {
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-gray-800 text-sm">{item.name}</p>
+                      {item.description && <p className="text-xs text-gray-500">{item.description}</p>}
                       {item.price != null && <p className="text-xs text-gray-500">${item.price.toFixed(2)}</p>}
+                      {item.firstYearComp && (
+                        <p className="text-xs font-medium text-green-700">
+                          {firstYear ? "Free for you: First Year Comp (one included)" : "Free for first-year players"}
+                        </p>
+                      )}
                       {item.options?.length > 0 && (
                         <select
                           value={line?.option ?? ""}

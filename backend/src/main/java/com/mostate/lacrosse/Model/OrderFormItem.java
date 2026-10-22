@@ -25,6 +25,11 @@ public class OrderFormItem {
     @Column(nullable = false)
     private String name;
 
+    private String description;
+
+    @Column(name = "first_year_comp", nullable = false)
+    private boolean firstYearComp = false;
+
     @Column(precision = 10, scale = 2)
     private BigDecimal price;
 
@@ -44,6 +49,12 @@ public class OrderFormItem {
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public boolean isFirstYearComp() { return firstYearComp; }
+    public void setFirstYearComp(boolean firstYearComp) { this.firstYearComp = firstYearComp; }
 
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }

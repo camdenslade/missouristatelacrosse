@@ -10,6 +10,7 @@ type PlayerTableProps = {
   userEmails: Record<string, string>;
   onSelectedPlayer?: (player: ApiPlayer) => void;
   selectedPlayerId?: string;
+  onDirtyChange?: (playerId: string, dirty: boolean) => void;
 };
 
 export default function PlayerTable({
@@ -18,6 +19,7 @@ export default function PlayerTable({
   userEmails,
   onSelectedPlayer,
   selectedPlayerId,
+  onDirtyChange,
 }: PlayerTableProps) {
   const [saving, setSaving] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -31,17 +33,7 @@ export default function PlayerTable({
         method: "PUT",
         json: { balance: Number(p.balance || 0), email: email || undefined },
       });
-
-      const cached = JSON.parse(localStorage.getItem("playerswCache") || "{}");
-      if (cached.list) {
-        const updatedList = cached.list.map((pl: ApiPlayer) =>
-          pl.id === p.id ? { ...pl, balance: Number(p.balance || 0), email } : pl
-        );
-        localStorage.setItem(
-          "playerswCache",
-          JSON.stringify({ ...cached, list: updatedList })
-        );
-      }
+      onDirtyChange?.(p.id, false);
 
       setMessage(`Updated ${p.name || "player"}.`);
     } catch {
@@ -53,10 +45,12 @@ export default function PlayerTable({
   };
 
   const updateField = (id: string, field: "email" | "balance", value: string | number) => {
+    onDirtyChange?.(id, true);
     setPlayers((prev) => prev.map((pl) => (pl.id === id ? { ...pl, [field]: value } : pl)));
   };
 
   const updateBalance = (id: string, raw: string) => {
+    onDirtyChange?.(id, true);
     const value = raw === "" ? "" : Number(raw);
     setPlayers((prev) =>
       prev.map((pl) =>

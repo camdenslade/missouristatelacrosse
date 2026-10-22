@@ -150,7 +150,7 @@ export interface DuesPayment {
   id: string;
   playerId: string;
   amount: number;
-  type: "PAYMENT" | "CHARGE" | "CREDIT" | "ADJUSTMENT";
+  type: "PAYMENT" | "CHARGE" | "CREDIT" | "ADJUSTMENT" | "WAIVED";
   note?: string | null;
   paidByUid?: string | null;
   payPalOrderId?: string | null;

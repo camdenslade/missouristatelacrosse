@@ -1,7 +1,9 @@
 import { X } from "lucide-react";
 import { useReducer } from "react";
 import type { FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 
+import { takePostLoginRedirect } from "./postLoginRedirect";
 import { apiRequest } from "../../Services/API";
 import { describeAuthError } from "../../Services/cognitoAuth";
 import { getActiveProgram } from "../../Services/programHelper";
@@ -54,6 +56,7 @@ type AuthModalProps = {
 
 export default function AuthModal({ onClose }: AuthModalProps) {
   const { signIn } = useAuth();
+  const navigate = useNavigate();
   const [state, dispatch] = useReducer(reducer, initialState);
   const { isSignUp, email, displayName, password, error, submitted, submitting } = state;
 
@@ -95,7 +98,9 @@ export default function AuthModal({ onClose }: AuthModalProps) {
 
     try {
       await signIn(email, password);
+      const returnTo = takePostLoginRedirect();
       onClose();
+      if (returnTo) navigate(returnTo);
     } catch (err) {
       console.error(err);
       dispatch({ type: "ERROR", error: describeAuthError(err) });
@@ -105,6 +110,7 @@ export default function AuthModal({ onClose }: AuthModalProps) {
   };
 
   const handleClose = () => {
+    takePostLoginRedirect();
     dispatch({ type: "RESET" });
     onClose();
   };

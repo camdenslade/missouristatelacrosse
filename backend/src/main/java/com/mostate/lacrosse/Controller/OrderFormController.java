@@ -49,6 +49,10 @@ import jakarta.servlet.http.HttpServletRequest;
 @RestController
 @RequestMapping("/api/order-forms")
 public class OrderFormController {
+
+    @org.springframework.beans.factory.annotation.Value("${app.frontend.base-url:https://missouristatelacrosse.com}")
+    private String frontendBaseUrl = "https://missouristatelacrosse.com";
+
     private final OrderFormRepository formRepo;
     private final OrderFormItemRepository itemRepo;
     private final OrderFormSubmissionRepository submissionRepo;
@@ -142,7 +146,7 @@ public class OrderFormController {
 
         if (Boolean.TRUE.equals(body.notifyPlayers())) {
             List<Player> players = playerRepo.findAllBySeason(seasonService.getActiveCode());
-            notifyPlayers(saved, players, false);
+            notifyPlayers(saved, players, false, program);
         }
 
         return ResponseEntity.ok(toFormResponse(saved));
@@ -153,7 +157,9 @@ public class OrderFormController {
      * isReminder=false) or just whoever hasn't submitted yet (isReminder=true). Silently
      * skips players with no email on file rather than failing the whole batch over one.
      */
-    private int notifyPlayers(OrderForm form, List<Player> players, boolean isReminder) {
+    private int notifyPlayers(OrderForm form, List<Player> players, boolean isReminder, String program) {
+        String portalPath = "women".equalsIgnoreCase(program) ? "/women/portal" : "/portal";
+        String formLink = frontendBaseUrl.replaceAll("/+$", "") + portalPath + "?form=" + form.getId();
         String subject = isReminder ? "Reminder: " + form.getTitle() : "New Order Form: " + form.getTitle();
         String body = EmailTemplate.paragraph(isReminder
             ? "This is a reminder that you still need to submit an order for:"
@@ -162,7 +168,8 @@ public class OrderFormController {
             + (form.getDescription() != null && !form.getDescription().isBlank()
                 ? EmailTemplate.paragraph(form.getDescription())
                 : "")
-            + EmailTemplate.paragraph("Log in to your player portal to place your order.");
+            + EmailTemplate.paragraph("Place your order in your player portal:")
+            + EmailTemplate.button(formLink, "Open Order Form");
         String html = EmailTemplate.wrap(null, body);
 
         int sent = 0;
@@ -187,15 +194,7 @@ public class OrderFormController {
         if (form == null) {
             return ResponseEntity.badRequest().body(new ErrorResponse("Order form not found"));
         }
-        List<Player> seasonPlayers = playerRepo.findAllBySeason(seasonService.getActiveCode());
-        var submittedByPlayer = submissionRepo.findAllByFormIdOrderByCreatedAtDesc(id).stream()
-            .map(OrderFormSubmission::getPlayerId)
-            .collect(java.util.stream.Collectors.toSet());
-        List<Player> notSubmitted = seasonPlayers.stream()
-            .filter(p -> !submittedByPlayer.contains(p.getId()))
-            .toList();
-
-        int sent = notifyPlayers(form, notSubmitted, true);
+        int sent = notifyPlayers(form, playersNotSubmitted(id), true, program);
         return ResponseEntity.ok(Map.of("remindedCount", sent));
     }
 
@@ -250,6 +249,8 @@ public class OrderFormController {
         OrderFormItem item = new OrderFormItem();
         item.setFormId(formId);
         item.setName(TextSanitizer.clean(body.name()));
+        item.setDescription(cleanDescription(body.description()));
+        item.setFirstYearComp(Boolean.TRUE.equals(body.firstYearComp()));
         item.setPrice(body.price());
         if (body.image() != null) {
             item.setImage(body.image().isBlank() ? null : s3Service.extractKey(body.image()));
@@ -271,6 +272,8 @@ public class OrderFormController {
         OrderFormItem item = itemRepo.findById(itemId).orElse(null);
         if (item == null) return ResponseEntity.notFound().build();
         if (body.name() != null) item.setName(TextSanitizer.clean(body.name()));
+        if (body.description() != null) item.setDescription(cleanDescription(body.description()));
+        if (body.firstYearComp() != null) item.setFirstYearComp(body.firstYearComp());
         if (body.price() != null) item.setPrice(body.price());
         if (body.image() != null) {
             item.setImage(body.image().isBlank() ? null : s3Service.extractKey(body.image()));
@@ -321,7 +324,9 @@ public class OrderFormController {
         Map<UUID, OrderFormItem> itemsById = items.stream()
             .collect(java.util.stream.Collectors.toMap(OrderFormItem::getId, i -> i));
 
+        boolean firstYear = isFirstYear(player);
         BigDecimal total = BigDecimal.ZERO;
+        BigDecimal compedTotal = BigDecimal.ZERO;
         List<Map<String, Object>> priced = new ArrayList<>();
         for (Selection sel : body.selections()) {
             OrderFormItem item = itemsById.get(sel.itemId());
@@ -330,16 +335,23 @@ public class OrderFormController {
             }
             int qty = sel.quantity() != null && sel.quantity() > 0 ? sel.quantity() : 1;
             BigDecimal unitPrice = item.getPrice() != null ? item.getPrice() : BigDecimal.ZERO;
-            BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(qty));
-            total = total.add(lineTotal);
-            priced.add(Map.of(
-                "itemId", item.getId().toString(),
-                "name", item.getName(),
-                "option", sel.option() != null ? sel.option() : "",
-                "quantity", qty,
-                "unitPrice", unitPrice,
-                "lineTotal", lineTotal
-            ));
+            String option = sel.option() != null ? sel.option() : "";
+            // First Year Comp covers one unit; anything beyond that is charged on its own line.
+            int compedQty = firstYear && item.isFirstYearComp() && unitPrice.signum() > 0 ? 1 : 0;
+            if (compedQty > 0) {
+                Map<String, Object> comped = pricedLine(item, option, compedQty, unitPrice);
+                comped.put("waived", true);
+                comped.put("waivedReason", "First Year Comp");
+                priced.add(comped);
+                total = total.add(unitPrice);
+                compedTotal = compedTotal.add(unitPrice);
+            }
+            int chargedQty = qty - compedQty;
+            if (chargedQty > 0) {
+                Map<String, Object> line = pricedLine(item, option, chargedQty, unitPrice);
+                priced.add(line);
+                total = total.add((BigDecimal) line.get("lineTotal"));
+            }
         }
 
         OrderFormSubmission submission = new OrderFormSubmission();
@@ -350,24 +362,27 @@ public class OrderFormController {
         submission.setSubmittedByUid((String) request.getAttribute("firebaseUid"));
         submissionRepo.save(submission);
 
-        if (total.signum() > 0) {
+        BigDecimal owed = total.subtract(compedTotal);
+        if (owed.signum() > 0) {
             DuesPayment charge = new DuesPayment();
             charge.setPlayerId(player.getId());
-            charge.setAmount(total);
+            charge.setAmount(owed);
             charge.setType("CHARGE");
-            charge.setNote("Order: " + form.getTitle());
+            charge.setNote("Order: " + form.getTitle()
+                + (compedTotal.signum() > 0 ? " ($" + compedTotal.setScale(2) + " First Year Comp not charged)" : ""));
             charge.setPaidByUid((String) request.getAttribute("firebaseUid"));
             duesRepo.save(charge);
 
             BigDecimal current = player.getBalance() != null ? player.getBalance() : BigDecimal.ZERO;
-            player.setBalance(current.add(total));
+            player.setBalance(current.add(owed));
             playerRepo.save(player);
         }
 
         return ResponseEntity.ok(Map.of(
             "submissionId", submission.getId(),
-            "total", total,
-            "newBalance", player.getBalance()
+            "total", owed,
+            "firstYearComp", compedTotal,
+            "newBalance", player.getBalance() != null ? player.getBalance() : BigDecimal.ZERO
         ));
     }
 
@@ -381,18 +396,164 @@ public class OrderFormController {
             return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
         }
         List<Map<String, Object>> results = submissionRepo.findAllByFormIdOrderByCreatedAtDesc(formId).stream()
-            .map(s -> {
-                Player player = playerRepo.findById(s.getPlayerId()).orElse(null);
+            .map(this::toSubmissionResponse)
+            .toList();
+        return ResponseEntity.ok(results);
+    }
+
+    private Map<String, Object> toSubmissionResponse(OrderFormSubmission s) {
+        Player player = playerRepo.findById(s.getPlayerId()).orElse(null);
+        List<Object> lines = JsonUtils.readList(s.getSelections());
+        BigDecimal waivedTotal = BigDecimal.ZERO;
+        for (Object o : lines) {
+            if (o instanceof Map<?, ?> m && Boolean.TRUE.equals(m.get("waived"))) {
+                waivedTotal = waivedTotal.add(new BigDecimal(String.valueOf(m.get("lineTotal") == null ? "0" : m.get("lineTotal"))));
+            }
+        }
+        BigDecimal total = s.getTotal() != null ? s.getTotal() : BigDecimal.ZERO;
+        Map<String, Object> m = new java.util.LinkedHashMap<>();
+        m.put("id", s.getId());
+        m.put("playerName", player != null ? player.getName() : "Unknown player");
+        m.put("selections", lines);
+        m.put("total", total);
+        m.put("waivedTotal", waivedTotal);
+        m.put("owed", total.subtract(waivedTotal));
+        m.put("createdAt", s.getCreatedAt());
+        return m;
+    }
+
+    /**
+     * Waives (or un-waives) one line of a player's order, e.g. gear that's included in a
+     * player's first year. Waiving takes that line's price back off the player's balance as a
+     * WAIVED ledger entry; the budget only counts CREDIT entries as income, so a waiver never
+     * shows up as money received. Un-waiving charges it again.
+     */
+    @PutMapping("/submissions/{submissionId}/lines/{index}/waived")
+    public ResponseEntity<?> setLineWaived(
+        HttpServletRequest request,
+        @PathVariable UUID submissionId,
+        @PathVariable int index,
+        @RequestParam(defaultValue = "men") String program,
+        @RequestParam boolean value
+    ) {
+        if (!isBoard(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Board access required"));
+        }
+        OrderFormSubmission submission = submissionRepo.findById(submissionId).orElse(null);
+        if (submission == null) return ResponseEntity.notFound().build();
+        List<Map<String, Object>> lines = new java.util.ArrayList<>();
+        for (Object o : JsonUtils.readList(submission.getSelections())) {
+            if (o instanceof Map<?, ?> m) {
+                Map<String, Object> copy = new java.util.LinkedHashMap<>();
+                m.forEach((k, v) -> copy.put(String.valueOf(k), v));
+                lines.add(copy);
+            }
+        }
+        if (index < 0 || index >= lines.size()) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("No such line on this order"));
+        }
+        Map<String, Object> line = lines.get(index);
+        boolean wasWaived = Boolean.TRUE.equals(line.get("waived"));
+        if (wasWaived == value) {
+            return ResponseEntity.ok(toSubmissionResponse(submission));
+        }
+
+        BigDecimal lineTotal = new BigDecimal(String.valueOf(line.getOrDefault("lineTotal", "0")));
+        Player player = playerRepo.findById(submission.getPlayerId()).orElse(null);
+        if (player != null && lineTotal.signum() > 0) {
+            OrderForm form = formRepo.findById(submission.getFormId()).orElse(null);
+            String option = String.valueOf(line.getOrDefault("option", ""));
+            String what = line.get("quantity") + " x " + line.get("name")
+                + (option.isBlank() ? "" : " (" + option + ")")
+                + (form != null ? ", " + form.getTitle() : "");
+            DuesPayment entry = new DuesPayment();
+            entry.setPlayerId(player.getId());
+            entry.setAmount(lineTotal);
+            entry.setType(value ? "WAIVED" : "CHARGE");
+            entry.setNote((value ? "Waived: " : "Waiver removed: ") + what);
+            entry.setPaidByUid((String) request.getAttribute("firebaseUid"));
+            duesRepo.save(entry);
+
+            BigDecimal current = player.getBalance() != null ? player.getBalance() : BigDecimal.ZERO;
+            player.setBalance(value ? current.subtract(lineTotal) : current.add(lineTotal));
+            playerRepo.save(player);
+        }
+
+        line.put("waived", value);
+        submission.setSelections(JsonUtils.toJson(lines));
+        submissionRepo.save(submission);
+        return ResponseEntity.ok(toSubmissionResponse(submission));
+    }
+
+    /**
+     * Whether this player row is their first season: no row for the same player profile in
+     * any earlier season. A row with no profile can't be checked, so it's never auto-comped
+     * (the board can still waive by hand).
+     */
+    private boolean isFirstYear(Player player) {
+        if (player.getProfileId() == null || player.getSeason() == null) return false;
+        return playerRepo.findAllByProfileId(player.getProfileId()).stream()
+            .map(Player::getSeason)
+            .filter(java.util.Objects::nonNull)
+            .noneMatch(season -> season.compareTo(player.getSeason()) < 0);
+    }
+
+    private static Map<String, Object> pricedLine(OrderFormItem item, String option, int qty, BigDecimal unitPrice) {
+        Map<String, Object> line = new java.util.LinkedHashMap<>();
+        line.put("itemId", item.getId().toString());
+        line.put("name", item.getName());
+        line.put("option", option);
+        line.put("quantity", qty);
+        line.put("unitPrice", unitPrice);
+        line.put("lineTotal", unitPrice.multiply(BigDecimal.valueOf(qty)));
+        return line;
+    }
+
+    /** Lets the portal show a first-year player that First Year Comp items are free for them. */
+    @GetMapping("/first-year")
+    public ResponseEntity<?> firstYear(
+        HttpServletRequest request,
+        @RequestParam UUID playerId,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        Player player = playerRepo.findById(playerId).orElse(null);
+        if (player == null) return ResponseEntity.notFound().build();
+        if (!isSelfOrAdmin(request, player, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Not authorized for this player"));
+        }
+        return ResponseEntity.ok(Map.of("firstYear", isFirstYear(player)));
+    }
+
+    /** Current-season players with no submission for this form: the same list Remind emails. */
+    @GetMapping("/{formId}/not-submitted")
+    public ResponseEntity<?> notSubmitted(
+        HttpServletRequest request,
+        @PathVariable UUID formId,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isBoard(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Admin access required"));
+        }
+        List<Map<String, Object>> results = playersNotSubmitted(formId).stream()
+            .sorted(java.util.Comparator.comparing(p -> p.getName() == null ? "" : p.getName()))
+            .map(p -> {
                 Map<String, Object> m = new java.util.LinkedHashMap<>();
-                m.put("id", s.getId());
-                m.put("playerName", player != null ? player.getName() : "Unknown player");
-                m.put("selections", JsonUtils.readList(s.getSelections()));
-                m.put("total", s.getTotal());
-                m.put("createdAt", s.getCreatedAt());
+                m.put("playerId", p.getId());
+                m.put("name", p.getName() != null ? p.getName() : "Unnamed player");
+                m.put("hasEmail", p.getEmail() != null && !p.getEmail().isBlank());
                 return m;
             })
             .toList();
         return ResponseEntity.ok(results);
+    }
+
+    private List<Player> playersNotSubmitted(UUID formId) {
+        var submittedByPlayer = submissionRepo.findAllByFormIdOrderByCreatedAtDesc(formId).stream()
+            .map(OrderFormSubmission::getPlayerId)
+            .collect(java.util.stream.Collectors.toSet());
+        return playerRepo.findAllBySeason(seasonService.getActiveCode()).stream()
+            .filter(p -> !submittedByPlayer.contains(p.getId()))
+            .toList();
     }
 
     // --- response shaping ------------------------------------------------------------------
@@ -416,6 +577,8 @@ public class OrderFormController {
         m.put("id", item.getId());
         m.put("formId", item.getFormId());
         m.put("name", item.getName());
+        m.put("description", item.getDescription());
+        m.put("firstYearComp", item.isFirstYearComp());
         m.put("price", item.getPrice());
         m.put("image", s3Service.toPresignedUrl(item.getImage(), Duration.ofHours(2)));
         m.put("options", JsonUtils.readList(item.getOptions()));
@@ -424,7 +587,15 @@ public class OrderFormController {
 
     public record FormRequest(String title, String description, Boolean active, Boolean notifyPlayers) {}
 
-    public record ItemRequest(String name, BigDecimal price, String image, List<String> options) {}
+    public record ItemRequest(
+        String name, String description, Boolean firstYearComp, BigDecimal price, String image, List<String> options
+    ) {}
+
+    private static String cleanDescription(String raw) {
+        if (raw == null) return null;
+        String cleaned = TextSanitizer.clean(raw).trim();
+        return cleaned.isEmpty() ? null : cleaned;
+    }
 
     public record Selection(UUID itemId, String option, Integer quantity) {}
 

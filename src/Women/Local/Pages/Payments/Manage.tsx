@@ -1,5 +1,5 @@
 import { ChevronDown } from "lucide-react";
-import { useEffect, useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 import ManageTodos from "./components/ManageTodos";
@@ -78,7 +78,40 @@ export default function Manage() {
 
   const paymentProvider = resolvePaymentProvider();
 
-  const { players, setPlayers, loading: loadingPlayers } = usePlayers();
+  const { players, setPlayers, loading: loadingPlayers, refresh } = usePlayers();
+
+  // Emails and balances can change from other pages (Manage Players, the roster) or other
+  // officers, so re-pull the roster whenever this tab comes back into view. Rows with unsaved
+  // edits in the table are left alone.
+  const dirtyIds = useRef(new Set<string>());
+  const lastRefresh = useRef(Date.now());
+  const [refreshTick, setRefreshTick] = useState(0);
+  const handleDirtyChange = useCallback((playerId: string, dirty: boolean) => {
+    if (dirty) dirtyIds.current.add(playerId);
+    else dirtyIds.current.delete(playerId);
+  }, []);
+  useEffect(() => {
+    const onReturn = () => {
+      if (document.visibilityState !== "visible") return;
+      if (Date.now() - lastRefresh.current < 5000) return;
+      lastRefresh.current = Date.now();
+      refresh(new Set(dirtyIds.current)).then(() => setRefreshTick((t) => t + 1));
+    };
+    window.addEventListener("focus", onReturn);
+    document.addEventListener("visibilitychange", onReturn);
+    return () => {
+      window.removeEventListener("focus", onReturn);
+      document.removeEventListener("visibilitychange", onReturn);
+    };
+  }, [refresh]);
+
+  useEffect(() => {
+    const selectedId = state.selectedPlayer?.id;
+    if (!selectedId || dirtyIds.current.has(selectedId)) return;
+    const fresh = players.find((p) => p.id === selectedId);
+    if (fresh && fresh !== state.selectedPlayer) dispatch({ type: "SET_SELECTED_PLAYER", player: fresh });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [players]);
   const [selectedSeason, setSelectedSeason] = useState(currentSeason);
   useEffect(() => {
     setSelectedSeason(currentSeason);
@@ -144,9 +177,11 @@ export default function Manage() {
 
   const seasonPlayerIds = useMemo(() => seasonPlayers.map((p) => p.id).join(","), [seasonPlayers]);
 
+  // The account email is only shown when the roster row has none, so only those players
+  // need a lookup, and it's redone on every refresh in case the account email changed.
   useEffect(() => {
     if (!seasonPlayers.length) return;
-    const pending = seasonPlayers.filter((p) => !(p.id in state.userEmails));
+    const pending = seasonPlayers.filter((p) => !(p.email ?? "").trim());
     if (!pending.length) return;
     const fetchEmails = async () => {
       const resolved: Record<string, string> = {};
@@ -159,7 +194,8 @@ export default function Manage() {
       dispatch({ type: "SET_FIELD", field: "userEmails", value: { ...state.userEmails, ...resolved } });
     };
     fetchEmails();
-  }, [seasonPlayerIds]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seasonPlayerIds, refreshTick]);
 
   const handleAddParent = async () => {
     dispatch({ type: "SET_FIELD", field: "message", value: "" });
@@ -320,6 +356,7 @@ export default function Manage() {
               userEmails={state.userEmails}
               onSelectedPlayer={(p) => dispatch({ type: "SET_SELECTED_PLAYER", player: p })}
               selectedPlayerId={state.selectedPlayerId}
+              onDirtyChange={handleDirtyChange}
             />
           )}
 
