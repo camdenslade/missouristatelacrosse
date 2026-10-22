@@ -297,7 +297,7 @@ export default function ManageBudget() {
 
       {!state.loading && (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm hidden md:table">
             <thead>
               <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
                 <th className="px-4 py-2.5 text-left">Date</th>
@@ -383,6 +383,91 @@ export default function ManageBudget() {
               </tfoot>
             )}
           </table>
+
+          {/* Phones: one card per row instead of a six-column table. */}
+          <div className="md:hidden divide-y divide-gray-100">
+            {displayItems.length === 0 && (
+              <p className="px-4 py-6 text-center text-sm text-gray-400">No entries for this season yet.</p>
+            )}
+            {displayItems.map((item, i) => {
+              if (item.kind === "row") {
+                const row = item.row;
+                const expense = row.type === "expense";
+                return (
+                  <div key={i} className="px-4 py-3">
+                    <div className="flex justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm text-gray-800 break-words">{row.description}</p>
+                        <p className="text-xs text-gray-500">{row.date}</p>
+                      </div>
+                      <p className={`font-mono text-sm shrink-0 ${expense ? "text-red-600" : "text-green-700"}`}>
+                        {expense ? "-" : "+"}${Number(row.amount).toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="mt-1 flex justify-between items-center text-xs text-gray-500">
+                      <span>Balance ${item.runningTotal.toFixed(2)}</span>
+                      <span className="flex gap-3">
+                        {row.manualEntryId && (
+                          <button onClick={() => handleDelete(row.manualEntryId)} className="text-red-500">Delete</button>
+                        )}
+                        {row.receiptId && (
+                          <button onClick={() => handleVoid(row.receiptId, row.description)} className="text-gray-500">Void</button>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+              const open = !!state.expanded[item.key];
+              return (
+                <div key={item.key}>
+                  <button
+                    onClick={() => dispatch({ type: "TOGGLE_GROUP", key: item.key })}
+                    className="w-full text-left px-4 py-3 active:bg-gray-50"
+                  >
+                    <div className="flex justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-800 flex items-center gap-1">
+                          {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                          <span className="break-words">Event - {item.label}</span>
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {item.rows.length} payment{item.rows.length === 1 ? "" : "s"},{" "}
+                          {item.firstDate === item.date ? item.date : `${item.firstDate} to ${item.date}`}
+                        </p>
+                      </div>
+                      <p className="font-mono text-sm text-green-700 shrink-0">+${item.amount.toFixed(2)}</p>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500">Balance ${item.runningTotal.toFixed(2)}</p>
+                  </button>
+                  {open && (
+                    <div className="bg-gray-50 divide-y divide-gray-100">
+                      {item.rows.map((row, j) => (
+                        <div key={j} className="pl-8 pr-4 py-2 flex justify-between gap-3 text-xs">
+                          <div className="min-w-0">
+                            <p className="text-gray-700 break-words">{row.description}</p>
+                            <p className="text-gray-400">{row.date}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="font-mono text-green-700">+${Number(row.amount).toFixed(2)}</p>
+                            {row.receiptId && (
+                              <button onClick={() => handleVoid(row.receiptId, row.description)} className="text-gray-500">Void</button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {displayItems.length > 0 && (
+              <div className="px-4 py-3 bg-gray-50 flex justify-between font-bold text-sm">
+                <span>Season Total (net, est.)</span>
+                <span className="font-mono">${Number(state.total).toFixed(2)}</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

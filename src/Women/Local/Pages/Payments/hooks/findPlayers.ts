@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "../../../../../Global/Context/AuthContext";
 import { apiRequest } from "../../../../../Services/API";
@@ -36,11 +36,12 @@ export default function usePlayers(parentProvidedLinkedPlayers: ApiPlayer[] = []
   const program: Program = isWomenSite ? "women" : "men";
   const userRole = roles?.[program] || "";
 
-  useEffect(() => {
-    if (authLoading || !user) return;
-
-    const fetchPlayers = async () => {
-      setLoading(true);
+  // keepIds: rows with unsaved local edits. A background refresh leaves those rows as they
+  // are so it never wipes what someone is typing.
+  const fetchPlayers = useCallback(
+    async ({ background = false, keepIds }: { background?: boolean; keepIds?: Set<string> } = {}) => {
+      if (authLoading || !user) return;
+      if (!background) setLoading(true);
       let list: ApiPlayer[] = [];
 
       try {
@@ -72,23 +73,30 @@ export default function usePlayers(parentProvidedLinkedPlayers: ApiPlayer[] = []
           return { ...player, ...extra, data: extra, balance: player.balance ?? 0 };
         });
 
-        setPlayers(list);
+        setPlayers((prev) =>
+          keepIds?.size
+            ? list.map((fresh) => (keepIds.has(fresh.id) ? prev.find((p) => p.id === fresh.id) ?? fresh : fresh))
+            : list
+        );
       } catch (err) {
         console.error("Error loading players:", err);
       } finally {
-        setLoading(false);
+        if (!background) setLoading(false);
       }
-    };
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [authLoading, user?.uid, userRole, parentProvidedLinkedPlayers.length, currentSeason]
+  );
 
+  useEffect(() => {
     fetchPlayers();
-  }, [
-    authLoading,
-    user?.uid,
-    userRole,
-    parentProvidedLinkedPlayers.length,
-    currentSeason,
-  ]);
+  }, [fetchPlayers]);
 
-  return { players, setPlayers, loading };
+  const refresh = useCallback(
+    (keepIds?: Set<string>) => fetchPlayers({ background: true, keepIds }),
+    [fetchPlayers]
+  );
+
+  return { players, setPlayers, loading, refresh };
 }
 

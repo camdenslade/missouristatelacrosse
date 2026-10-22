@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useReducer, useState } from "react";
 import toast from "react-hot-toast";
+import { useSearchParams } from "react-router-dom";
 
 import OrderForms from "./components/OrderForms";
 import ParentPlayerSelect from "./components/ParentPlayerSelect";
@@ -55,6 +56,9 @@ function portalReducer(state: PortalState, action: PortalAction): PortalState {
 export default function Portal() {
   const { user, roles, loading } = useAuth();
   const [state, dispatch] = useReducer(portalReducer, initialState);
+  // A shared order form link (/portal?form=<id>, copied from Manage Order Forms) jumps to that form.
+  const [searchParams] = useSearchParams();
+  const linkedFormId = searchParams.get("form");
   const [linkedPlayerId, setLinkedPlayerId] = useState<string>("");
   const [linkedPlayer, setLinkedPlayer] = useState<ApiPlayer | null>(null);
   const [ledger, setLedger] = useState<DuesPayment[]>([]);
@@ -356,7 +360,7 @@ export default function Portal() {
               {(programRole === "player" || (programRole === "admin" && !!linkedPlayer)) && (
                 <div className="mt-8 space-y-8">
                   <TodoList playerId={state.selectedPlayer.id} season={currentSeason} />
-                  <OrderForms playerId={state.selectedPlayer.id} />
+                  <OrderForms playerId={state.selectedPlayer.id} focusFormId={linkedFormId} />
                 </div>
               )}
             </div>

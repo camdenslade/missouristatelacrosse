@@ -6,13 +6,14 @@ import { uploadCompressedImage } from "../../../../Global/Common/hooks/uploadHel
 import { apiRequest } from "../../../../Services/API";
 
 const blankFormDraft = { title: "", description: "", notifyPlayers: false };
-const blankItemDraft = { name: "", price: "", options: "" };
+const blankItemDraft = { name: "", description: "", price: "", options: "", firstYearComp: false };
 
 const initialState = {
   forms: [],
   loading: true,
   expandedFormId: null,
   submissionsByForm: {},
+  notSubmittedByForm: {},
   formDraft: blankFormDraft,
   itemDraft: blankItemDraft,
   savingForm: false,
@@ -39,6 +40,18 @@ function reducer(state, action) {
       return { ...state, expandedFormId: state.expandedFormId === action.id ? null : action.id };
     case "SET_SUBMISSIONS":
       return { ...state, submissionsByForm: { ...state.submissionsByForm, [action.formId]: action.submissions } };
+    case "REPLACE_SUBMISSION":
+      return {
+        ...state,
+        submissionsByForm: {
+          ...state.submissionsByForm,
+          [action.formId]: (state.submissionsByForm[action.formId] || []).map((s) =>
+            s.id === action.submission.id ? action.submission : s
+          ),
+        },
+      };
+    case "SET_NOT_SUBMITTED":
+      return { ...state, notSubmittedByForm: { ...state.notSubmittedByForm, [action.formId]: action.players } };
     default:
       return state;
   }
@@ -48,6 +61,7 @@ export default function ManageOrderForms() {
   const confirm = useConfirm();
   const [state, dispatch] = useReducer(reducer, initialState);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
+  const [editingNote, setEditingNote] = useState<{ itemId: string; text: string } | null>(null);
 
   const load = () => {
     apiRequest("/api/order-forms")
@@ -84,6 +98,35 @@ export default function ManageOrderForms() {
     } catch (err) {
       console.error(err);
       toast.error("Failed to update.");
+    }
+  };
+
+  // Waiving a line (gear included in a player's first year, a comped item) takes its price
+  // off that player's balance; un-waiving charges it again.
+  const handleToggleWaived = async (formId, submission, index, waived) => {
+    try {
+      const updated = await apiRequest(
+        `/api/order-forms/submissions/${submission.id}/lines/${index}/waived?value=${waived}`,
+        { method: "PUT" }
+      );
+      dispatch({ type: "REPLACE_SUBMISSION", formId, submission: updated });
+      toast.success(waived ? "Waived, taken off their balance." : "Waiver removed, charged again.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update.");
+    }
+  };
+
+  // Players open order forms in their Portal (orders go on their dues balance), so the link
+  // points there and the Portal scrolls to this form.
+  const handleCopyLink = async (formId) => {
+    const portalPath = window.location.pathname.toLowerCase().startsWith("/women") ? "/women/portal" : "/portal";
+    const link = `${window.location.origin}${portalPath}?form=${formId}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      toast.success("Link copied.");
+    } catch {
+      window.prompt("Copy this link:", link);
     }
   };
 
@@ -126,7 +169,14 @@ export default function ManageOrderForms() {
         : [];
       await apiRequest(`/api/order-forms/${formId}/items`, {
         method: "POST",
-        json: { name: state.itemDraft.name.trim(), price, image: imageUrl || undefined, options },
+        json: {
+          name: state.itemDraft.name.trim(),
+          description: state.itemDraft.description.trim() || undefined,
+          firstYearComp: state.itemDraft.firstYearComp,
+          price,
+          image: imageUrl || undefined,
+          options,
+        },
       });
       dispatch({ type: "RESET_ITEM_DRAFT" });
       load();
@@ -137,6 +187,34 @@ export default function ManageOrderForms() {
     } finally {
       dispatch({ type: "SET_SAVING_ITEM", payload: false });
       setUploadProgress(null);
+    }
+  };
+
+  const handleSaveNote = async () => {
+    if (!editingNote) return;
+    try {
+      await apiRequest(`/api/order-forms/items/${editingNote.itemId}`, {
+        method: "PUT",
+        json: { description: editingNote.text },
+      });
+      setEditingNote(null);
+      load();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save note.");
+    }
+  };
+
+  const handleToggleFirstYearComp = async (item) => {
+    try {
+      await apiRequest(`/api/order-forms/items/${item.id}`, {
+        method: "PUT",
+        json: { firstYearComp: !item.firstYearComp },
+      });
+      load();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update.");
     }
   };
 
@@ -155,6 +233,9 @@ export default function ManageOrderForms() {
     apiRequest(`/api/order-forms/${formId}/submissions`)
       .then((submissions) => dispatch({ type: "SET_SUBMISSIONS", formId, submissions }))
       .catch(() => dispatch({ type: "SET_SUBMISSIONS", formId, submissions: [] }));
+    apiRequest(`/api/order-forms/${formId}/not-submitted`)
+      .then((players) => dispatch({ type: "SET_NOT_SUBMITTED", formId, players }))
+      .catch(() => dispatch({ type: "SET_NOT_SUBMITTED", formId, players: [] }));
   };
 
   const input = "border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30";
@@ -228,6 +309,9 @@ export default function ManageOrderForms() {
                   <button onClick={() => handleRemind(form.id)} className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium">
                     Remind
                   </button>
+                  <button onClick={() => handleCopyLink(form.id)} className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium">
+                    Copy Link
+                  </button>
                   <button
                     onClick={() => {
                       dispatch({ type: "TOGGLE_EXPANDED", id: form.id });
@@ -247,17 +331,58 @@ export default function ManageOrderForms() {
                 <div className="border-t border-gray-100 p-4 space-y-4 bg-gray-50">
                   <ul className="divide-y divide-gray-100 bg-white rounded-lg border border-gray-200">
                     {form.items.map((item) => (
-                      <li key={item.id} className="flex items-center justify-between px-3 py-2">
-                        <div className="flex items-center gap-2 min-w-0">
+                      <li key={item.id} className="flex items-start justify-between gap-3 px-3 py-2">
+                        <div className="flex items-start gap-2 min-w-0 flex-1">
                           {item.image && <img src={item.image} alt="" className="h-8 w-8 rounded object-cover" />}
-                          <span className="text-sm text-gray-800">
-                            {item.name}{item.price != null ? ` - $${Number(item.price).toFixed(2)}` : ""}
-                            {item.options?.length > 0 ? ` (${item.options.join(", ")})` : ""}
-                          </span>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-sm text-gray-800">
+                              {item.name}{item.price != null ? ` - $${Number(item.price).toFixed(2)}` : ""}
+                              {item.options?.length > 0 ? ` (${item.options.join(", ")})` : ""}
+                            </span>
+                            {item.firstYearComp && (
+                              <span className="ml-2 text-[11px] px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 font-medium">
+                                First Year Comp
+                              </span>
+                            )}
+                            {editingNote?.itemId === item.id ? (
+                              <div className="mt-1 flex flex-wrap gap-2">
+                                <input
+                                  type="text"
+                                  autoFocus
+                                  value={editingNote?.text ?? ""}
+                                  placeholder="First-year players get this free"
+                                  onChange={(e) => setEditingNote({ itemId: item.id, text: e.target.value })}
+                                  onKeyDown={(e) => { if (e.key === "Enter") handleSaveNote(); }}
+                                  className={`${input} bg-white flex-1 min-w-[12rem] py-1 text-xs`}
+                                />
+                                <button onClick={handleSaveNote} className="text-xs text-[#5E0009] font-medium hover:underline">Save</button>
+                                <button onClick={() => setEditingNote(null)} className="text-xs text-gray-400 hover:underline">Cancel</button>
+                              </div>
+                            ) : (
+                              item.description && <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>
+                            )}
+                          </div>
                         </div>
-                        <button onClick={() => handleDeleteItem(item.id)} className="text-xs text-red-500 hover:underline shrink-0">
-                          Remove
-                        </button>
+                        <div className="flex gap-3 shrink-0">
+                          <button
+                            onClick={() => handleToggleFirstYearComp(item)}
+                            title="First-year players get one of this item free"
+                            className="text-xs text-gray-500 hover:underline"
+                          >
+                            {item.firstYearComp ? "Turn off First Year Comp" : "First Year Comp"}
+                          </button>
+                          {editingNote?.itemId !== item.id && (
+                            <button
+                              onClick={() => setEditingNote({ itemId: item.id, text: item.description || "" })}
+                              className="text-xs text-gray-500 hover:underline"
+                            >
+                              {item.description ? "Edit note" : "Add note"}
+                            </button>
+                          )}
+                          <button onClick={() => handleDeleteItem(item.id)} className="text-xs text-red-500 hover:underline">
+                            Remove
+                          </button>
+                        </div>
                       </li>
                     ))}
                     {form.items.length === 0 && <li className="px-3 py-2 text-sm text-gray-400">No items yet.</li>}
@@ -271,6 +396,16 @@ export default function ManageOrderForms() {
                         value={state.itemDraft.name}
                         onChange={(e) => dispatch({ type: "SET_ITEM_DRAFT_FIELD", field: "name", value: e.target.value })}
                         className={`${input} bg-white w-32`}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Description (optional)</label>
+                      <input
+                        type="text"
+                        placeholder="First-year players get this free"
+                        value={state.itemDraft.description}
+                        onChange={(e) => dispatch({ type: "SET_ITEM_DRAFT_FIELD", field: "description", value: e.target.value })}
+                        className={`${input} bg-white w-56`}
                       />
                     </div>
                     <div>
@@ -303,6 +438,14 @@ export default function ManageOrderForms() {
                         className="text-xs"
                       />
                     </div>
+                    <label className="flex items-center gap-1.5 text-xs text-gray-600 pb-2" title="First-year players get one of this item free">
+                      <input
+                        type="checkbox"
+                        checked={state.itemDraft.firstYearComp}
+                        onChange={(e) => dispatch({ type: "SET_ITEM_DRAFT_FIELD", field: "firstYearComp", value: e.target.checked })}
+                      />
+                      First Year Comp
+                    </label>
                     <button
                       type="submit"
                       disabled={state.savingItem}
@@ -312,19 +455,81 @@ export default function ManageOrderForms() {
                     </button>
                   </form>
 
-                  <div>
-                    <h4 className="text-sm font-bold text-gray-700 mb-2">Submissions</h4>
-                    {(state.submissionsByForm[form.id] || []).length === 0 ? (
-                      <p className="text-xs text-gray-400">No submissions yet.</p>
-                    ) : (
-                      <ul className="text-sm text-gray-700 space-y-1">
-                        {(state.submissionsByForm[form.id] || []).map((s) => (
-                          <li key={s.id}>
-                            {s.playerName} - ${Number(s.total).toFixed(2)} ({new Date(s.createdAt).toLocaleDateString()})
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-700 mb-2">
+                        Submitted ({(state.submissionsByForm[form.id] || []).length})
+                      </h4>
+                      {(state.submissionsByForm[form.id] || []).length === 0 ? (
+                        <p className="text-xs text-gray-400">No submissions yet.</p>
+                      ) : (
+                        <ul className="space-y-2">
+                          {(state.submissionsByForm[form.id] || []).map((s) => (
+                            <li key={s.id} className="border border-gray-200 rounded-lg px-3 py-2 bg-white">
+                              <div className="flex justify-between gap-2 text-sm">
+                                <span className="font-medium text-gray-800">{s.playerName}</span>
+                                <span className="font-mono text-gray-700">
+                                  ${Number(s.owed ?? s.total).toFixed(2)}
+                                  {Number(s.waivedTotal) > 0 && (
+                                    <span className="ml-1 text-xs text-gray-400">
+                                      (${Number(s.waivedTotal).toFixed(2)} waived)
+                                    </span>
+                                  )}
+                                </span>
+                              </div>
+                              <ul className="mt-1 text-xs text-gray-600 space-y-1">
+                                {(s.selections || []).map((line, i) => (
+                                  <li key={i} className="flex items-center justify-between gap-2">
+                                    <span>
+                                      <span className={line.waived ? "line-through text-gray-400" : ""}>
+                                        {line.quantity} x {line.name}
+                                        {line.option ? ` (${line.option})` : ""}
+                                        {Number(line.lineTotal) > 0 && ` - $${Number(line.lineTotal).toFixed(2)}`}
+                                      </span>
+                                      {line.waived && line.waivedReason && (
+                                        <span className="ml-1 text-green-700">{line.waivedReason}</span>
+                                      )}
+                                    </span>
+                                    {Number(line.lineTotal) > 0 && (
+                                      <button
+                                        onClick={() => handleToggleWaived(form.id, s, i, !line.waived)}
+                                        className={`shrink-0 px-2 py-0.5 rounded-md font-medium ${
+                                          line.waived
+                                            ? "bg-green-50 text-green-700 hover:bg-green-100"
+                                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                        }`}
+                                      >
+                                        {line.waived ? "Waived, undo" : "Waive"}
+                                      </button>
+                                    )}
+                                  </li>
+                                ))}
+                              </ul>
+                              <p className="mt-1 text-[11px] text-gray-400">
+                                {new Date(s.createdAt).toLocaleDateString()}
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-700 mb-2">
+                        Not submitted yet ({(state.notSubmittedByForm[form.id] || []).length})
+                      </h4>
+                      {(state.notSubmittedByForm[form.id] || []).length === 0 ? (
+                        <p className="text-xs text-gray-400">Everyone on this season's roster has submitted.</p>
+                      ) : (
+                        <ul className="text-sm text-gray-700 space-y-1">
+                          {(state.notSubmittedByForm[form.id] || []).map((p) => (
+                            <li key={p.playerId}>
+                              {p.name}
+                              {!p.hasEmail && <span className="ml-2 text-xs text-gray-400">(no email, Remind can't reach them)</span>}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
