@@ -7,4 +7,5 @@ import com.mostate.lacrosse.Model.OrderFormSubmission;
 
 public interface OrderFormSubmissionRepository extends JpaRepository<OrderFormSubmission, UUID> {
     List<OrderFormSubmission> findAllByFormIdOrderByCreatedAtDesc(UUID formId);
+    List<OrderFormSubmission> findAllByFormIdAndPlayerIdOrderByCreatedAtDesc(UUID formId, UUID playerId);
 }

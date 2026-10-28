@@ -17,6 +17,8 @@ type Item = {
 };
 type OrderForm = { id: string; title: string; description: string | null; items: Item[] };
 type CartLine = { option: string; quantity: number };
+type OrderLine = { itemId: string; name: string; option?: string; quantity: number; lineTotal?: number; waived?: boolean; waivedReason?: string };
+type MySubmission = { id: string; selections: OrderLine[]; owed: number; createdAt: string };
 
 const initialState = { forms: [] as OrderForm[], loading: true, cart: {} as Record<string, CartLine>, submitting: null as string | null };
 
@@ -41,6 +43,8 @@ function reducer(state: typeof initialState, action: any) {
     }
     case "CLEAR_CART":
       return { ...state, cart: {} };
+    case "LOAD_CART":
+      return { ...state, cart: { ...state.cart, ...(action.cart as Record<string, CartLine>) } };
     case "SET_SUBMITTING":
       return { ...state, submitting: action.formId };
     default:
@@ -66,6 +70,24 @@ export default function OrderForms({
   const focusRef = useRef<HTMLDivElement | null>(null);
   const [firstYear, setFirstYear] = useState(false);
   const [savedSizes, setSavedSizes] = useState<SavedSizes>({});
+  // Each player has one order per form; once placed it's shown as a summary they can change.
+  const [mySubs, setMySubs] = useState<Record<string, MySubmission | null>>({});
+  const [editing, setEditing] = useState<Record<string, boolean>>({});
+
+  const loadMySubmission = (formId: string) =>
+    apiRequest<{ submission: MySubmission | null }>(`/api/order-forms/${formId}/my-submission?playerId=${playerId}`)
+      .then((r) => setMySubs((prev) => ({ ...prev, [formId]: r?.submission ?? null })))
+      .catch(() => setMySubs((prev) => ({ ...prev, [formId]: null })));
+
+  const startChange = (formId: string, sub: MySubmission) => {
+    const cart: Record<string, CartLine> = {};
+    for (const line of sub.selections || []) {
+      const prev = cart[line.itemId];
+      cart[line.itemId] = { option: prev?.option || line.option || "", quantity: (prev?.quantity ?? 0) + line.quantity };
+    }
+    dispatch({ type: "LOAD_CART", cart });
+    setEditing((e) => ({ ...e, [formId]: true }));
+  };
 
   useEffect(() => {
     apiRequest<SavedSizes>(`/api/order-forms/sizes?playerId=${playerId}`)
@@ -94,6 +116,12 @@ export default function OrderForms({
       .then((forms) => dispatch({ type: "SET_FORMS", forms }))
       .catch(() => dispatch({ type: "SET_FORMS", forms: [] }));
   }, []);
+
+  useEffect(() => {
+    if (state.loading) return;
+    state.forms.forEach((f) => loadMySubmission(f.id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.loading, state.forms, playerId]);
 
   useEffect(() => {
     if (!state.loading && focusFormId) {
@@ -131,7 +159,11 @@ export default function OrderForms({
       return;
     }
     const total = totalFor(form);
-    if (total > 0 && !(await confirm(`Submit this order for $${total.toFixed(2)}? It will be added to your balance.`))) {
+    const updating = !!mySubs[form.id];
+    const question = updating
+      ? `Update your order? Your order total becomes $${total.toFixed(2)} and your balance is adjusted to match.`
+      : `Submit this order for $${total.toFixed(2)}? It will be added to your balance.`;
+    if ((total > 0 || (updating && Number(mySubs[form.id]?.owed) > 0)) && !(await confirm(question))) {
       return;
     }
     dispatch({ type: "SET_SUBMITTING", formId: form.id });
@@ -141,7 +173,9 @@ export default function OrderForms({
         json: { playerId, selections },
       });
       dispatch({ type: "CLEAR_CART" });
-      toast.success("Order submitted!");
+      toast.success(updating ? "Order updated!" : "Order submitted!");
+      setEditing((e) => ({ ...e, [form.id]: false }));
+      loadMySubmission(form.id);
       apiRequest<SavedSizes>(`/api/order-forms/sizes?playerId=${playerId}`)
         .then((s) => setSavedSizes(s || {}))
         .catch(() => {});
@@ -170,6 +204,8 @@ export default function OrderForms({
         const total = totalFor(form);
         const focused = form.id === focusFormId;
         const itemCount = form.items.reduce((n, item) => n + (state.cart[item.id]?.quantity ?? 0), 0);
+        const mine = mySubs[form.id];
+        const showSummary = !!mine && !editing[form.id];
         return (
           <section
             key={form.id}
@@ -187,6 +223,43 @@ export default function OrderForms({
               </div>
             </header>
 
+            {showSummary && mine ? (
+              <div className="p-5 space-y-4">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#5E0009]">Your Order</p>
+                  <p className="text-xs text-gray-500">Placed {new Date(mine.createdAt).toLocaleDateString()}. You can change it while the form is open.</p>
+                </div>
+                <ul className="divide-y divide-gray-100 rounded-xl border border-gray-100">
+                  {[...(mine.selections || [])]
+                    .sort((a, b) => form.items.findIndex((i) => i.id === a.itemId) - form.items.findIndex((i) => i.id === b.itemId))
+                    .map((line, i) => (
+                      <li key={i} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                        <span className={line.waived ? "text-gray-400 line-through" : "text-gray-800"}>
+                          {line.quantity} x {line.name}
+                          {line.option ? ` (${line.option})` : ""}
+                        </span>
+                        {line.waived ? (
+                          <span className="text-[11px] font-semibold text-green-700">{line.waivedReason || "Waived"}</span>
+                        ) : (
+                          Number(line.lineTotal) > 0 && (
+                            <span className="tabular-nums text-gray-600">${Number(line.lineTotal).toFixed(2)}</span>
+                          )
+                        )}
+                      </li>
+                    ))}
+                </ul>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-lg font-extrabold text-gray-900 tabular-nums">${Number(mine.owed ?? 0).toFixed(2)}</p>
+                  <button
+                    onClick={() => startChange(form.id, mine)}
+                    className="inline-flex items-center justify-center rounded-full px-5 py-2 text-sm font-semibold border border-gray-200 bg-white text-gray-700 hover:border-[#5E0009]/40 hover:text-[#5E0009] transition"
+                  >
+                    Change Order
+                  </button>
+                </div>
+              </div>
+            ) : (
+            <>
             <div className="p-4 space-y-3">
               {form.items.map((item) => {
                 const line = state.cart[item.id];
@@ -285,14 +358,29 @@ export default function OrderForms({
                 </p>
                 <p className="text-lg font-extrabold text-gray-900 tabular-nums">${total.toFixed(2)}</p>
               </div>
-              <button
-                onClick={() => handleSubmit(form)}
-                disabled={state.submitting === form.id || itemCount === 0}
-                className="inline-flex items-center justify-center bg-[#5E0009] text-white rounded-full px-6 py-2.5 text-sm font-semibold hover:bg-[#7a0012] transition shadow-sm disabled:opacity-50"
-              >
-                {state.submitting === form.id ? "Submitting..." : "Submit Order"}
-              </button>
+              <div className="flex items-center gap-2">
+                {mine && (
+                  <button
+                    onClick={() => {
+                      dispatch({ type: "CLEAR_CART" });
+                      setEditing((e) => ({ ...e, [form.id]: false }));
+                    }}
+                    className="px-3 py-2 text-sm text-gray-500 hover:text-gray-800"
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  onClick={() => handleSubmit(form)}
+                  disabled={state.submitting === form.id || itemCount === 0}
+                  className="inline-flex items-center justify-center bg-[#5E0009] text-white rounded-full px-6 py-2.5 text-sm font-semibold hover:bg-[#7a0012] transition shadow-sm disabled:opacity-50"
+                >
+                  {state.submitting === form.id ? "Saving..." : mine ? "Update Order" : "Submit Order"}
+                </button>
+              </div>
             </footer>
+            </>
+            )}
           </section>
         );
       })}

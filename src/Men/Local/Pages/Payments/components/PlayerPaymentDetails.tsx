@@ -29,6 +29,7 @@ const typeLabel: Record<string, { label: string; color: string; sign: string }> 
   CHARGE:  { label: "Charge",     color: "text-red-600",   sign: "+" },
   ADJUSTMENT: { label: "Adjustment", color: "text-red-600", sign: "+" },
   WAIVED:  { label: "Waived",     color: "text-green-600", sign: "−" },
+  ORDER_CREDIT: { label: "Order change", color: "text-green-600", sign: "−" },
 };
 
 // Ledger entries come back newest-first. Balance and CREDIT/PAYMENT reduce balance,
