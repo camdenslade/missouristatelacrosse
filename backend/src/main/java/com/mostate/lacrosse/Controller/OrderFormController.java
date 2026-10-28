@@ -359,7 +359,32 @@ public class OrderFormController {
             }
         }
 
-        OrderFormSubmission submission = new OrderFormSubmission();
+        // One order per player per form: submitting again replaces their order, and the balance
+        // moves by the difference instead of being charged twice.
+        List<OrderFormSubmission> existing = submissionRepo.findAllByFormIdAndPlayerIdOrderByCreatedAtDesc(formId, player.getId());
+        OrderFormSubmission submission = existing.isEmpty() ? new OrderFormSubmission() : existing.get(0);
+        BigDecimal previouslyOwed = existing.isEmpty() ? BigDecimal.ZERO : owedOn(submission);
+
+        // Anything the board waived by hand stays waived if it's still on the new order.
+        java.util.Set<String> boardWaived = new java.util.HashSet<>();
+        if (!existing.isEmpty()) {
+            for (Object o : JsonUtils.readList(submission.getSelections())) {
+                if (o instanceof Map<?, ?> m && Boolean.TRUE.equals(m.get("waived")) && !"First Year Comp".equals(m.get("waivedReason"))) {
+                    boardWaived.add(String.valueOf(m.get("itemId")));
+                }
+            }
+        }
+        BigDecimal carriedWaived = BigDecimal.ZERO;
+        for (Map<String, Object> line : priced) {
+            if (!Boolean.TRUE.equals(line.get("waived")) && boardWaived.contains(String.valueOf(line.get("itemId")))) {
+                line.put("waived", true);
+                carriedWaived = carriedWaived.add((BigDecimal) line.get("lineTotal"));
+            }
+        }
+
+        for (OrderFormSubmission extra : existing.stream().skip(1).toList()) {
+            submissionRepo.delete(extra);
+        }
         submission.setFormId(formId);
         submission.setPlayerId(player.getId());
         submission.setSelections(JsonUtils.toJson(priced));
@@ -369,28 +394,67 @@ public class OrderFormController {
 
         rememberSizes(player, body.selections(), itemsById);
 
-        BigDecimal owed = total.subtract(compedTotal);
-        if (owed.signum() > 0) {
-            DuesPayment charge = new DuesPayment();
-            charge.setPlayerId(player.getId());
-            charge.setAmount(owed);
-            charge.setType("CHARGE");
-            charge.setNote("Order: " + form.getTitle()
+        BigDecimal owed = total.subtract(compedTotal).subtract(carriedWaived);
+        BigDecimal delta = owed.subtract(previouslyOwed);
+        if (delta.signum() != 0) {
+            boolean updating = !existing.isEmpty();
+            DuesPayment entry = new DuesPayment();
+            entry.setPlayerId(player.getId());
+            entry.setAmount(delta.abs());
+            // A lower total is an ORDER_CREDIT, not CREDIT: the budget counts CREDIT as cash received.
+            entry.setType(delta.signum() > 0 ? "CHARGE" : "ORDER_CREDIT");
+            entry.setNote((updating ? "Order updated: " : "Order: ") + form.getTitle()
                 + (compedTotal.signum() > 0 ? " ($" + compedTotal.setScale(2) + " First Year Comp not charged)" : ""));
-            charge.setPaidByUid((String) request.getAttribute("firebaseUid"));
-            duesRepo.save(charge);
+            entry.setPaidByUid((String) request.getAttribute("firebaseUid"));
+            duesRepo.save(entry);
 
             BigDecimal current = player.getBalance() != null ? player.getBalance() : BigDecimal.ZERO;
-            player.setBalance(current.add(owed));
+            player.setBalance(current.add(delta));
             playerRepo.save(player);
         }
 
         return ResponseEntity.ok(Map.of(
             "submissionId", submission.getId(),
             "total", owed,
+            "updated", !existing.isEmpty(),
             "firstYearComp", compedTotal,
             "newBalance", player.getBalance() != null ? player.getBalance() : BigDecimal.ZERO
         ));
+    }
+
+    /** What the player currently owes for an order: its total minus waived lines. */
+    private static BigDecimal owedOn(OrderFormSubmission s) {
+        BigDecimal total = s.getTotal() != null ? s.getTotal() : BigDecimal.ZERO;
+        return total.subtract(waivedTotalOf(JsonUtils.readList(s.getSelections())));
+    }
+
+    private static BigDecimal waivedTotalOf(List<Object> lines) {
+        BigDecimal waived = BigDecimal.ZERO;
+        for (Object o : lines) {
+            if (o instanceof Map<?, ?> m && Boolean.TRUE.equals(m.get("waived"))) {
+                waived = waived.add(new BigDecimal(String.valueOf(m.get("lineTotal") == null ? "0" : m.get("lineTotal"))));
+            }
+        }
+        return waived;
+    }
+
+    /** The player's own current order on this form, so the portal can show it and let them change it. */
+    @GetMapping("/{formId}/my-submission")
+    public ResponseEntity<?> mySubmission(
+        HttpServletRequest request,
+        @PathVariable UUID formId,
+        @RequestParam UUID playerId,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        Player player = playerRepo.findById(playerId).orElse(null);
+        if (player == null) return ResponseEntity.notFound().build();
+        if (!isSelfOrAdmin(request, player, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Not authorized for this player"));
+        }
+        List<OrderFormSubmission> mine = submissionRepo.findAllByFormIdAndPlayerIdOrderByCreatedAtDesc(formId, playerId);
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("submission", mine.isEmpty() ? null : toSubmissionResponse(mine.get(0)));
+        return ResponseEntity.ok(body);
     }
 
     @GetMapping("/{formId}/submissions")
