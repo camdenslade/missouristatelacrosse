@@ -153,7 +153,7 @@ export default function App() {
             <Route
               path="/payments"
               element={
-                <ProtectedRoute allowedRoles={["admin", "player", "parent"]}>
+                <ProtectedRoute allowedRoles={["admin", "president", "vp", "treasurer", "board", "player", "parent"]}>
                   <PaymentsRedirect />
                 </ProtectedRoute>
               }
@@ -169,7 +169,7 @@ export default function App() {
             <Route
               path="/portal"
               element={
-                <ProtectedRoute allowedRoles={["admin", "player", "parent"]}>
+                <ProtectedRoute allowedRoles={["admin", "president", "vp", "treasurer", "board", "player", "parent"]}>
                   <Portal />
                 </ProtectedRoute>
               }
@@ -219,7 +219,7 @@ export default function App() {
             <Route
               path="/dues"
               element={
-                <ProtectedRoute allowedRoles={["admin", "player", "parent"]}>
+                <ProtectedRoute allowedRoles={["admin", "president", "vp", "treasurer", "board", "player", "parent"]}>
                   <Dues />
                 </ProtectedRoute>
               }
@@ -253,7 +253,7 @@ export default function App() {
             <Route
               path="/women/payments"
               element={
-                <ProtectedRoute allowedRoles={["admin", "player", "parent"]}>
+                <ProtectedRoute allowedRoles={["admin", "president", "vp", "treasurer", "board", "player", "parent"]}>
                   <WPaymentsRedirect />
                 </ProtectedRoute>
               }
@@ -269,7 +269,7 @@ export default function App() {
             <Route
               path="/women/portal"
               element={
-                <ProtectedRoute allowedRoles={["admin", "player", "parent"]}>
+                <ProtectedRoute allowedRoles={["admin", "president", "vp", "treasurer", "board", "player", "parent"]}>
                   <WPortal />
                 </ProtectedRoute>
               }
@@ -315,7 +315,7 @@ export default function App() {
             <Route
               path="/women/dues"
               element={
-                <ProtectedRoute allowedRoles={["admin", "player", "parent"]}>
+                <ProtectedRoute allowedRoles={["admin", "president", "vp", "treasurer", "board", "player", "parent"]}>
                   <WDues />
                 </ProtectedRoute>
               }

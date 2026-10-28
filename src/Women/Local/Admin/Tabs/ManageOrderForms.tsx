@@ -3,10 +3,11 @@ import toast from "react-hot-toast";
 
 import { useConfirm } from "../../../../Global/Common/components/ConfirmModal";
 import { uploadCompressedImage } from "../../../../Global/Common/hooks/uploadHelper";
+import { SIZE_CATEGORIES } from "../../../../Global/Common/utils/sizeCategories";
 import { apiRequest } from "../../../../Services/API";
 
 const blankFormDraft = { title: "", description: "", notifyPlayers: false };
-const blankItemDraft = { name: "", description: "", price: "", options: "", firstYearComp: false };
+const blankItemDraft = { name: "", description: "", price: "", options: "", firstYearComp: false, sizeCategory: "auto" };
 
 const initialState = {
   forms: [],
@@ -62,6 +63,9 @@ export default function ManageOrderForms() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [editingNote, setEditingNote] = useState<{ itemId: string; text: string } | null>(null);
+  type TeamSizeRow = { playerId: string; name: string; position: string | null; sizes: Record<string, string> };
+  const [teamSizes, setTeamSizes] = useState<TeamSizeRow[] | null>(null);
+  const [showTeamSizes, setShowTeamSizes] = useState(false);
 
   const load = () => {
     apiRequest("/api/order-forms")
@@ -173,6 +177,8 @@ export default function ManageOrderForms() {
           name: state.itemDraft.name.trim(),
           description: state.itemDraft.description.trim() || undefined,
           firstYearComp: state.itemDraft.firstYearComp,
+          // "auto" lets the server work the size type out from the item name.
+          sizeCategory: state.itemDraft.sizeCategory === "auto" ? undefined : state.itemDraft.sizeCategory,
           price,
           image: imageUrl || undefined,
           options,
@@ -202,6 +208,34 @@ export default function ManageOrderForms() {
     } catch (err) {
       console.error(err);
       toast.error("Failed to save note.");
+    }
+  };
+
+  const handleSetSizeCategory = async (item, sizeCategory) => {
+    try {
+      await apiRequest(`/api/order-forms/items/${item.id}`, { method: "PUT", json: { sizeCategory } });
+      load();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update.");
+    }
+  };
+
+  const loadTeamSizes = () => {
+    apiRequest<TeamSizeRow[]>("/api/order-forms/sizes/roster")
+      .then((rows) => setTeamSizes(rows))
+      .catch(() => setTeamSizes([]));
+  };
+
+  const copyTeamSizesCsv = async () => {
+    const header = ["Name", "Position", ...SIZE_CATEGORIES.map((c) => c.label)];
+    const rows = (teamSizes || []).map((r) => [r.name, r.position || "", ...SIZE_CATEGORIES.map((c) => r.sizes?.[c.id] || "")]);
+    const csv = [header, ...rows].map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    try {
+      await navigator.clipboard.writeText(csv);
+      toast.success("Copied. Paste into a spreadsheet.");
+    } catch {
+      window.prompt("Copy these sizes:", csv);
     }
   };
 
@@ -309,6 +343,62 @@ export default function ManageOrderForms() {
         </div>
       </form>
 
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <button
+          onClick={() => {
+            if (!showTeamSizes && teamSizes === null) loadTeamSizes();
+            setShowTeamSizes((v) => !v);
+          }}
+          className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left"
+        >
+          <div>
+            <h3 className="text-lg font-extrabold uppercase text-gray-900">Team Sizes</h3>
+            <p className="text-xs text-gray-500">Every player's saved sizes, for placing a team order with a vendor.</p>
+          </div>
+          <span className="text-xs font-semibold text-[#5E0009] shrink-0">{showTeamSizes ? "Hide" : "Show"}</span>
+        </button>
+        {showTeamSizes && (
+          <div className="border-t border-gray-100 p-5">
+            {teamSizes === null ? (
+              <p className="text-sm text-gray-400 animate-pulse">Loading...</p>
+            ) : (
+              <>
+                <div className="flex justify-end mb-3">
+                  <button onClick={copyTeamSizesCsv} className={pillSecondary}>Copy as CSV</button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-[11px] uppercase tracking-wider text-gray-500 border-b border-gray-100">
+                        <th className="py-2 pr-4">Player</th>
+                        {SIZE_CATEGORIES.map((c) => (
+                          <th key={c.id} className="py-2 pr-3 text-center">{c.label}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {teamSizes.map((r) => (
+                        <tr key={r.playerId}>
+                          <td className="py-2 pr-4 whitespace-nowrap">
+                            <span className="font-semibold text-gray-900">{r.name}</span>
+                            {r.position && <span className="ml-1.5 text-xs text-gray-400">{r.position}</span>}
+                          </td>
+                          {SIZE_CATEGORIES.map((c) => (
+                            <td key={c.id} className="py-2 pr-3 text-center tabular-nums">
+                              {r.sizes?.[c.id] || <span className="text-gray-300">-</span>}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
       {!state.loading && state.forms.length === 0 && (
         <p className="text-sm text-gray-400 text-center py-8">No order forms yet. Create one above.</p>
       )}
@@ -385,7 +475,20 @@ export default function ManageOrderForms() {
                                   <p className="font-semibold text-gray-900 tabular-nums">${Number(item.price).toFixed(2)}</p>
                                 )}
                               </div>
-                              <div className="mt-1 flex flex-wrap gap-1.5">
+                              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                                {item.options?.length > 0 && (
+                                  <select
+                                    value={item.sizeCategory || ""}
+                                    onChange={(e) => handleSetSizeCategory(item, e.target.value)}
+                                    title="Which saved size this item uses"
+                                    className="text-[11px] font-semibold rounded-full border border-gray-200 bg-white px-2 py-0.5 text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#5E0009]/30"
+                                  >
+                                    <option value="">Size type: none</option>
+                                    {SIZE_CATEGORIES.map((c) => (
+                                      <option key={c.id} value={c.id}>Size type: {c.label}</option>
+                                    ))}
+                                  </select>
+                                )}
                                 {item.firstYearComp && (
                                   <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700">
                                     First Year Comp
@@ -487,6 +590,20 @@ export default function ManageOrderForms() {
                         />
                       </label>
                       <label className="block">
+                        <span className="block text-xs font-semibold text-gray-500 mb-1">Size type (for saved sizes)</span>
+                        <select
+                          value={state.itemDraft.sizeCategory}
+                          onChange={(e) => dispatch({ type: "SET_ITEM_DRAFT_FIELD", field: "sizeCategory", value: e.target.value })}
+                          className={input}
+                        >
+                          <option value="auto">Detect from name</option>
+                          <option value="">None</option>
+                          {SIZE_CATEGORIES.map((c) => (
+                            <option key={c.id} value={c.id}>{c.label}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block">
                         <span className="block text-xs font-semibold text-gray-500 mb-1">Image (optional)</span>
                         <input
                           type="file"
@@ -537,7 +654,17 @@ export default function ManageOrderForms() {
                                   <p className="text-[11px] text-green-700">${Number(s.waivedTotal).toFixed(2)} waived</p>
                                 )}
                                 <ul className="mt-2 space-y-1.5 text-xs text-gray-600">
-                                  {(s.selections || []).map((line, i) => (
+                                  {/* Listed in the form's item order; i stays the stored position, which waiving uses. */}
+                                  {(s.selections || [])
+                                    .map((line, i) => ({ line, i }))
+                                    .sort((a, b) => {
+                                      const rank = (id) => {
+                                        const idx = form.items.findIndex((it) => it.id === id);
+                                        return idx === -1 ? Number.MAX_SAFE_INTEGER : idx;
+                                      };
+                                      return rank(a.line.itemId) - rank(b.line.itemId) || a.i - b.i;
+                                    })
+                                    .map(({ line, i }) => (
                                     <li key={i} className="flex items-center justify-between gap-2">
                                       <span className="min-w-0">
                                         <span className={line.waived ? "line-through text-gray-400" : ""}>

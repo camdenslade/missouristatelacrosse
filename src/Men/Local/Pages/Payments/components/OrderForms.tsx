@@ -2,6 +2,7 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 import { useConfirm } from "../../../../../Global/Common/components/ConfirmModal";
+import type { SavedSizes } from "../../../../../Global/Common/utils/sizeCategories";
 import { apiRequest } from "../../../../../Services/API";
 
 type Item = {
@@ -9,6 +10,7 @@ type Item = {
   name: string;
   description: string | null;
   firstYearComp?: boolean;
+  sizeCategory?: string | null;
   price: number | null;
   image: string | null;
   options: string[];
@@ -51,16 +53,31 @@ export default function OrderForms({
   focusFormId,
   emptyMessage,
   hideHeading,
+  onSubmitted,
 }: {
   playerId: string;
   focusFormId?: string | null;
   emptyMessage?: string;
   hideHeading?: boolean;
+  onSubmitted?: () => void;
 }) {
   const confirm = useConfirm();
   const [state, dispatch] = useReducer(reducer, initialState);
   const focusRef = useRef<HTMLDivElement | null>(null);
   const [firstYear, setFirstYear] = useState(false);
+  const [savedSizes, setSavedSizes] = useState<SavedSizes>({});
+
+  useEffect(() => {
+    apiRequest<SavedSizes>(`/api/order-forms/sizes?playerId=${playerId}`)
+      .then((s) => setSavedSizes(s || {}))
+      .catch(() => setSavedSizes({}));
+  }, [playerId]);
+
+  // The player's saved size for this kind of item, if this item offers it.
+  const savedOption = (item: Item) => {
+    const size = item.sizeCategory ? savedSizes[item.sizeCategory] : undefined;
+    return size && item.options?.includes(size) ? size : undefined;
+  };
 
   useEffect(() => {
     apiRequest<{ firstYear: boolean }>(`/api/order-forms/first-year?playerId=${playerId}`)
@@ -125,6 +142,10 @@ export default function OrderForms({
       });
       dispatch({ type: "CLEAR_CART" });
       toast.success("Order submitted!");
+      apiRequest<SavedSizes>(`/api/order-forms/sizes?playerId=${playerId}`)
+        .then((s) => setSavedSizes(s || {}))
+        .catch(() => {});
+      onSubmitted?.();
     } catch (err) {
       console.error(err);
       toast.error("Failed to submit order.");
@@ -212,10 +233,13 @@ export default function OrderForms({
                                 key={opt}
                                 type="button"
                                 onClick={() => dispatch({ type: "SET_OPTION", itemId: item.id, option: opt })}
+                                title={savedOption(item) === opt ? "Your saved size" : undefined}
                                 className={`min-w-[2.5rem] px-3 py-1 rounded-full text-xs font-semibold border transition ${
                                   active
                                     ? "bg-[#5E0009] border-[#5E0009] text-white"
-                                    : "bg-white border-gray-200 text-gray-700 hover:border-[#5E0009]/50"
+                                    : savedOption(item) === opt
+                                      ? "bg-white border-[#5E0009]/50 text-[#5E0009] border-dashed"
+                                      : "bg-white border-gray-200 text-gray-700 hover:border-[#5E0009]/50"
                                 }`}
                               >
                                 {opt}
@@ -240,7 +264,9 @@ export default function OrderForms({
                         <button
                           type="button"
                           aria-label={`Add one ${item.name}`}
-                          onClick={() => dispatch({ type: "SET_LINE", itemId: item.id, quantity: quantity + 1, option: line?.option })}
+                          onClick={() =>
+                            dispatch({ type: "SET_LINE", itemId: item.id, quantity: quantity + 1, option: line?.option || savedOption(item) })
+                          }
                           className="h-8 w-8 rounded-full text-lg leading-none text-[#5E0009] hover:bg-[#5E0009]/10"
                         >
                           +

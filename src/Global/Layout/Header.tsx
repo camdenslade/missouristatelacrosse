@@ -60,7 +60,7 @@ export default function Header({ onAuthOpen }: HeaderProps) {
   const isTreasurerOrAbove = myRank >= ROLE_LADDER.indexOf("treasurer");
   const isBoardOrAbove = myRank >= ROLE_LADDER.indexOf("board");
   const canSeePayments = user && (isAdmin || isPlayer || isParent || isBoardOrAbove);
-  const isAdminPlayer = isAdmin && !!playerId;
+  const isAdminPlayer = (isAdmin || isBoardOrAbove) && !!playerId;
   const isGlobalAdmin = roles?.men === "admin" || roles?.women === "admin";
   
 

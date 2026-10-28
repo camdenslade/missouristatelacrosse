@@ -11,5 +11,5 @@ export default function PaymentsRedirect() {
   const program = isWomenSite ? "women" : "men";
   const base = isWomenSite ? "/women" : "";
 
-  return <Navigate to={roles?.[program] === "admin" ? `${base}/manage` : `${base}/portal`} replace />;
+  return <Navigate to={["admin", "president", "vp", "treasurer", "board"].includes(String(roles?.[program] ?? "")) ? `${base}/manage` : `${base}/portal`} replace />;
 }
