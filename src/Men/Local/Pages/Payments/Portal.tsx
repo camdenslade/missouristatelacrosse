@@ -2,6 +2,7 @@ import { useEffect, useMemo, useReducer, useState } from "react";
 import toast from "react-hot-toast";
 import { useSearchParams } from "react-router-dom";
 
+import MySizes from "./components/MySizes";
 import OrderForms from "./components/OrderForms";
 import ParentPlayerSelect from "./components/ParentPlayerSelect";
 import PlayerPaymentDetails from "./components/PlayerPaymentDetails";
@@ -55,6 +56,8 @@ function portalReducer(state: PortalState, action: PortalAction): PortalState {
   }
 }
 
+const OFFICER_ROLES = ["board", "treasurer", "vp", "president", "admin"];
+
 export default function Portal() {
   const { user, roles, loading } = useAuth();
   const [state, dispatch] = useReducer(portalReducer, initialState);
@@ -62,6 +65,7 @@ export default function Portal() {
   const [searchParams] = useSearchParams();
   const linkedFormId = searchParams.get("form");
   const [activeTab, setActiveTab] = useState<PortalTab>(linkedFormId ? "orders" : "pay");
+  const [sizesRefresh, setSizesRefresh] = useState(0);
   const [linkedPlayerId, setLinkedPlayerId] = useState<string>("");
   const [linkedPlayer, setLinkedPlayer] = useState<ApiPlayer | null>(null);
   const [ledger, setLedger] = useState<DuesPayment[]>([]);
@@ -75,7 +79,8 @@ export default function Portal() {
   const program: Program = isWomenSite ? "women" : "men";
 
   const programRole = (roles?.[program] || "") as Role | "";
-  const canAccess = ["admin", "player", "parent"].includes(programRole);
+  const isOfficer = OFFICER_ROLES.includes(programRole);
+  const canAccess = isOfficer || ["player", "parent"].includes(programRole);
 
   const paymentProvider = resolvePaymentProvider();
 
@@ -303,7 +308,7 @@ export default function Portal() {
 
   const player = state.selectedPlayer;
   const balance = Number(player?.balance ?? 0);
-  const isPlayerView = programRole === "player" || (programRole === "admin" && !!linkedPlayer);
+  const isPlayerView = programRole === "player" || (isOfficer && !!linkedPlayer);
   const tabs: Array<{ id: PortalTab; label: string }> = [
     { id: "pay", label: "Pay Dues" },
     ...(isPlayerView ? [{ id: "todos" as PortalTab, label: "To-Dos" }, { id: "orders" as PortalTab, label: "Order Forms" }] : []),
@@ -319,7 +324,7 @@ export default function Portal() {
   // The Portal is always the player's own view; balance adjustments, payment references, and
   // parent removal stay on Payments > Manage even when the viewer is an admin.
   const detailsProps = {
-    userRole: programRole === "admin" ? "player" : programRole,
+    userRole: isOfficer ? "player" : programRole,
     selectedPlayer: player,
     addParentEmail: state.addParentEmail,
     setAddParentEmail: (val: string) => dispatch({ type: "SET_FIELD", field: "addParentEmail", value: val }),
@@ -490,7 +495,16 @@ export default function Portal() {
             )}
 
             {currentTab === "orders" && (
-              <OrderForms playerId={player.id} focusFormId={linkedFormId} hideHeading emptyMessage="No order forms are open right now." />
+              <div className="space-y-6">
+                <MySizes playerId={player.id} refreshKey={sizesRefresh} />
+                <OrderForms
+                  playerId={player.id}
+                  focusFormId={linkedFormId}
+                  hideHeading
+                  emptyMessage="No order forms are open right now."
+                  onSubmitted={() => setSizesRefresh((n) => n + 1)}
+                />
+              </div>
             )}
 
             {currentTab === "family" && (

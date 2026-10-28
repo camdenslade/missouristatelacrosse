@@ -44,6 +44,20 @@ public class PlayerProfileService {
         repository.save(profile);
     }
 
+    public String getSizes(UUID profileId) {
+        PlayerProfile profile = findById(profileId);
+        return profile != null && profile.getSizes() != null ? profile.getSizes() : "{}";
+    }
+
+    public void setSizes(UUID profileId, String sizesJson) {
+        PlayerProfile profile = findById(profileId);
+        if (profile == null) {
+            return;
+        }
+        profile.setSizes(sizesJson);
+        repository.save(profile);
+    }
+
     public String getEmail(UUID profileId) {
         PlayerProfile profile = findById(profileId);
         return profile != null ? profile.getEmail() : null;

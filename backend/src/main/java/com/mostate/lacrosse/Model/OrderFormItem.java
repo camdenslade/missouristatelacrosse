@@ -27,6 +27,9 @@ public class OrderFormItem {
 
     private String description;
 
+    @Column(name = "size_category")
+    private String sizeCategory;
+
     @Column(name = "first_year_comp", nullable = false)
     private boolean firstYearComp = false;
 
@@ -52,6 +55,9 @@ public class OrderFormItem {
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+
+    public String getSizeCategory() { return sizeCategory; }
+    public void setSizeCategory(String sizeCategory) { this.sizeCategory = sizeCategory; }
 
     public boolean isFirstYearComp() { return firstYearComp; }
     public void setFirstYearComp(boolean firstYearComp) { this.firstYearComp = firstYearComp; }

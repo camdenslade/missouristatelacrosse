@@ -32,6 +32,10 @@ public class PlayerProfile {
     @Column(columnDefinition = "jsonb")
     private String parents;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private String sizes = "{}";
+
     @Column(name = "created_at")
     private Instant createdAt;
 
@@ -76,4 +80,7 @@ public class PlayerProfile {
 
     public Instant getUpdatedAt() {return updatedAt;}
     public void setUpdatedAt(Instant updatedAt) {this.updatedAt = updatedAt;}
+
+    public String getSizes() { return sizes; }
+    public void setSizes(String sizes) { this.sizes = sizes; }
 }

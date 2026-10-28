@@ -18,6 +18,8 @@ const parsePlayerData = (player: ApiPlayer | null): Record<string, JsonValue> =>
   return {};
 };
 
+const OFFICER_ROLES = ["board", "treasurer", "vp", "president", "admin"];
+
 export default function usePlayers(parentProvidedLinkedPlayers: ApiPlayer[] = []) {
   const { user, roles, loading: authLoading } = useAuth();
   const [players, setPlayers] = useState<ApiPlayer[]>([]);
@@ -45,7 +47,7 @@ export default function usePlayers(parentProvidedLinkedPlayers: ApiPlayer[] = []
       let list: ApiPlayer[] = [];
 
       try {
-        if (userRole === "admin") {
+        if (OFFICER_ROLES.includes(userRole)) {
           list = await apiRequest<ApiPlayer[]>(`/api/players`);
         } else if (userRole === "player") {
           const userRecord = await apiRequest<ApiUser>(`/api/users/${user.uid}`).catch(() => null);

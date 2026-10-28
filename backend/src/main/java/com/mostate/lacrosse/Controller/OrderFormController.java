@@ -251,6 +251,10 @@ public class OrderFormController {
         item.setName(TextSanitizer.clean(body.name()));
         item.setDescription(cleanDescription(body.description()));
         item.setFirstYearComp(Boolean.TRUE.equals(body.firstYearComp()));
+        // Omitted means "work it out from the name"; an empty string means no size category.
+        item.setSizeCategory(body.sizeCategory() == null
+            ? inferSizeCategory(body.name(), body.options())
+            : normalizeSizeCategory(body.sizeCategory()));
         item.setPrice(body.price());
         if (body.image() != null) {
             item.setImage(body.image().isBlank() ? null : s3Service.extractKey(body.image()));
@@ -274,6 +278,7 @@ public class OrderFormController {
         if (body.name() != null) item.setName(TextSanitizer.clean(body.name()));
         if (body.description() != null) item.setDescription(cleanDescription(body.description()));
         if (body.firstYearComp() != null) item.setFirstYearComp(body.firstYearComp());
+        if (body.sizeCategory() != null) item.setSizeCategory(normalizeSizeCategory(body.sizeCategory()));
         if (body.price() != null) item.setPrice(body.price());
         if (body.image() != null) {
             item.setImage(body.image().isBlank() ? null : s3Service.extractKey(body.image()));
@@ -361,6 +366,8 @@ public class OrderFormController {
         submission.setTotal(total);
         submission.setSubmittedByUid((String) request.getAttribute("firebaseUid"));
         submissionRepo.save(submission);
+
+        rememberSizes(player, body.selections(), itemsById);
 
         BigDecimal owed = total.subtract(compedTotal);
         if (owed.signum() > 0) {
@@ -509,6 +516,86 @@ public class OrderFormController {
         return line;
     }
 
+    /** Saves the size picked for each sized item on this order as the player's size for that category. */
+    private void rememberSizes(Player player, List<Selection> selections, Map<UUID, OrderFormItem> itemsById) {
+        if (player.getProfileId() == null) return;
+        Map<String, Object> sizes = new java.util.LinkedHashMap<>(JsonUtils.readMap(profileService.getSizes(player.getProfileId())));
+        boolean changed = false;
+        for (Selection sel : selections) {
+            OrderFormItem item = itemsById.get(sel.itemId());
+            if (item == null || item.getSizeCategory() == null || sel.option() == null || sel.option().isBlank()) continue;
+            if (!sel.option().equals(sizes.get(item.getSizeCategory()))) {
+                sizes.put(item.getSizeCategory(), sel.option());
+                changed = true;
+            }
+        }
+        if (changed) profileService.setSizes(player.getProfileId(), JsonUtils.toJson(sizes));
+    }
+
+    /** A player's saved sizes, for pre-filling order forms and the portal's My Sizes card. */
+    @GetMapping("/sizes")
+    public ResponseEntity<?> getSizes(
+        HttpServletRequest request,
+        @RequestParam UUID playerId,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        Player player = playerRepo.findById(playerId).orElse(null);
+        if (player == null) return ResponseEntity.notFound().build();
+        if (!isSelfOrAdmin(request, player, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Not authorized for this player"));
+        }
+        if (player.getProfileId() == null) return ResponseEntity.ok(Map.of());
+        return ResponseEntity.ok(JsonUtils.readMap(profileService.getSizes(player.getProfileId())));
+    }
+
+    @PutMapping("/sizes")
+    public ResponseEntity<?> setSizes(
+        HttpServletRequest request,
+        @RequestParam UUID playerId,
+        @RequestParam(defaultValue = "men") String program,
+        @RequestBody Map<String, String> body
+    ) {
+        Player player = playerRepo.findById(playerId).orElse(null);
+        if (player == null) return ResponseEntity.notFound().build();
+        if (!isSelfOrAdmin(request, player, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Not authorized for this player"));
+        }
+        if (player.getProfileId() == null) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("This player has no profile to save sizes on"));
+        }
+        Map<String, Object> sizes = new java.util.LinkedHashMap<>();
+        body.forEach((category, size) -> {
+            String c = normalizeSizeCategory(category);
+            String v = size == null ? "" : TextSanitizer.clean(size).trim();
+            if (c != null && !v.isEmpty() && v.length() <= 20) sizes.put(c, v);
+        });
+        profileService.setSizes(player.getProfileId(), JsonUtils.toJson(sizes));
+        return ResponseEntity.ok(sizes);
+    }
+
+    /** Board view: every current-season player's saved sizes, for placing a team order. */
+    @GetMapping("/sizes/roster")
+    public ResponseEntity<?> rosterSizes(
+        HttpServletRequest request,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isBoard(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Board access required"));
+        }
+        List<Map<String, Object>> rows = playerRepo.findAllBySeason(seasonService.getActiveCode()).stream()
+            .sorted(java.util.Comparator.comparing(p -> p.getName() == null ? "" : p.getName()))
+            .map(p -> {
+                Map<String, Object> m = new java.util.LinkedHashMap<>();
+                m.put("playerId", p.getId());
+                m.put("name", p.getName() != null ? p.getName() : "Unnamed player");
+                m.put("position", p.getPosition());
+                m.put("sizes", p.getProfileId() != null ? JsonUtils.readMap(profileService.getSizes(p.getProfileId())) : Map.of());
+                return m;
+            })
+            .toList();
+        return ResponseEntity.ok(rows);
+    }
+
     /** Lets the portal show a first-year player that First Year Comp items are free for them. */
     @GetMapping("/first-year")
     public ResponseEntity<?> firstYear(
@@ -579,6 +666,7 @@ public class OrderFormController {
         m.put("name", item.getName());
         m.put("description", item.getDescription());
         m.put("firstYearComp", item.isFirstYearComp());
+        m.put("sizeCategory", item.getSizeCategory());
         m.put("price", item.getPrice());
         m.put("image", s3Service.toPresignedUrl(item.getImage(), Duration.ofHours(2)));
         m.put("options", JsonUtils.readList(item.getOptions()));
@@ -588,8 +676,31 @@ public class OrderFormController {
     public record FormRequest(String title, String description, Boolean active, Boolean notifyPlayers) {}
 
     public record ItemRequest(
-        String name, String description, Boolean firstYearComp, BigDecimal price, String image, List<String> options
+        String name, String description, Boolean firstYearComp, String sizeCategory,
+        BigDecimal price, String image, List<String> options
     ) {}
+
+    /** Kinds of sized items a player's saved sizes are kept for. Mirrors src/Global/Common/utils/sizeCategories.ts. */
+    private static final List<String> SIZE_CATEGORIES = List.of("shirt", "shorts", "hoodie", "pants", "polo", "jersey", "gloves");
+
+    private static String normalizeSizeCategory(String raw) {
+        String c = raw == null ? "" : raw.trim().toLowerCase();
+        return SIZE_CATEGORIES.contains(c) ? c : null;
+    }
+
+    /** Same name rules as the V51 migration that categorized the existing items. */
+    static String inferSizeCategory(String name, List<String> options) {
+        if (name == null || options == null || options.isEmpty()) return null;
+        String n = name.toLowerCase();
+        if (n.contains("glove")) return "gloves";
+        if (n.contains("hoodie") || n.contains("sweatshirt")) return "hoodie";
+        if (n.contains("pant") || n.contains("jogger")) return "pants";
+        if (n.contains("short")) return "shorts";
+        if (n.contains("polo")) return "polo";
+        if (n.contains("jersey")) return "jersey";
+        if (n.contains("shirt") || n.contains("tee")) return "shirt";
+        return null;
+    }
 
     private static String cleanDescription(String raw) {
         if (raw == null) return null;

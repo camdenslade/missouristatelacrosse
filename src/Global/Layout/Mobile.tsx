@@ -46,7 +46,7 @@ export default function MobileMenu({
   const isTreasurerOrAbove = myRank >= ROLE_LADDER.indexOf("treasurer");
   const isBoardOrAbove = myRank >= ROLE_LADDER.indexOf("board");
   const canSeePayments = user && (isAdmin || isPlayer || isParent || isBoardOrAbove);
-  const isAdminPlayer = isAdmin && !!playerId;
+  const isAdminPlayer = (isAdmin || isBoardOrAbove) && !!playerId;
   const isGlobalAdmin = roles?.men === "admin" || roles?.women === "admin";
 
   return (
@@ -99,11 +99,11 @@ export default function MobileMenu({
           </>
         ) : (
           <Link
-            to={programLink(isAdmin || isTreasurerOrAbove ? "/manage" : "/portal")}
+            to={programLink(isAdmin || isBoardOrAbove ? "/manage" : "/portal")}
             className={linkHover}
             onClick={() => setOpen(false)}
           >
-            {isAdmin || isTreasurerOrAbove ? "Manage" : "Portal"}
+            {isAdmin || isBoardOrAbove ? "Manage" : "Portal"}
           </Link>
         )
       )}
