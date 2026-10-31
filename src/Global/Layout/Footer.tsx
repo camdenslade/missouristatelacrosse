@@ -16,7 +16,7 @@ export default function Footer() {
 
   const instagramURL = isWomen
     ? "https://www.instagram.com/mostatewlax/"
-    : "https://www.instagram.com/msu.lacrosse/";
+    : "https://www.instagram.com/mostatelacrosse/";
 
   const facebookURL = isWomen
     ? "https://www.facebook.com/Missouri-State-Womens-Lacrosse/"
