@@ -33,6 +33,7 @@ dependencies {
     implementation 'com.nimbusds:nimbus-jose-jwt:9.47'
 
     implementation "software.amazon.awssdk:ses:${awsSdkVersion}"
+    implementation "software.amazon.awssdk:pinpointsmsvoicev2:${awsSdkVersion}"
     implementation "software.amazon.awssdk:auth:${awsSdkVersion}"
     implementation "software.amazon.awssdk:secretsmanager:${awsSdkVersion}"
     implementation "software.amazon.awssdk:cognitoidentityprovider:${awsSdkVersion}"

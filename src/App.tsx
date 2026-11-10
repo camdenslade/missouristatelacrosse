@@ -22,6 +22,7 @@ const SetPassword = lazyPage(() => import("./Global/Authentication/SetPassword")
 const PrivacyPolicy = lazyPage(() => import("./Global/PrivacyPolicy"));
 const Support = lazyPage(() => import("./Global/Support"));
 const TermsOfService = lazyPage(() => import("./Global/TermsOfService"));
+const TextUpdates = lazyPage(() => import("./Global/TextUpdates"));
 const AdminDashboard = lazyPage(() => import("./Men/Local/Admin/AdminDash"));
 const Donate = lazyPage(() => import("./Men/Local/Pages/Donate/Donate"));
 const DonateSuccess = lazyPage(() => import("./Men/Local/Pages/Donate/DonateSuccess"));
@@ -336,6 +337,7 @@ export default function App() {
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/support" element={<Support />} />
             <Route path="/terms-of-service" element={<TermsOfService />} />
+            <Route path="/text-updates" element={<TextUpdates />} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

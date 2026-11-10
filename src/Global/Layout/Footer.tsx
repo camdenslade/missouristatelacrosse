@@ -78,6 +78,14 @@ export default function Footer() {
             <Link to="/support" className="hover:text-white transition-colors">
               Contact
             </Link>
+            {!isWomen && (
+              <>
+                <span className="text-white/20">|</span>
+                <Link to="/text-updates" className="hover:text-white transition-colors">
+                  Text Updates
+                </Link>
+              </>
+            )}
           </div>
           <div>&copy; {new Date().getFullYear()} {teamName}</div>
         </div>

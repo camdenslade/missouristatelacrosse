@@ -35,6 +35,20 @@ export default function PrivacyPolicy() {
         </section>
 
         <section>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Text Messages</h2>
+          <p className="mb-2">
+            If you sign up for text updates on our <a href="/text-updates" className="text-[#5E0009] font-semibold hover:underline">Text Updates</a> page,
+            we collect your mobile number, your name if you provide it, and a record of your consent (the date, time, and page where you signed up). We use your number only to send the team updates, event reminders, and fundraiser messages you signed up for.
+          </p>
+          <p className="mb-2">
+            Mobile information will not be shared with third parties or affiliates for marketing or promotional purposes. Text messaging originator opt-in data and consent are not shared with any third parties. We share your number only with the messaging provider that delivers our texts.
+          </p>
+          <p>
+            Message frequency varies. Message and data rates may apply. Reply STOP to any message to opt out, or HELP for help. You can also email support@missouristatelacrosse.com to be removed.
+          </p>
+        </section>
+
+        <section>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Who Can See It</h2>
           <p>Roster, dues, and registration data is visible to team officers and admins who need it to run the program. Public pages (roster listings, articles, schedule) only show information intended to be public.</p>
         </section>

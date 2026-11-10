@@ -93,6 +93,13 @@
       "description": "The terms for using the Missouri State Lacrosse website.",
       "priority": "0.2",
       "changefreq": "yearly"
+    },
+    {
+      "path": "/text-updates",
+      "title": "Text Updates",
+      "description": "Sign up for text updates from Missouri State Men's Lacrosse: team news, event reminders, and fundraisers.",
+      "priority": "0.3",
+      "changefreq": "yearly"
     }
   ],
   "detailPages": [

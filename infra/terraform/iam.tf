@@ -57,6 +57,14 @@ resource "aws_iam_role_policy" "ec2_backend" {
         Resource = aws_sesv2_email_identity.domain.arn
       },
       {
+        # Fundraiser outreach texts (AWS End User Messaging SMS). Unused until the backend
+        # has SMS_ENABLED=true; narrow Resource to the phone number's ARN once it exists.
+        Sid      = "FundraiserSms"
+        Effect   = "Allow"
+        Action   = ["sms-voice:SendTextMessage"]
+        Resource = "*"
+      },
+      {
         Sid    = "CognitoUserPool"
         Effect = "Allow"
         Action = [
