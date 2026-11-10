@@ -2,6 +2,8 @@ import { useCallback, useEffect, useReducer, useState } from "react";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 
+import FundraiserOutreachPanel from "./FundraiserOutreachPanel";
+
 import { useConfirm } from "../../../../Global/Common/components/ConfirmModal";
 import { uploadCompressedImage } from "../../../../Global/Common/hooks/uploadHelper";
 import {
@@ -151,6 +153,7 @@ export default function ManageFundraisers() {
   });
 
   const [imageItem, setImageItem] = useState<ImageItem | null>(null);
+  const [outreachFor, setOutreachFor] = useState<ApiFundraiser | null>(null);
   const [raisedByFundraiser, setRaisedByFundraiser] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -331,6 +334,12 @@ export default function ManageFundraisers() {
                         Edit
                       </button>
                       <button
+                        onClick={() => setOutreachFor(f)}
+                        className="text-xs px-3 py-1 rounded-full bg-[#5E0009]/10 text-[#5E0009] hover:bg-[#5E0009]/20 font-semibold"
+                      >
+                        Outreach
+                      </button>
+                      <button
                         onClick={() => handleDelete(f.id)}
                         className="text-xs px-3 py-1 rounded-full bg-red-50 text-red-600 hover:bg-red-100 font-semibold"
                       >
@@ -343,6 +352,9 @@ export default function ManageFundraisers() {
             </tbody>
           </table>
         </div>
+      )}
+      {outreachFor && (
+        <FundraiserOutreachPanel fundraiserId={outreachFor.id} title={outreachFor.title ?? ""} onClose={() => setOutreachFor(null)} />
       )}
     </div>
   );

@@ -11,6 +11,7 @@ Disallow: /settings
 Disallow: /admin
 Disallow: /dues
 Disallow: /order-lookup
+Disallow: /unsubscribe
 Disallow: /checkout
 Disallow: /pending-approval
 Disallow: /set-password

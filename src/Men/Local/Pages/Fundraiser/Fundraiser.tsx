@@ -1,7 +1,7 @@
-import { Heart, MapPin } from "lucide-react";
+import { Heart, MapPin, Trophy } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { fetchFundraiserBySlug } from "../../../../Global/Common/hooks/useFundraisers";
 import usePaymentButtons from "../../../../Global/Common/hooks/usePaymentButtons";
@@ -11,6 +11,12 @@ import { getProgramInfo } from "../../../../Services/programHelper";
 import type { ApiFundraiser } from "../../../../types/api";
 
 const SUGGESTED = [25, 50, 100, 250];
+
+type OutreachView = {
+  outreachEnabled: boolean;
+  supporting: string | null;
+  leaderboard: Array<{ name: string; raised: number; donations: number }>;
+};
 
 export default function Fundraiser() {
   const { slug } = useParams<{ slug: string }>();
@@ -22,6 +28,20 @@ export default function Fundraiser() {
   const [donationAmount, setDonationAmount] = useState("");
   const [confirmedAmount, setConfirmedAmount] = useState<number | null>(null);
   const [raised, setRaised] = useState<number | null>(null);
+  // A player's share link carries ?ref=<code>; an outreach email also carries ?c=<contact token>.
+  const [searchParams] = useSearchParams();
+  const ref = searchParams.get("ref") || undefined;
+  const contact = searchParams.get("c") || undefined;
+  const [outreach, setOutreach] = useState<OutreachView | null>(null);
+
+  useEffect(() => {
+    if (!slug) return;
+    apiRequest<OutreachView>(
+      `/api/fundraisers/outreach/slug/${encodeURIComponent(slug)}${ref ? `?ref=${encodeURIComponent(ref)}` : ""}`
+    )
+      .then(setOutreach)
+      .catch(() => setOutreach(null));
+  }, [slug, ref]);
 
   useEffect(() => {
     if (!slug) {
@@ -77,7 +97,7 @@ export default function Fundraiser() {
     });
   };
 
-  usePaymentButtons(confirmedAmount, "paypal-fundraiser-buttons", handleSuccess, "donate", `fundraiser-${slug}`);
+  usePaymentButtons(confirmedAmount, "paypal-fundraiser-buttons", handleSuccess, "donate", `fundraiser-${slug}`, { ref, contact });
 
   if (status === "loading") {
     return (
@@ -118,6 +138,15 @@ export default function Fundraiser() {
       </div>
 
       <div className="max-w-2xl mx-auto w-full flex flex-col gap-6 px-4 mt-8 pb-12">
+        {outreach?.supporting && (
+          <div className="bg-white rounded-2xl shadow-lg px-6 py-4 flex items-center gap-3 border-l-4 border-[#5E0009]">
+            <Heart size={18} className="text-[#5E0009] shrink-0" />
+            <p className="text-sm text-gray-700">
+              You're supporting <span className="font-bold text-gray-900">{outreach.supporting}</span>. Your gift counts
+              toward their goal.
+            </p>
+          </div>
+        )}
         {fundraiser.image && (
           <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
             <img src={fundraiser.image} alt="" className="w-full max-h-72 object-cover" />
@@ -183,6 +212,34 @@ export default function Fundraiser() {
             </>
           )}
         </div>
+
+        {outreach?.outreachEnabled && outreach.leaderboard.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-lg p-6 md:p-7">
+            <div className="flex items-center gap-2 mb-3">
+              <Trophy size={16} className="text-[#5E0009]" />
+              <p className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Top Fundraisers</p>
+            </div>
+            <ol className="divide-y">
+              {outreach.leaderboard.slice(0, 10).map((row, i) => (
+                <li key={`${row.name}-${i}`} className="flex items-center justify-between py-2.5">
+                  <span className="flex items-center gap-3 min-w-0">
+                    <span
+                      className={`w-6 h-6 shrink-0 rounded-full text-xs font-bold flex items-center justify-center ${
+                        i === 0 ? "bg-[#5E0009] text-white" : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {i + 1}
+                    </span>
+                    <span className="text-sm font-medium text-gray-800 truncate">{row.name}</span>
+                  </span>
+                  <span className="text-sm font-semibold text-gray-700 tabular-nums">
+                    ${Number(row.raised).toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
 
         {/* Donate */}
         <div className="bg-white rounded-2xl shadow-lg p-6 md:p-7 flex flex-col items-center gap-5">

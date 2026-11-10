@@ -30,8 +30,11 @@ export default function usePayPalButtons(
   containerId = "paypal-buttons",
   onSuccess?: PayPalSuccessHandler,
   label: "donate" | "pay" | "buynow" | "checkout" | "subscribe" = "donate",
-  source?: string
+  source?: string,
+  referral?: { ref?: string; contact?: string }
 ) {
+  const ref = referral?.ref;
+  const contact = referral?.contact;
   const [paypalLoaded, setPaypalLoaded] = useState(false);
 
   const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
@@ -94,7 +97,7 @@ export default function usePayPalButtons(
           "/api/paypal/create",
           {
             method: "POST",
-            json: { amount: amount.toFixed(2), source },
+            json: { amount: amount.toFixed(2), source, ref, contact },
           }
         );
 
@@ -131,7 +134,7 @@ export default function usePayPalButtons(
     if (!buttons) return;
 
     buttons.render(`#${containerId}`);
-  }, [paypalLoaded, customAmount, containerId, onSuccess, label, source]);
+  }, [paypalLoaded, customAmount, containerId, onSuccess, label, source, ref, contact]);
 
   return { paypalLoaded };
 }

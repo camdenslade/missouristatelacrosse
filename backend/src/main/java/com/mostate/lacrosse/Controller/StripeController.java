@@ -19,6 +19,7 @@ import com.mostate.lacrosse.Model.EventRegistration;
 import com.mostate.lacrosse.Repository.EventRegistrationRepository;
 import com.mostate.lacrosse.Service.PaymentReceiptService;
 import com.mostate.lacrosse.Service.StripeService;
+import com.mostate.lacrosse.Service.FundraiserOutreachService;
 import com.mostate.lacrosse.Service.TerminalPaymentRecorder;
 import com.mostate.lacrosse.Utils.JsonUtils;
 import com.stripe.exception.SignatureVerificationException;
@@ -48,17 +49,20 @@ public class StripeController {
     private final PaymentReceiptService receiptService;
     private final EventRegistrationRepository registrationRepository;
     private final TerminalPaymentRecorder terminalPaymentRecorder;
+    private final FundraiserOutreachService outreachService;
 
     public StripeController(
         StripeService stripeService,
         PaymentReceiptService receiptService,
         EventRegistrationRepository registrationRepository,
-        TerminalPaymentRecorder terminalPaymentRecorder
+        TerminalPaymentRecorder terminalPaymentRecorder,
+        FundraiserOutreachService outreachService
     ) {
         this.stripeService = stripeService;
         this.receiptService = receiptService;
         this.registrationRepository = registrationRepository;
         this.terminalPaymentRecorder = terminalPaymentRecorder;
+        this.outreachService = outreachService;
     }
 
     @GetMapping("/config")
@@ -95,6 +99,7 @@ public class StripeController {
             // so a later confirm/webhook can't relabel the payment.
             if (body.source() != null && !body.source().isBlank()) {
                 receiptService.reserveSource(session.getId(), body.source(), "stripe");
+                outreachService.recordReferral(session.getId(), body.source(), body.ref(), body.contact());
             }
 
             return ResponseEntity.ok(Map.of(
@@ -275,5 +280,7 @@ public class StripeController {
         return id == null ? null : String.valueOf(id);
     }
 
-    public record CreateSessionRequest(@NotBlank String amount, Boolean includeShippingFee, String source) {}
+    public record CreateSessionRequest(
+        @NotBlank String amount, Boolean includeShippingFee, String source, String ref, String contact
+    ) {}
 }
