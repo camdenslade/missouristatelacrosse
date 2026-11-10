@@ -28,6 +28,7 @@ export default [
   { path: "/admin" },
   { path: "/privacy-policy" },
   { path: "/terms-of-service" },
+  { path: "/text-updates" },
 
   { path: "/women" },
   { path: "/women/" },

@@ -29,6 +29,19 @@ export default function TermsOfService() {
         </section>
 
         <section>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Text Messaging</h2>
+          <p className="mb-2">
+            Missouri State Men's Lacrosse offers optional text updates: team news, game and event reminders, and fundraiser updates. You only receive texts if you sign up on our <a href="/text-updates" className="text-[#5E0009] font-semibold hover:underline">Text Updates</a> page and check the consent box. Consent is not a condition of any purchase or donation.
+          </p>
+          <p className="mb-2">
+            Message frequency varies. Message and data rates may apply. Reply STOP at any time to opt out; you'll get one confirmation and no further messages. Reply HELP for help, or email support@missouristatelacrosse.com.
+          </p>
+          <p>
+            Carriers are not liable for delayed or undelivered messages. See our <a href="/privacy-policy" className="text-[#5E0009] font-semibold hover:underline">Privacy Policy</a> for how your number is handled.
+          </p>
+        </section>
+
+        <section>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Acceptable Use</h2>
           <p>Don't use this site to submit false information, interfere with its operation, or access areas or data you're not authorized to see. Accounts found abusing the site may be suspended.</p>
         </section>
