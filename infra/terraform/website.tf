@@ -143,6 +143,7 @@ locals {
     "/alumni-budget*",
     "/recruitment/submissions*",
     "/order-lookup*",
+    "/unsubscribe*",
     "/donate/success*",
     "/fundraiser/*/success*",
   ]

@@ -19,7 +19,9 @@ export default function usePaymentButtons(
   containerId = "payment-buttons",
   onSuccess?: SuccessHandler,
   label: "donate" | "pay" | "buynow" | "checkout" | "subscribe" = "pay",
-  source?: string
+  source?: string,
+  // Fundraiser credit: the player's share code and the outreach email's contact token.
+  referral?: { ref?: string; contact?: string }
 ) {
   const useStripe = resolvePaymentProvider() === "stripe";
 
@@ -28,14 +30,16 @@ export default function usePaymentButtons(
     containerId,
     onSuccess,
     label,
-    source
+    source,
+    referral
   );
   const stripe = useStripeCheckout(
     useStripe ? customAmount : null,
     containerId,
     onSuccess,
     label,
-    source
+    source,
+    referral
   );
 
   return {

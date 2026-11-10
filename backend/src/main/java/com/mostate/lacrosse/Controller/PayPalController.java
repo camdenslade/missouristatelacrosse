@@ -15,6 +15,7 @@ import org.springframework.validation.annotation.Validated;
 import com.mostate.lacrosse.Dto.ClientIdResponse;
 import com.mostate.lacrosse.Dto.ErrorResponse;
 import com.mostate.lacrosse.Service.PayPalSDKService;
+import com.mostate.lacrosse.Service.FundraiserOutreachService;
 import com.mostate.lacrosse.Service.PaymentReceiptService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -25,16 +26,19 @@ import jakarta.validation.constraints.NotBlank;
 public class PayPalController {
     private final PayPalSDKService payPalSDKService;
     private final PaymentReceiptService receiptService;
+    private final FundraiserOutreachService outreachService;
     private static final BigDecimal SHIPPING_FEE = BigDecimal.valueOf(5);
     @Value("${paypal.client.id}")
     private String clientId;
 
     public PayPalController(
         PayPalSDKService payPalSDKService,
-        PaymentReceiptService receiptService
+        PaymentReceiptService receiptService,
+        FundraiserOutreachService outreachService
     ){
         this.payPalSDKService = payPalSDKService;
         this.receiptService = receiptService;
+        this.outreachService = outreachService;
     }
 
     @PostMapping("/create")
@@ -55,6 +59,7 @@ public class PayPalController {
                 Object orderId = order.get("id");
                 if (orderId != null) {
                     receiptService.reserveSource(String.valueOf(orderId), body.source());
+                    outreachService.recordReferral(String.valueOf(orderId), body.source(), body.ref(), body.contact());
                 }
             }
             return ResponseEntity.ok(order);
@@ -109,5 +114,7 @@ public class PayPalController {
         return ResponseEntity.ok(new ClientIdResponse(clientId));
     }
 
-    public record CreateOrderRequest(@NotBlank String amount, Boolean includeShippingFee, String source) {}
+    public record CreateOrderRequest(
+        @NotBlank String amount, Boolean includeShippingFee, String source, String ref, String contact
+    ) {}
 }

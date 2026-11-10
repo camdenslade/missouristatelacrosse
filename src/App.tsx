@@ -47,6 +47,7 @@ const Stats = lazyPage(() => import("./Men/Local/Pages/Stats/Stats"));
 const Checkout = lazyPage(() => import("./Men/Local/Pages/Store/Checkout/Checkout"));
 const CheckoutSuccess = lazyPage(() => import("./Men/Local/Pages/Store/Checkout/CheckoutSuccess"));
 const OrderLookup = lazyPage(() => import("./Men/Local/Pages/Store/OrderLookup"));
+const Unsubscribe = lazyPage(() => import("./Global/Common/Unsubscribe"));
 const Store = lazyPage(() => import("./Men/Local/Pages/Store/Store"));
 const WAdminDashboard = lazyPage(() => import("./Women/Local/Admin/AdminDash"));
 const WDonate = lazyPage(() => import("./Women/Local/Pages/Donate/Donate"));
@@ -176,6 +177,7 @@ export default function App() {
             />
             <Route path="/store" element={<Store />} />
             <Route path="/order-lookup" element={<OrderLookup />} />
+            <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="/donate" element={<Donate />} />
             <Route path="/donate/success" element={<DonateSuccess />} />
             <Route path="/fundraiser/:slug" element={<Fundraiser />} />
@@ -276,6 +278,7 @@ export default function App() {
             />
             <Route path="/women/store" element={<WStore />} />
             <Route path="/women/order-lookup" element={<OrderLookup />} />
+            <Route path="/women/unsubscribe" element={<Unsubscribe />} />
             <Route path="/women/donate" element={<WDonate />} />
             <Route path="/women/donate/success" element={<WDonateSuccess />} />
             <Route path="/women/gallery" element={<WGallery />} />

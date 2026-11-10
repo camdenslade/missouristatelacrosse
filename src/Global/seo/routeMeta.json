@@ -115,7 +115,8 @@
     "/alumni-budget",
     "/recruitment/submissions",
     "/order-lookup",
-    "/dues"
+    "/dues",
+    "/unsubscribe"
   ],
   "noindexSuffixes": ["/success"]
 }

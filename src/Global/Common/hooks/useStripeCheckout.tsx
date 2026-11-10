@@ -41,8 +41,11 @@ export default function useStripeCheckout(
   containerId = "stripe-checkout",
   onSuccess?: StripeSuccessHandler,
   _label: "donate" | "pay" | "buynow" | "checkout" | "subscribe" = "pay",
-  source?: string
+  source?: string,
+  referral?: { ref?: string; contact?: string }
 ) {
+  const ref = referral?.ref;
+  const contact = referral?.contact;
   const envPk = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
   const [publishableKey, setPublishableKey] = useState(envPk || "");
 
@@ -82,7 +85,7 @@ export default function useStripeCheckout(
     const fetchClientSecret = async () => {
       const data = await apiRequest<CreateSessionResponse>("/api/stripe/create", {
         method: "POST",
-        json: { amount: amount.toFixed(2), source },
+        json: { amount: amount.toFixed(2), source, ref, contact },
       });
       // The session id is the client secret's prefix; keep it for the confirm call.
       capturedSessionId = data.id || data.clientSecret.split("_secret_")[0];
@@ -135,7 +138,7 @@ export default function useStripeCheckout(
       }, 0);
     };
     // onSuccess intentionally excluded — read via ref above.
-  }, [publishableKey, customAmount, containerId, source]);
+  }, [publishableKey, customAmount, containerId, source, ref, contact]);
 
   return { stripeLoaded: !!publishableKey };
 }

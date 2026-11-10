@@ -2,6 +2,7 @@ import { useEffect, useMemo, useReducer, useState } from "react";
 import toast from "react-hot-toast";
 import { useSearchParams } from "react-router-dom";
 
+import FundraiserOutreach, { type OutreachCampaign } from "./components/FundraiserOutreach";
 import MySizes from "./components/MySizes";
 import OrderForms from "./components/OrderForms";
 import ParentPlayerSelect from "./components/ParentPlayerSelect";
@@ -15,7 +16,7 @@ import { apiRequest } from "../../../../Services/API";
 import type { ApiParentRecord, ApiPlayer, ApiUser, DuesPayment, ParentLink, Program, Role } from "../../../../types/api";
 import { fetchActiveSeasonCode, getSeasonValue, displaySeasonLabel } from "../Roster/hooks/seasonUtils";
 
-type PortalTab = "pay" | "todos" | "orders" | "family" | "history";
+type PortalTab = "pay" | "todos" | "orders" | "fundraiser" | "family" | "history";
 
 type PortalState = {
   selectedPlayerId: string;
@@ -66,6 +67,12 @@ export default function Portal() {
   const linkedFormId = searchParams.get("form");
   const [activeTab, setActiveTab] = useState<PortalTab>(linkedFormId ? "orders" : "pay");
   const [sizesRefresh, setSizesRefresh] = useState(0);
+  const [campaign, setCampaign] = useState<OutreachCampaign | null>(null);
+  useEffect(() => {
+    apiRequest<OutreachCampaign[]>("/api/fundraisers/outreach/active")
+      .then((list) => setCampaign(list?.[0] ?? null))
+      .catch(() => setCampaign(null));
+  }, []);
   const [linkedPlayerId, setLinkedPlayerId] = useState<string>("");
   const [linkedPlayer, setLinkedPlayer] = useState<ApiPlayer | null>(null);
   const [ledger, setLedger] = useState<DuesPayment[]>([]);
@@ -312,6 +319,7 @@ export default function Portal() {
   const tabs: Array<{ id: PortalTab; label: string }> = [
     { id: "pay", label: "Pay Dues" },
     ...(isPlayerView ? [{ id: "todos" as PortalTab, label: "To-Dos" }, { id: "orders" as PortalTab, label: "Order Forms" }] : []),
+    ...(isPlayerView && campaign ? [{ id: "fundraiser" as PortalTab, label: "Fundraiser" }] : []),
     { id: "family", label: "Family" },
     { id: "history", label: "History" },
   ];
@@ -515,6 +523,8 @@ export default function Portal() {
                 )}
               </div>
             )}
+
+            {currentTab === "fundraiser" && campaign && <FundraiserOutreach playerId={player.id} campaign={campaign} />}
 
             {currentTab === "history" && (
               <PlayerPaymentDetails {...detailsProps} sections={["history"]} />
