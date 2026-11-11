@@ -55,7 +55,8 @@ export default function TextUpdates() {
           <div className="text-center space-y-3">
             <h2 className="text-2xl font-extrabold uppercase text-gray-900">You're Signed Up</h2>
             <p className="text-gray-600">
-              Thanks for supporting Missouri State Lacrosse. Reply STOP to any message to opt out, or HELP for help.
+              Thanks for supporting Missouri State Lacrosse. Texts come from (207) 367-3104. Reply STOP to any message
+              to opt out, or HELP for help.
             </p>
           </div>
         ) : (
@@ -125,7 +126,8 @@ export default function TextUpdates() {
             </button>
 
             <p className="text-[11px] text-gray-400 text-center">
-              You don't need to sign up to donate, buy, or use any part of this site. We never sell or share your number.
+              Texts come from (207) 367-3104. You don't need to sign up to donate, buy, or use any part of this site. We
+              never sell or share your number.
             </p>
           </form>
         )}

@@ -31,7 +31,7 @@ export default function TermsOfService() {
         <section>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Text Messaging</h2>
           <p className="mb-2">
-            Missouri State Men's Lacrosse offers optional text updates: team news, game and event reminders, and fundraiser updates. You only receive texts if you sign up on our <a href="/text-updates" className="text-[#5E0009] font-semibold hover:underline">Text Updates</a> page and check the consent box. Consent is not a condition of any purchase or donation.
+            Missouri State Men's Lacrosse offers optional text updates: team news, game and event reminders, and fundraiser updates. Texts are sent from (207) 367-3104. You only receive texts if you sign up on our <a href="/text-updates" className="text-[#5E0009] font-semibold hover:underline">Text Updates</a> page and check the consent box. Consent is not a condition of any purchase or donation.
           </p>
           <p className="mb-2">
             Message frequency varies. Message and data rates may apply. Reply STOP at any time to opt out; you'll get one confirmation and no further messages. Reply HELP for help, or email support@missouristatelacrosse.com.

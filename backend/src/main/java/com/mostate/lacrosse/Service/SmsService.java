@@ -14,8 +14,9 @@ import software.amazon.awssdk.services.pinpointsmsvoicev2.model.SendTextMessageR
 
 /**
  * Texts through AWS End User Messaging SMS, off by default. It stays off until the 10DLC
- * brand and campaign are approved and SMS_ENABLED plus SMS_ORIGINATION_NUMBER are set on
- * the server. AWS manages STOP/HELP itself: an opted-out number comes back as a conflict.
+ * brand and campaign are approved and SMS_ENABLED=true is set in the backend secret. The
+ * number defaults to +12073673104 (application.properties). AWS manages STOP/HELP itself:
+ * an opted-out number comes back as a conflict.
  */
 @Service
 public class SmsService {
