@@ -9,7 +9,6 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.pinpointsmsvoicev2.PinpointSmsVoiceV2Client;
 import software.amazon.awssdk.services.pinpointsmsvoicev2.model.ConflictException;
 import software.amazon.awssdk.services.pinpointsmsvoicev2.model.ConflictExceptionReason;
-import software.amazon.awssdk.services.pinpointsmsvoicev2.model.MessageType;
 import software.amazon.awssdk.services.pinpointsmsvoicev2.model.SendTextMessageRequest;
 
 /**
@@ -72,7 +71,8 @@ public class SmsService {
                 .destinationPhoneNumber(toE164)
                 .originationIdentity(originationNumber)
                 .messageBody(body)
-                .messageType(MessageType.PROMOTIONAL)
+                // No message type: AWS uses the number's own (ours is TRANSACTIONAL), and
+                // asking for a different one is rejected as INVALID_PARAMETER.
                 .build());
             return Result.SENT;
         } catch (ConflictException e) {
