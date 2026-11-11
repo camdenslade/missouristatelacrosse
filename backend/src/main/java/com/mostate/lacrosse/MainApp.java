@@ -90,6 +90,8 @@ public class MainApp {
             setPropertyIfPresent(secretsMap, "S3_PUBLIC_BASE_URL");
             setPropertyIfPresent(secretsMap, "TERMINAL_SHARED_SECRET");
             setPropertyIfPresent(secretsMap, "TERMINAL_LOCATION_ID");
+            setPropertyIfPresent(secretsMap, "SMS_ENABLED");
+            setPropertyIfPresent(secretsMap, "SMS_ORIGINATION_NUMBER");
 
             System.out.println("Secrets and base URLs loaded successfully from AWS Secrets Manager.");
 
