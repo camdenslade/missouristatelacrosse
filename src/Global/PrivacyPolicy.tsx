@@ -60,7 +60,7 @@ export default function PrivacyPolicy() {
 
         <section>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Contact</h2>
-          <p>Questions about this policy? Reach out through our <a href="/sponsorships" className="text-[#5E0009] font-semibold hover:underline">contact options</a> or an officer of the organization.</p>
+          <p>Questions about this policy? Reach out through our <a href="/support" className="text-[#5E0009] font-semibold hover:underline">contact options</a>, at support@missouristatelacrosse.com, or an officer of the organization.</p>
         </section>
 
         <p className="text-sm text-gray-400">
