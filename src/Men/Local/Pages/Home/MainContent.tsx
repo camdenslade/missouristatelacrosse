@@ -1,10 +1,9 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight, HandCoins, Instagram, Newspaper, Plus, Settings, Trash2, X } from "lucide-react";
-import { useEffect, useLayoutEffect, useReducer, useState } from "react";
 import type { FormEvent } from "react";
+import { useEffect, useLayoutEffect, useReducer, useState } from "react";
 import { Link } from "react-router-dom";
 
-import ManageArticlesModal from "./Articles/ManageArticles";
 import { useSponsors } from "../../../../Global/Common/hooks/useSponsors";
 import InstagramManagerModal from "../../../../Global/Common/InstagramManagerModal";
 import SponsorLogos from "../../../../Global/Common/SponsorLogos";
@@ -12,6 +11,7 @@ import { validateText, validateUrl } from "../../../../Global/Common/utils/valid
 import { useAuth } from "../../../../Global/Context/AuthContext";
 import { apiRequest } from "../../../../Services/API";
 import type { ApiArticle, ApiFundraiser } from "../../../../types/api";
+import ManageArticlesModal from "./Articles/ManageArticles";
 
 
 
@@ -23,7 +23,17 @@ const heroImages = [
   "/assets/hero5.jpg",
   "/assets/hero6.jpg",
   "/assets/hero7.jpg",
+  "/assets/hero8.jpg",
+  "/assets/hero9.jpg",
+  "/assets/hero10.jpg",
+  "/assets/hero11.jpg",
+  "/assets/hero12.jpg",
+  "/assets/hero13.jpg",
+  "/assets/hero14.jpg",
+  "/assets/hero15.jpg",
 ];
+
+const shuffledImages = [...heroImages].sort(() => Math.random() - 0.5);
 
 const fetchArticles = async (): Promise<ApiArticle[]> => {
   try {
@@ -130,7 +140,7 @@ export default function MainContent() {
         .map((a) => a.image as string);
       const finalSlides = [
         ...articleImages,
-        ...heroImages.slice(0, Math.max(0, 7 - articleImages.length)),
+        ...shuffledImages.slice(0, Math.max(0, 7 - articleImages.length)),
       ].slice(0, 7);
       await preloadImages(finalSlides);
       setSlides(finalSlides);
