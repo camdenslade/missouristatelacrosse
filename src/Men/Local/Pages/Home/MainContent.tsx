@@ -30,7 +30,6 @@ const heroImages = [
   "/assets/hero12.jpg",
   "/assets/hero13.jpg",
   "/assets/hero14.jpg",
-  "/assets/hero15.jpg",
 ];
 
 const shuffledImages = [...heroImages].sort(() => Math.random() - 0.5);
@@ -290,6 +289,7 @@ export default function MainContent() {
             initial={{ opacity: 0 }}
             animate={i === currentIndex ? { opacity: 1 } : { opacity: 0 }}
             transition={{ duration: 1.0, ease: "easeInOut" }}
+            style={/hero(8|9|1[0-4])\.jpg$/.test(img) ? { objectPosition: "50% 60%" } : undefined}
             className="absolute inset-0 w-full h-full object-cover object-top z-0 md:object-[50%_20%]"
           />
         ))}
