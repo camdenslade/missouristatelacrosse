@@ -23,6 +23,7 @@ const heroImages = [
   "/assets/hero5.jpg",
   "/assets/hero6.jpg",
   "/assets/hero7.jpg",
+  /*
   "/assets/hero8.jpg",
   "/assets/hero9.jpg",
   "/assets/hero10.jpg",
@@ -30,6 +31,7 @@ const heroImages = [
   "/assets/hero12.jpg",
   "/assets/hero13.jpg",
   "/assets/hero14.jpg",
+  */
 ];
 
 const shuffledImages = [...heroImages].sort(() => Math.random() - 0.5);
