@@ -256,6 +256,7 @@ public class OrderFormController {
             ? inferSizeCategory(body.name(), body.options())
             : normalizeSizeCategory(body.sizeCategory()));
         item.setPrice(body.price());
+        item.setChoiceGroup(cleanChoiceGroup(body.choiceGroup()));
         if (body.image() != null) {
             item.setImage(body.image().isBlank() ? null : s3Service.extractKey(body.image()));
         }
@@ -280,6 +281,7 @@ public class OrderFormController {
         if (body.firstYearComp() != null) item.setFirstYearComp(body.firstYearComp());
         if (body.sizeCategory() != null) item.setSizeCategory(normalizeSizeCategory(body.sizeCategory()));
         if (body.price() != null) item.setPrice(body.price());
+        if (body.choiceGroup() != null) item.setChoiceGroup(cleanChoiceGroup(body.choiceGroup()));
         if (body.image() != null) {
             item.setImage(body.image().isBlank() ? null : s3Service.extractKey(body.image()));
         }
@@ -328,6 +330,15 @@ public class OrderFormController {
         List<OrderFormItem> items = itemRepo.findAllByFormIdOrderBySortOrderAsc(formId);
         Map<UUID, OrderFormItem> itemsById = items.stream()
             .collect(java.util.stream.Collectors.toMap(OrderFormItem::getId, i -> i));
+
+        // Items sharing a choice group are pick-one.
+        java.util.Set<String> groupsPicked = new java.util.HashSet<>();
+        for (Selection sel : body.selections()) {
+            OrderFormItem item = itemsById.get(sel.itemId());
+            if (item != null && item.getChoiceGroup() != null && !groupsPicked.add(item.getChoiceGroup())) {
+                return ResponseEntity.badRequest().body(new ErrorResponse("Choose only one " + item.getChoiceGroup()));
+            }
+        }
 
         boolean firstYear = isFirstYear(player);
         BigDecimal total = BigDecimal.ZERO;
@@ -556,6 +567,47 @@ public class OrderFormController {
         return ResponseEntity.ok(toSubmissionResponse(submission));
     }
 
+    /** Board removes one line from a player's order; an unwaived charged line is credited back. */
+    @DeleteMapping("/submissions/{submissionId}/lines/{index}")
+    @Transactional
+    public ResponseEntity<?> removeLine(
+        HttpServletRequest request,
+        @PathVariable UUID submissionId,
+        @PathVariable int index,
+        @RequestParam(defaultValue = "men") String program
+    ) {
+        if (!isBoard(request, program)) {
+            return ResponseEntity.status(403).body(new ErrorResponse("Board access required"));
+        }
+        OrderFormSubmission submission = submissionRepo.findById(submissionId).orElse(null);
+        if (submission == null) return ResponseEntity.notFound().build();
+        List<Object> lines = new java.util.ArrayList<>(JsonUtils.readList(submission.getSelections()));
+        if (index < 0 || index >= lines.size() || !(lines.get(index) instanceof Map<?, ?> line)) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("No such line on this order"));
+        }
+        BigDecimal lineTotal = new BigDecimal(String.valueOf(line.get("lineTotal") != null ? line.get("lineTotal") : "0"));
+        boolean waived = Boolean.TRUE.equals(line.get("waived"));
+        Player player = playerRepo.findById(submission.getPlayerId()).orElse(null);
+        if (player != null && !waived && lineTotal.signum() > 0) {
+            DuesPayment entry = new DuesPayment();
+            entry.setPlayerId(player.getId());
+            entry.setAmount(lineTotal);
+            entry.setType("ORDER_CREDIT");
+            entry.setNote("Removed from order: " + line.get("quantity") + " x " + line.get("name"));
+            entry.setPaidByUid((String) request.getAttribute("firebaseUid"));
+            duesRepo.save(entry);
+            BigDecimal current = player.getBalance() != null ? player.getBalance() : BigDecimal.ZERO;
+            player.setBalance(current.subtract(lineTotal));
+            playerRepo.save(player);
+        }
+        lines.remove(index);
+        BigDecimal total = submission.getTotal() != null ? submission.getTotal() : BigDecimal.ZERO;
+        submission.setTotal(total.subtract(lineTotal).max(BigDecimal.ZERO));
+        submission.setSelections(JsonUtils.toJson(lines));
+        submissionRepo.save(submission);
+        return ResponseEntity.ok(toSubmissionResponse(submission));
+    }
+
     /**
      * Whether this player row is their first season: no row for the same player profile in
      * any earlier season. A row with no profile can't be checked, so it's never auto-comped
@@ -731,6 +783,7 @@ public class OrderFormController {
         m.put("description", item.getDescription());
         m.put("firstYearComp", item.isFirstYearComp());
         m.put("sizeCategory", item.getSizeCategory());
+        m.put("choiceGroup", item.getChoiceGroup());
         m.put("price", item.getPrice());
         m.put("image", s3Service.toPresignedUrl(item.getImage(), Duration.ofHours(2)));
         m.put("options", JsonUtils.readList(item.getOptions()));
@@ -741,8 +794,15 @@ public class OrderFormController {
 
     public record ItemRequest(
         String name, String description, Boolean firstYearComp, String sizeCategory,
-        BigDecimal price, String image, List<String> options
+        BigDecimal price, String image, List<String> options, String choiceGroup
     ) {}
+
+    /** Empty string clears the group. */
+    private static String cleanChoiceGroup(String raw) {
+        if (raw == null) return null;
+        String cleaned = TextSanitizer.clean(raw).trim();
+        return cleaned.isEmpty() ? null : cleaned;
+    }
 
     /** Kinds of sized items a player's saved sizes are kept for. Mirrors src/Global/Common/utils/sizeCategories.ts. */
     private static final List<String> SIZE_CATEGORIES = List.of("shirt", "shorts", "hoodie", "pants", "polo", "jersey", "gloves");
