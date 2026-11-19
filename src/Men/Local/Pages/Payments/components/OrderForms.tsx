@@ -11,6 +11,7 @@ type Item = {
   description: string | null;
   firstYearComp?: boolean;
   sizeCategory?: string | null;
+  choiceGroup?: string | null;
   price: number | null;
   image: string | null;
   options: string[];
@@ -32,6 +33,7 @@ function reducer(state: typeof initialState, action: any) {
         delete cart[action.itemId];
       } else {
         cart[action.itemId] = { option: action.option ?? cart[action.itemId]?.option ?? "", quantity: action.quantity };
+        for (const id of action.siblings ?? []) delete cart[id];
       }
       return { ...state, cart };
     }
@@ -39,6 +41,7 @@ function reducer(state: typeof initialState, action: any) {
       const cart = { ...state.cart };
       const existing = cart[action.itemId] ?? { option: "", quantity: 1 };
       cart[action.itemId] = { ...existing, option: action.option };
+      for (const id of action.siblings ?? []) delete cart[id];
       return { ...state, cart };
     }
     case "CLEAR_CART":
@@ -135,6 +138,10 @@ export default function OrderForms({
     return emptyMessage ? <p className="text-sm text-gray-400 text-center py-8">{emptyMessage}</p> : null;
   }
   const linkedFormMissing = !!focusFormId && !state.forms.some((f) => f.id === focusFormId);
+
+  // Other items in the same pick-one group; choosing this item removes them from the cart.
+  const siblingsOf = (form: OrderForm, item: Item) =>
+    item.choiceGroup ? form.items.filter((i) => i.id !== item.id && i.choiceGroup === item.choiceGroup).map((i) => i.id) : [];
 
   const totalFor = (form: OrderForm) =>
     form.items.reduce((sum, item) => {
@@ -288,6 +295,11 @@ export default function OrderForms({
                           )}
                         </div>
                         {item.description && <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>}
+                        {item.choiceGroup && (
+                          <span className="mt-1 mr-1 inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                            Pick one {item.choiceGroup}
+                          </span>
+                        )}
                         {item.firstYearComp && (
                           <span className="mt-1 inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700">
                             {firstYear ? "Free for you: First Year Comp" : "Free for first-year players"}
@@ -305,7 +317,7 @@ export default function OrderForms({
                               <button
                                 key={opt}
                                 type="button"
-                                onClick={() => dispatch({ type: "SET_OPTION", itemId: item.id, option: opt })}
+                                onClick={() => dispatch({ type: "SET_OPTION", itemId: item.id, option: opt, siblings: siblingsOf(form, item) })}
                                 title={savedOption(item) === opt ? "Your saved size" : undefined}
                                 className={`min-w-[2.5rem] px-3 py-1 rounded-full text-xs font-semibold border transition ${
                                   active
@@ -338,7 +350,7 @@ export default function OrderForms({
                           type="button"
                           aria-label={`Add one ${item.name}`}
                           onClick={() =>
-                            dispatch({ type: "SET_LINE", itemId: item.id, quantity: quantity + 1, option: line?.option || savedOption(item) })
+                            dispatch({ type: "SET_LINE", itemId: item.id, quantity: quantity + 1, option: line?.option || savedOption(item), siblings: siblingsOf(form, item) })
                           }
                           className="h-8 w-8 rounded-full text-lg leading-none text-[#5E0009] hover:bg-[#5E0009]/10"
                         >

@@ -30,6 +30,9 @@ public class OrderFormItem {
     @Column(name = "size_category")
     private String sizeCategory;
 
+    @Column(name = "choice_group")
+    private String choiceGroup;
+
     @Column(name = "first_year_comp", nullable = false)
     private boolean firstYearComp = false;
 
@@ -58,6 +61,9 @@ public class OrderFormItem {
 
     public String getSizeCategory() { return sizeCategory; }
     public void setSizeCategory(String sizeCategory) { this.sizeCategory = sizeCategory; }
+
+    public String getChoiceGroup() { return choiceGroup; }
+    public void setChoiceGroup(String choiceGroup) { this.choiceGroup = choiceGroup; }
 
     public boolean isFirstYearComp() { return firstYearComp; }
     public void setFirstYearComp(boolean firstYearComp) { this.firstYearComp = firstYearComp; }

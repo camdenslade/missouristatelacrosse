@@ -121,6 +121,18 @@ export default function ManageOrderForms() {
     }
   };
 
+  const handleRemoveLine = async (formId, submission, index, line) => {
+    if (!window.confirm(`Remove ${line.name}${line.option ? ` (${line.option})` : ""} from this order?`)) return;
+    try {
+      const updated = await apiRequest(`/api/order-forms/submissions/${submission.id}/lines/${index}`, { method: "DELETE" });
+      dispatch({ type: "REPLACE_SUBMISSION", formId, submission: updated });
+      toast.success("Removed from the order.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to remove.");
+    }
+  };
+
   // Players open order forms in their Portal (orders go on their dues balance), so the link
   // points there and the Portal scrolls to this form.
   const handleCopyLink = async (formId) => {
@@ -214,6 +226,21 @@ export default function ManageOrderForms() {
   const handleSetSizeCategory = async (item, sizeCategory) => {
     try {
       await apiRequest(`/api/order-forms/items/${item.id}`, { method: "PUT", json: { sizeCategory } });
+      load();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update.");
+    }
+  };
+
+  const handleSetChoiceGroup = async (item) => {
+    const value = window.prompt(
+      "Pick-one group: items on this form with the same group name can't be ordered together (e.g. \"elbow pads\"). Leave blank to remove.",
+      item.choiceGroup || ""
+    );
+    if (value === null) return;
+    try {
+      await apiRequest(`/api/order-forms/items/${item.id}`, { method: "PUT", json: { choiceGroup: value.trim() } });
       load();
     } catch (err) {
       console.error(err);
@@ -489,6 +516,14 @@ export default function ManageOrderForms() {
                                     ))}
                                   </select>
                                 )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleSetChoiceGroup(item)}
+                                  title="Items with the same group are pick-one"
+                                  className="text-[11px] font-semibold rounded-full border border-gray-200 bg-white px-2 py-0.5 text-gray-600 hover:bg-gray-50"
+                                >
+                                  {item.choiceGroup ? `Pick one: ${item.choiceGroup}` : "Pick-one group: none"}
+                                </button>
                                 {item.firstYearComp && (
                                   <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700">
                                     First Year Comp
@@ -688,6 +723,12 @@ export default function ManageOrderForms() {
                                           {line.waived ? "Waived, undo" : "Waive"}
                                         </button>
                                       )}
+                                      <button
+                                        onClick={() => handleRemoveLine(form.id, s, i, line)}
+                                        className={`${pill} shrink-0 py-1 bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600`}
+                                      >
+                                        Remove
+                                      </button>
                                     </li>
                                   ))}
                                 </ul>
